@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Plus, FileText, Calendar, Edit, Trash2 } from 'lucide-react';
 
 type Post = {

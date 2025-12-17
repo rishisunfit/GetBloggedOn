@@ -1,6 +1,4 @@
 import { ArrowLeft, Calendar } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import { ReactionBar } from './ReactionBar';
 import { CTAForm } from './CTAForm';
 
