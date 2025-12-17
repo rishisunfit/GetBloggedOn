@@ -7,10 +7,20 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies
 node_modules
-dist
-dist-ssr
-*.local
+*.lock
+
+# Next.js
+.next/
+out/
+build/
+.vercel
+
+# Environment variables
+.env
+.env*.local
+.env.production
 
 # Editor directories and files
 .vscode/*
@@ -23,9 +33,6 @@ dist-ssr
 *.sln
 *.sw?
 
-node_modules
-dist
-.env
-.env.local
-
+# Misc
+*.local
 supabase-schema.sql
