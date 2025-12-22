@@ -90,6 +90,45 @@
   line-height: 1.5;
 }
 
+/* Centered lists - center the list block while keeping bullets inline with text */
+.ProseMirror ul[style*="text-align: center"],
+.ProseMirror ol[style*="text-align: center"] {
+  display: table;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: left;
+  padding-left: 1.5rem;
+}
+
+.ProseMirror ul[style*="text-align: center"] li,
+.ProseMirror ol[style*="text-align: center"] li {
+  text-align: left;
+}
+
+.ProseMirror ul[style*="text-align: center"] li p,
+.ProseMirror ol[style*="text-align: center"] li p {
+  text-align: left;
+}
+
+.ProseMirror ul[style*="text-align: right"],
+.ProseMirror ol[style*="text-align: right"] {
+  display: table;
+  margin-left: auto;
+  margin-right: 0;
+  text-align: left;
+  padding-left: 1.5rem;
+}
+
+.ProseMirror ul[style*="text-align: right"] li,
+.ProseMirror ol[style*="text-align: right"] li {
+  text-align: left;
+}
+
+.ProseMirror ul[style*="text-align: right"] li p,
+.ProseMirror ol[style*="text-align: right"] li p {
+  text-align: left;
+}
+
 .ProseMirror p {
   margin-bottom: 0.5rem;
   line-height: 1.6;
@@ -323,6 +362,35 @@
   margin-bottom: 1rem;
 }
 
+/* Centered lists in preview - center the list block */
+.preview-content ul[style*="text-align: center"],
+.preview-content ol[style*="text-align: center"] {
+  display: table;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: left;
+  padding-left: 1.5rem;
+}
+
+.preview-content ul[style*="text-align: center"] li,
+.preview-content ol[style*="text-align: center"] li {
+  text-align: left;
+}
+
+.preview-content ul[style*="text-align: right"],
+.preview-content ol[style*="text-align: right"] {
+  display: table;
+  margin-left: auto;
+  margin-right: 0;
+  text-align: left;
+  padding-left: 1.5rem;
+}
+
+.preview-content ul[style*="text-align: right"] li,
+.preview-content ol[style*="text-align: right"] li {
+  text-align: left;
+}
+
 .preview-content blockquote {
   border-left: 4px solid rgb(209 213 219);
   padding-left: 1rem;
@@ -371,3 +439,177 @@
   margin: 2rem 0;
   border-color: rgb(209 213 219);
 }
+
+/* Editorial Template Styles */
+.editorial-editor .ProseMirror {
+  font-family: var(--body-font, Georgia, serif);
+  font-weight: var(--body-weight, 400);
+  color: var(--text-color, #000);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+.editorial-editor .ProseMirror *,
+.editorial-editor .ProseMirror p,
+.editorial-editor .ProseMirror span {
+  max-width: 100%;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.editorial-editor .ProseMirror h1,
+.editorial-editor .ProseMirror h2,
+.editorial-editor .ProseMirror h3 {
+  font-family: var(--heading-font, "PT Serif", Georgia, serif);
+  font-weight: var(--heading-weight, 700);
+}
+
+.editorial-editor .ProseMirror h1 {
+  font-size: 3rem;
+  line-height: 1.2;
+  margin-bottom: 1.5rem;
+}
+
+.editorial-editor .ProseMirror h2 {
+  font-size: 1.5rem;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+}
+
+.editorial-editor .ProseMirror blockquote {
+  border-left: 4px solid currentColor;
+  padding-left: 1.5rem;
+  margin: 2rem 0;
+  font-style: italic;
+  font-size: 1.5rem;
+  line-height: 1.4;
+}
+
+.editorial-editor .ProseMirror a {
+  color: var(--link-color, #4746E5);
+}
+
+.editorial-editor .ProseMirror .editorial-header {
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgb(156 163 175);
+  margin-bottom: 1rem;
+}
+
+.editorial-editor .ProseMirror .subtitle {
+  font-size: 1.25rem;
+  font-style: italic;
+  color: rgb(107 114 128);
+  margin-bottom: 2rem;
+}
+
+.editorial-editor .ProseMirror .byline {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgb(229 231 235);
+  margin-bottom: 3rem;
+}
+
+/* Preview content editorial styles */
+.preview-content.editorial h1 {
+  font-size: 3rem;
+  line-height: 1.2;
+}
+
+.preview-content.editorial blockquote {
+  font-size: 1.5rem;
+  border-left-width: 4px;
+}
+
+/* Soft Reading Time Badge - warm and inviting */
+.editorial-editor .ProseMirror mark[data-color="#dbeafe"],
+.preview-content mark[data-color="#dbeafe"] {
+  background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%) !important;
+  padding: 0.4rem 1rem;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #92400e;
+  letter-spacing: 0.03em;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(251, 191, 36, 0.25);
+}
+
+/* Decorative thin line */
+.decorative-line-thin {
+  display: inline-block;
+  color: #d1d5db;
+  letter-spacing: -0.1em;
+  font-weight: 300;
+}
+
+/* Purple badge highlight */
+.editorial-editor .ProseMirror mark[data-color="#c7d2fe"],
+.preview-content mark[data-color="#c7d2fe"] {
+  background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 50%, #7c3aed 100%) !important;
+  color: white !important;
+  padding: 0.4rem 1rem;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  box-shadow: 
+    0 2px 8px rgba(139, 92, 246, 0.3),
+    0 0 20px rgba(139, 92, 246, 0.15);
+  border: none;
+}
+
+/* Mobile preview styles */
+.mobile-preview .ProseMirror,
+.mobile-preview .preview-content {
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.mobile-preview .ProseMirror h1,
+.mobile-preview .preview-content h1 {
+  font-size: 1.75rem !important;
+  line-height: 1.2;
+  margin-bottom: 0.75rem;
+}
+
+.mobile-preview .ProseMirror h2,
+.mobile-preview .preview-content h2 {
+  font-size: 1.35rem !important;
+  margin-bottom: 0.5rem;
+}
+
+.mobile-preview .ProseMirror h3,
+.mobile-preview .preview-content h3 {
+  font-size: 1.15rem !important;
+}
+
+.mobile-preview .ProseMirror blockquote,
+.mobile-preview .preview-content blockquote {
+  font-size: 1.1rem !important;
+  padding-left: 1rem;
+  margin: 1rem 0;
+}
+
+.mobile-preview .ProseMirror p,
+.mobile-preview .preview-content p {
+  margin-bottom: 0.75rem;
+}
+
+/* Responsive canvas for actual mobile devices */
+@media (max-width: 640px) {
+  .editorial-editor .ProseMirror h1 {
+    font-size: 2rem;
+  }
+  
+  .editorial-editor .ProseMirror blockquote {
+    font-size: 1.25rem;
+  }
+}
+
