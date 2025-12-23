@@ -4,7 +4,13 @@ import { supabase } from "./supabase";
  * Upload an image file to Supabase storage
  * @param file - The image file to upload
  * @param userId - The user ID (for organizing files)
- * @returns The public URL of the uploaded image
+ * @returns The URL of the uploaded image
+ * 
+ * NOTE: For best results, make your Supabase storage bucket "public" in the Supabase dashboard.
+ * Go to Storage > images bucket > Settings > Make it public.
+ * This allows images to be accessed via public URLs that never expire.
+ * 
+ * If the bucket is private, this function will use signed URLs (which expire after 1 year).
  */
 export async function uploadImageToStorage(
   file: File,
@@ -16,24 +22,44 @@ export async function uploadImageToStorage(
     .toString(36)
     .substring(7)}.${fileExt}`;
 
+  const bucketName = "images"; // Make sure this matches your bucket name in Supabase
+
   // Upload the file
   const { data, error } = await supabase.storage
-    .from("images")
+    .from(bucketName)
     .upload(fileName, file, {
       cacheControl: "3600",
       upsert: false,
+      contentType: file.type || "image/png",
     });
 
   if (error) {
+    console.error("Upload error:", error);
     throw new Error(`Failed to upload image: ${error.message}`);
   }
 
-  // Get the public URL
-  const {
-    data: { publicUrl },
-  } = supabase.storage.from("images").getPublicUrl(data.path);
+  if (!data) {
+    throw new Error("Upload succeeded but no data returned");
+  }
 
-  return publicUrl;
+  // Always use signed URLs for now to ensure images work regardless of bucket policy
+  // Signed URLs work for both public and private buckets
+  // Note: Signed URLs expire after the expiration time (set to 1 year)
+  const expiresIn = 60 * 60 * 24 * 365; // 1 year in seconds
+  const { data: signedData, error: signedError } = await supabase.storage
+    .from(bucketName)
+    .createSignedUrl(data.path, expiresIn);
+
+  if (signedError) {
+    console.error("Error creating signed URL:", signedError);
+    throw new Error(`Failed to create signed URL: ${signedError.message}`);
+  }
+
+  if (!signedData?.signedUrl) {
+    throw new Error("Failed to get signed URL: No URL returned");
+  }
+
+  return signedData.signedUrl;
 }
 
 /**

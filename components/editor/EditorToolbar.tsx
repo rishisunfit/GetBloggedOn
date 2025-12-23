@@ -36,6 +36,7 @@ import { useDialog } from "@/hooks/useDialog";
 import { ImagePickerModal } from "./ImagePickerModal";
 import { AIImageGeneratorModal } from "./AIImageGeneratorModal";
 import { ImageHistoryModal } from "./ImageHistoryModal";
+import { TableModal } from "./TableModal";
 import {
   uploadImageToStorage,
   uploadDataURLToStorage,
@@ -64,9 +65,8 @@ const ToolbarButton = ({
   <button
     onClick={onClick}
     disabled={disabled}
-    className={`p-1.5 rounded hover:bg-gray-100 transition-colors ${
-      active ? "bg-gray-100 text-gray-900" : "text-gray-700"
-    } ${disabled ? "opacity-40 cursor-not-allowed" : ""}`}
+    className={`p-1.5 rounded hover:bg-gray-100 transition-colors ${active ? "bg-gray-100 text-gray-900" : "text-gray-700"
+      } ${disabled ? "opacity-40 cursor-not-allowed" : ""}`}
     title={title}
     type="button"
   >
@@ -79,6 +79,8 @@ const Divider = () => <div className="w-px h-6 bg-gray-300 mx-0.5" />;
 export function EditorToolbar({ editor }: EditorToolbarProps) {
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showHighlightPicker, setShowHighlightPicker] = useState(false);
+  const [showTableModal, setShowTableModal] = useState(false);
+  const [currentAlignment, setCurrentAlignment] = useState<string | null>(null);
   const [showLineSpacingPicker, setShowLineSpacingPicker] = useState(false);
   const [showFontSizePicker, setShowFontSizePicker] = useState(false);
   const [showImagePicker, setShowImagePicker] = useState(false);
@@ -98,14 +100,25 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
 
     const handleUpdate = () => {
       forceUpdate({});
+      // Update alignment state
+      if (editor.isActive({ textAlign: "center" })) setCurrentAlignment("center");
+      else if (editor.isActive({ textAlign: "right" })) setCurrentAlignment("right");
+      else if (editor.isActive({ textAlign: "justify" })) setCurrentAlignment("justify");
+      else if (editor.isActive({ textAlign: "left" })) setCurrentAlignment("left");
+      else setCurrentAlignment(null);
     };
+
+    // Initial check
+    handleUpdate();
 
     editor.on("transaction", handleUpdate);
     editor.on("update", handleUpdate);
+    editor.on("selectionUpdate", handleUpdate);
 
     return () => {
       editor.off("transaction", handleUpdate);
       editor.off("update", handleUpdate);
+      editor.off("selectionUpdate", handleUpdate);
     };
   }, [editor]);
 
@@ -156,8 +169,32 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
     try {
       // Upload to Supabase storage
       const imageUrl = await uploadImageToStorage(file, user.id);
-      // Insert image into editor
-      editor.chain().focus().setImage({ src: imageUrl }).run();
+      console.log("Image uploaded, URL:", imageUrl);
+
+      // Test if image URL is accessible
+      const img = document.createElement('img');
+      img.onload = () => {
+        console.log("Image is accessible and loaded successfully");
+      };
+      img.onerror = () => {
+        console.error("Image failed to load from URL:", imageUrl);
+      };
+      img.src = imageUrl;
+
+      // Insert image into editor (alignment defaults to center via ImageExtension attrs)
+      editor.chain().focus().setImage({ src: imageUrl, alt: file.name }).run();
+
+      // Wait a bit and verify the image was inserted
+      setTimeout(() => {
+        const html = editor.getHTML();
+        console.log("Editor HTML after image insert:", html);
+        // Check if image tag exists in HTML
+        if (html.includes(imageUrl)) {
+          console.log("✓ Image URL found in editor HTML");
+        } else {
+          console.error("✗ Image URL NOT found in editor HTML");
+        }
+      }, 100);
     } catch (error) {
       console.error("Error uploading image:", error);
       await showDialog({
@@ -186,8 +223,12 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
         user.id,
         "generated-image.png"
       );
-      // Insert image into editor
-      editor.chain().focus().setImage({ src: uploadedUrl }).run();
+      console.log("Generated image uploaded, URL:", uploadedUrl);
+      // Insert image into editor (alignment defaults to center via ImageExtension attrs)
+      editor.chain().focus().setImage({ src: uploadedUrl, alt: "Generated image" }).run();
+      // Verify the image was inserted
+      const html = editor.getHTML();
+      console.log("Editor HTML after image insert:", html);
     } catch (error) {
       console.error("Error uploading generated image:", error);
       await showDialog({
@@ -201,7 +242,11 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
 
   const handleSelectFromHistory = async (imageUrl: string) => {
     // Use the image directly (it's already in Supabase storage)
-    editor.chain().focus().setImage({ src: imageUrl }).run();
+    console.log("Using image from history, URL:", imageUrl);
+    editor.chain().focus().setImage({ src: imageUrl, alt: "Image from history" }).run();
+    // Verify the image was inserted
+    const html = editor.getHTML();
+    console.log("Editor HTML after image insert:", html);
   };
 
   const addImage = () => {
@@ -479,35 +524,31 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
           <Divider />
 
           {/* Alignment */}
-          <div className="flex items-center gap-0 ">
+          <div className={`flex items-center gap-0 ${currentAlignment ? "bg-blue-50 rounded px-1 py-0.5" : ""}`}>
             <ToolbarButton
               onClick={() => editor.chain().focus().setTextAlign("left").run()}
-              active={editor.isActive({ textAlign: "left" })}
+              active={currentAlignment === "left"}
               title="Align Left"
             >
               <AlignLeft size={18} />
             </ToolbarButton>
             <ToolbarButton
-              onClick={() =>
-                editor.chain().focus().setTextAlign("center").run()
-              }
-              active={editor.isActive({ textAlign: "center" })}
+              onClick={() => editor.chain().focus().setTextAlign("center").run()}
+              active={currentAlignment === "center"}
               title="Align Center"
             >
               <AlignCenter size={18} />
             </ToolbarButton>
             <ToolbarButton
               onClick={() => editor.chain().focus().setTextAlign("right").run()}
-              active={editor.isActive({ textAlign: "right" })}
+              active={currentAlignment === "right"}
               title="Align Right"
             >
               <AlignRight size={18} />
             </ToolbarButton>
             <ToolbarButton
-              onClick={() =>
-                editor.chain().focus().setTextAlign("justify").run()
-              }
-              active={editor.isActive({ textAlign: "justify" })}
+              onClick={() => editor.chain().focus().setTextAlign("justify").run()}
+              active={currentAlignment === "justify"}
               title="Justify"
             >
               <AlignJustify size={18} />
@@ -737,70 +778,60 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
           <Divider />
 
           {/* Table */}
-          <div className="flex items-center gap-0 ">
+          <div className={`flex items-center gap-0 ${editor.isActive("table") ? "bg-blue-50 rounded px-1 py-0.5" : ""}`}>
             <ToolbarButton
-              onClick={() => {
-                const rows = parseInt(
-                  window.prompt("Number of rows:", "3") || "3"
-                );
-                const cols = parseInt(
-                  window.prompt("Number of columns:", "3") || "3"
-                );
-                if (rows > 0 && cols > 0) {
-                  editor
-                    .chain()
-                    .focus()
-                    .insertTable({ rows, cols, withHeaderRow: true })
-                    .run();
-                }
-              }}
+              onClick={() => setShowTableModal(true)}
+              active={editor.isActive("table")}
               title="Insert Table"
             >
               <Table size={18} />
             </ToolbarButton>
             {editor.isActive("table") && (
               <>
+                <Divider />
                 <ToolbarButton
                   onClick={() => editor.chain().focus().addColumnBefore().run()}
                   title="Add Column Before"
                 >
-                  <span className="text-xs">+Col</span>
+                  <span className="text-xs font-medium">+Col</span>
                 </ToolbarButton>
                 <ToolbarButton
                   onClick={() => editor.chain().focus().addColumnAfter().run()}
                   title="Add Column After"
                 >
-                  <span className="text-xs">Col+</span>
+                  <span className="text-xs font-medium">Col+</span>
                 </ToolbarButton>
                 <ToolbarButton
                   onClick={() => editor.chain().focus().deleteColumn().run()}
                   title="Delete Column"
                 >
-                  <span className="text-xs">-Col</span>
+                  <span className="text-xs font-medium">-Col</span>
                 </ToolbarButton>
+                <Divider />
                 <ToolbarButton
                   onClick={() => editor.chain().focus().addRowBefore().run()}
                   title="Add Row Before"
                 >
-                  <span className="text-xs">+Row</span>
+                  <span className="text-xs font-medium">+Row</span>
                 </ToolbarButton>
                 <ToolbarButton
                   onClick={() => editor.chain().focus().addRowAfter().run()}
                   title="Add Row After"
                 >
-                  <span className="text-xs">Row+</span>
+                  <span className="text-xs font-medium">Row+</span>
                 </ToolbarButton>
                 <ToolbarButton
                   onClick={() => editor.chain().focus().deleteRow().run()}
                   title="Delete Row"
                 >
-                  <span className="text-xs">-Row</span>
+                  <span className="text-xs font-medium">-Row</span>
                 </ToolbarButton>
+                <Divider />
                 <ToolbarButton
                   onClick={() => editor.chain().focus().deleteTable().run()}
                   title="Delete Table"
                 >
-                  <span className="text-xs">Del</span>
+                  <span className="text-xs font-medium text-red-600">Del</span>
                 </ToolbarButton>
               </>
             )}
@@ -849,70 +880,60 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
           <Divider />
 
           {/* Table */}
-          <div className="flex items-center gap-0 ">
+          <div className={`flex items-center gap-0 ${editor.isActive("table") ? "bg-blue-50 rounded px-1 py-0.5" : ""}`}>
             <ToolbarButton
-              onClick={() => {
-                const rows = parseInt(
-                  window.prompt("Number of rows:", "3") || "3"
-                );
-                const cols = parseInt(
-                  window.prompt("Number of columns:", "3") || "3"
-                );
-                if (rows > 0 && cols > 0) {
-                  editor
-                    .chain()
-                    .focus()
-                    .insertTable({ rows, cols, withHeaderRow: true })
-                    .run();
-                }
-              }}
+              onClick={() => setShowTableModal(true)}
+              active={editor.isActive("table")}
               title="Insert Table"
             >
               <Table size={18} />
             </ToolbarButton>
             {editor.isActive("table") && (
               <>
+                <Divider />
                 <ToolbarButton
                   onClick={() => editor.chain().focus().addColumnBefore().run()}
                   title="Add Column Before"
                 >
-                  <span className="text-xs">+Col</span>
+                  <span className="text-xs font-medium">+Col</span>
                 </ToolbarButton>
                 <ToolbarButton
                   onClick={() => editor.chain().focus().addColumnAfter().run()}
                   title="Add Column After"
                 >
-                  <span className="text-xs">Col+</span>
+                  <span className="text-xs font-medium">Col+</span>
                 </ToolbarButton>
                 <ToolbarButton
                   onClick={() => editor.chain().focus().deleteColumn().run()}
                   title="Delete Column"
                 >
-                  <span className="text-xs">-Col</span>
+                  <span className="text-xs font-medium">-Col</span>
                 </ToolbarButton>
+                <Divider />
                 <ToolbarButton
                   onClick={() => editor.chain().focus().addRowBefore().run()}
                   title="Add Row Before"
                 >
-                  <span className="text-xs">+Row</span>
+                  <span className="text-xs font-medium">+Row</span>
                 </ToolbarButton>
                 <ToolbarButton
                   onClick={() => editor.chain().focus().addRowAfter().run()}
                   title="Add Row After"
                 >
-                  <span className="text-xs">Row+</span>
+                  <span className="text-xs font-medium">Row+</span>
                 </ToolbarButton>
                 <ToolbarButton
                   onClick={() => editor.chain().focus().deleteRow().run()}
                   title="Delete Row"
                 >
-                  <span className="text-xs">-Row</span>
+                  <span className="text-xs font-medium">-Row</span>
                 </ToolbarButton>
+                <Divider />
                 <ToolbarButton
                   onClick={() => editor.chain().focus().deleteTable().run()}
                   title="Delete Table"
                 >
-                  <span className="text-xs">Del</span>
+                  <span className="text-xs font-medium text-red-600">Del</span>
                 </ToolbarButton>
               </>
             )}
@@ -973,45 +994,58 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
         onSelectImage={handleSelectFromHistory}
       />
 
+      {/* Table Modal */}
+      <TableModal
+        isOpen={showTableModal}
+        onClose={() => setShowTableModal(false)}
+        onInsert={(rows, cols) => {
+          editor
+            .chain()
+            .focus()
+            .insertTable({ rows, cols, withHeaderRow: true })
+            .run();
+        }}
+      />
+
       {/* Close pickers when clicking outside */}
       {(showColorPicker ||
         showHighlightPicker ||
         showLineSpacingPicker ||
         showFontSizePicker) && (
-        <div
-          className="fixed inset-0 z-40"
-          onMouseDown={(e) => {
-            // Only track if clicking on the backdrop itself (not a child)
-            if (e.target === e.currentTarget) {
-              dragStartRef.current = { x: e.clientX, y: e.clientY };
-            }
-          }}
-          onMouseUp={(e) => {
-            // Only close if clicking on the backdrop itself and it was a click (not a drag)
-            if (e.target === e.currentTarget && dragStartRef.current) {
-              const dx = Math.abs(e.clientX - dragStartRef.current.x);
-              const dy = Math.abs(e.clientY - dragStartRef.current.y);
-              // If moved less than 5px, it's a click, not a drag
-              if (dx < 5 && dy < 5) {
+          <div
+            className="fixed inset-0 z-40"
+            onMouseDown={(e) => {
+              // Only track if clicking on the backdrop itself (not a child)
+              if (e.target === e.currentTarget) {
+                dragStartRef.current = { x: e.clientX, y: e.clientY };
+              }
+            }}
+            onMouseUp={(e) => {
+              // Only close if clicking on the backdrop itself and it was a click (not a drag)
+              if (e.target === e.currentTarget && dragStartRef.current) {
+                const dx = Math.abs(e.clientX - dragStartRef.current.x);
+                const dy = Math.abs(e.clientY - dragStartRef.current.y);
+                // If moved less than 5px, it's a click, not a drag
+                if (dx < 5 && dy < 5) {
+                  setShowColorPicker(false);
+                  setShowHighlightPicker(false);
+                  setShowLineSpacingPicker(false);
+                  setShowFontSizePicker(false);
+                }
+              }
+              dragStartRef.current = null;
+            }}
+            onClick={(e) => {
+              // Fallback: close on click if it's the backdrop
+              if (e.target === e.currentTarget) {
                 setShowColorPicker(false);
                 setShowHighlightPicker(false);
                 setShowLineSpacingPicker(false);
                 setShowFontSizePicker(false);
               }
-            }
-            dragStartRef.current = null;
-          }}
-          onClick={(e) => {
-            // Fallback: close on click if it's the backdrop
-            if (e.target === e.currentTarget) {
-              setShowColorPicker(false);
-              setShowHighlightPicker(false);
-              setShowLineSpacingPicker(false);
-              setShowFontSizePicker(false);
-            }
-          }}
-        />
-      )}
+            }}
+          />
+        )}
     </div>
   );
 }

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
-import Image from "@tiptap/extension-image";
+import { ImageExtension } from "./ImageExtension";
 import Placeholder from "@tiptap/extension-placeholder";
 import TextAlign from "@tiptap/extension-text-align";
 import Underline from "@tiptap/extension-underline";
@@ -22,6 +22,7 @@ import { ArrowLeft, Eye, Save } from "lucide-react";
 import { EditorToolbar } from "./EditorToolbar";
 import { StyleExtension, FontSizeExtension } from "./StyleExtension";
 import { LinkBubbleMenu } from "./LinkBubbleMenu";
+import { ImageBubbleMenu } from "./ImageBubbleMenu";
 
 interface EditorProps {
   postId?: string;
@@ -49,16 +50,8 @@ export function Editor({
     extensions: [
       StarterKit.configure({
         codeBlock: false, // We'll use the standalone CodeBlock extension
-        paragraph: {
-          HTMLAttributes: {
-            class: null,
-          },
-        },
-        heading: {
-          HTMLAttributes: {
-            class: null,
-          },
-        },
+        link: false, // Disable link from StarterKit to avoid duplicate
+        underline: false, // Disable underline from StarterKit to avoid duplicate
       }),
       Link.configure({
         openOnClick: false,
@@ -66,16 +59,12 @@ export function Editor({
           class: "text-blue-600 underline hover:text-blue-800 cursor-pointer",
         },
       }),
-      Image.configure({
-        HTMLAttributes: {
-          class: "max-w-full h-auto rounded-lg my-4",
-        },
-      }),
+      ImageExtension,
       Placeholder.configure({
         placeholder: "Start writing your story...",
       }),
       TextAlign.configure({
-        types: ["heading", "paragraph"],
+        types: ["heading", "paragraph", "listItem"],
       }),
       Underline,
       Highlight.configure({
@@ -184,6 +173,9 @@ export function Editor({
 
       {/* Link Bubble Menu */}
       {editor && <LinkBubbleMenu editor={editor} />}
+
+      {/* Image Bubble Menu */}
+      {editor && <ImageBubbleMenu editor={editor} />}
 
       {/* Editor Content - Infinite scrollable area */}
       <div className="flex-1 overflow-y-auto bg-gray-50">

@@ -53,8 +53,7 @@ export function CTAForm({ postId }: CTAFormProps) {
             Have a question? Text me
           </h3>
           <p className="text-gray-600">
-            I'd love to hear from you. Drop me a message and I'll get back to
-            you soon.
+            I'd love to hear from you. Drop me a message and I'll get back to you soon. <br /> -&gt; My DMs and email inbox get flooded. This is a great, private way for me to answer your questions :)
           </p>
         </div>
       </div>
@@ -82,26 +81,6 @@ export function CTAForm({ postId }: CTAFormProps) {
                 setFormData({ ...formData, phone: e.target.value })
               }
               placeholder="+1 (555) 123-4567"
-              required
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="subject"
-              className="block text-sm font-medium text-gray-700 mb-2"
-            >
-              Subject
-            </label>
-            <input
-              type="text"
-              id="subject"
-              value={formData.subject}
-              onChange={(e) =>
-                setFormData({ ...formData, subject: e.target.value })
-              }
-              placeholder="What's this about?"
               required
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
             />
