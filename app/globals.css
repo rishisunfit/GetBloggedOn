@@ -6,6 +6,7 @@
   0% {
     background-position: -200% 0;
   }
+
   100% {
     background-position: 200% 0;
   }
@@ -129,9 +130,47 @@
   text-align: left;
 }
 
+/* Ensure text alignment works with prose */
+.ProseMirror [style*="text-align: left"] {
+  text-align: left !important;
+}
+
+.ProseMirror [style*="text-align: center"] {
+  text-align: center !important;
+}
+
+.ProseMirror [style*="text-align: right"] {
+  text-align: right !important;
+}
+
+.ProseMirror [style*="text-align: justify"] {
+  text-align: justify !important;
+}
+
 .ProseMirror p {
   margin-bottom: 0.5rem;
   line-height: 1.6;
+}
+
+/* Ensure text alignment works with prose */
+.ProseMirror [style*="text-align: left"],
+.preview-content [style*="text-align: left"] {
+  text-align: left !important;
+}
+
+.ProseMirror [style*="text-align: center"],
+.preview-content [style*="text-align: center"] {
+  text-align: center !important;
+}
+
+.ProseMirror [style*="text-align: right"],
+.preview-content [style*="text-align: right"] {
+  text-align: right !important;
+}
+
+.ProseMirror [style*="text-align: justify"],
+.preview-content [style*="text-align: justify"] {
+  text-align: justify !important;
 }
 
 /* Line spacing classes */
@@ -151,13 +190,13 @@
   margin-bottom: 0.5rem;
 }
 
-.ProseMirror ul[data-type="taskList"] li > label {
+.ProseMirror ul[data-type="taskList"] li>label {
   flex: 0 0 auto;
   margin-right: 0.5rem;
   user-select: none;
 }
 
-.ProseMirror ul[data-type="taskList"] li > div {
+.ProseMirror ul[data-type="taskList"] li>div {
   flex: 1 1 auto;
 }
 
@@ -184,13 +223,13 @@
   margin-bottom: 0.5rem;
 }
 
-.ProseMirror ul[data-type="taskList"] li > label {
+.ProseMirror ul[data-type="taskList"] li>label {
   flex: 0 0 auto;
   margin-right: 0.5rem;
   user-select: none;
 }
 
-.ProseMirror ul[data-type="taskList"] li > div {
+.ProseMirror ul[data-type="taskList"] li>div {
   flex: 1 1 auto;
 }
 
@@ -243,6 +282,71 @@
   margin: 1rem 0;
 }
 
+/* Image wrapper for resize functionality */
+.ProseMirror .image-wrapper {
+  display: block;
+  position: relative;
+  margin: 1rem 0;
+  width: 100%;
+}
+
+/* Inner container shrink-wraps to the image so resize handle anchors correctly */
+.ProseMirror .image-inner {
+  display: inline-block;
+  position: relative;
+  max-width: 100%;
+  line-height: 0;
+}
+
+.ProseMirror .image-inner img {
+  display: block;
+  max-width: 100%;
+  transition: outline 0.2s;
+}
+
+/* Active selection border */
+.ProseMirror .image-wrapper.ProseMirror-selectednode img {
+  outline: 3px solid #3b82f6;
+  outline-offset: -3px;
+}
+
+/* Resize handle */
+.ProseMirror .resize-handle {
+  position: absolute;
+  bottom: 16px;
+  right: 0px;
+  width: 8px;
+  height: 8px;
+  background-color: #3b82f6;
+  cursor: se-resize;
+  opacity: 0;
+  transition: opacity 0.2s;
+  border-radius: 2px;
+  z-index: 10;
+  box-shadow: 0 0 0 2px white;
+}
+
+.ProseMirror .image-inner:hover .resize-handle {
+  opacity: 1;
+}
+
+.ProseMirror .resize-handle:hover {
+  background-color: #2563eb;
+}
+
+/* Image alignment */
+.ProseMirror .image-wrapper[data-align="left"] {
+  text-align: left;
+}
+
+.ProseMirror .image-wrapper[data-align="center"] {
+  text-align: center;
+}
+
+.ProseMirror .image-wrapper[data-align="right"] {
+  text-align: right;
+}
+
 .ProseMirror hr {
   margin: 2rem 0;
   border-color: rgb(209 213 219);
@@ -265,6 +369,7 @@
   vertical-align: top;
   box-sizing: border-box;
   position: relative;
+  cursor: text;
 }
 
 .ProseMirror table th {
@@ -274,7 +379,7 @@
 }
 
 .ProseMirror table .selectedCell:after {
-  z-index: 2;
+  z-index: 1;
   position: absolute;
   content: "";
   left: 0;
@@ -283,6 +388,14 @@
   bottom: 0;
   background: rgba(200, 200, 255, 0.4);
   pointer-events: none;
+}
+
+/* Ensure cursor is visible in table cells */
+.ProseMirror table td p,
+.ProseMirror table th p {
+  cursor: text;
+  position: relative;
+  z-index: 2;
 }
 
 .ProseMirror table .column-resize-handle {
@@ -303,8 +416,7 @@
   pointer-events: none;
 }
 
-.ProseMirror
-  p[style*="text-align: center"].is-editor-empty:first-child::before {
+.ProseMirror p[style*="text-align: center"].is-editor-empty:first-child::before {
   float: none;
   width: 100%;
   text-align: center;
@@ -417,6 +529,41 @@
 .preview-content pre code {
   background-color: transparent;
   padding: 0;
+}
+
+/* Table Styles for Preview */
+.preview-content table {
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  width: 100%;
+  overflow-x: auto;
+  display: table;
+}
+
+.preview-content table td,
+.preview-content table th {
+  min-width: 1em;
+  border: 1px solid rgb(209 213 219);
+  padding: 0.5rem 0.75rem;
+  vertical-align: top;
+  box-sizing: border-box;
+}
+
+.preview-content table th {
+  font-weight: 600;
+  text-align: left;
+  background-color: rgb(249 250 251);
+}
+
+/* Responsive table wrapper for mobile */
+@media (max-width: 768px) {
+  .preview-content {
+    overflow-x: auto;
+  }
+
+  .preview-content table {
+    min-width: 100%;
+  }
 }
 
 .preview-content a {
@@ -559,7 +706,7 @@
   font-size: 0.8rem;
   font-weight: 600;
   letter-spacing: 0.03em;
-  box-shadow: 
+  box-shadow:
     0 2px 8px rgba(139, 92, 246, 0.3),
     0 0 20px rgba(139, 92, 246, 0.15);
   border: none;
@@ -607,9 +754,8 @@
   .editorial-editor .ProseMirror h1 {
     font-size: 2rem;
   }
-  
+
   .editorial-editor .ProseMirror blockquote {
     font-size: 1.25rem;
   }
 }
-
