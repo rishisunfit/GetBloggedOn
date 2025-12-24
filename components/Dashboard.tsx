@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, FileText, Calendar, Edit, Trash2, ClipboardList, Eye, ExternalLink, MessageSquare, Mail, Phone, Reply, Users, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, FileText, Calendar, Edit, Trash2, ClipboardList, Eye, ExternalLink, MessageSquare, Mail, Phone, Reply, Users, ChevronDown, ChevronUp, Search } from "lucide-react";
 import { formSubmissionsApi, type FormSubmission } from "@/services/formSubmissions";
 import { quizSubmissionsApi, type QuizSubmission } from "@/services/quizSubmissions";
 import { useAuth } from "@/hooks/useAuth";
@@ -65,6 +65,13 @@ export function Dashboard({
   const [selectedResponse, setSelectedResponse] = useState<FormSubmission | null>(null);
   const [expandedQuizResponses, setExpandedQuizResponses] = useState<Set<string>>(new Set());
   const [quizDataCache, setQuizDataCache] = useState<Map<string, FullQuiz>>(new Map());
+
+  // Search states for each tab
+  const [searchPosts, setSearchPosts] = useState("");
+  const [searchQuizzes, setSearchQuizzes] = useState("");
+  const [searchResponses, setSearchResponses] = useState("");
+  const [searchQuizResponses, setSearchQuizResponses] = useState("");
+
   const { user } = useAuth();
   const { showDialog } = useDialog();
 
@@ -214,6 +221,62 @@ export function Dashboard({
       setExpandedQuizResponses((prev) => new Set(prev).add(responseId));
     }
   };
+
+  // Filter functions
+  const filteredPosts = posts.filter((post) =>
+    post.title.toLowerCase().includes(searchPosts.toLowerCase())
+  );
+
+  const filteredQuizzes = quizzes.filter((quiz) =>
+    quiz.title.toLowerCase().includes(searchQuizzes.toLowerCase())
+  );
+
+  const filteredResponses = responses.filter((response) => {
+    const query = searchResponses.toLowerCase();
+    if (!query) return true;
+
+    const email = response.email?.toLowerCase() || "";
+    const phone = response.phone?.toLowerCase() || "";
+    const message = response.message?.toLowerCase() || "";
+    const postTitle = getPostTitle(response.post_id).toLowerCase();
+
+    return (
+      email.includes(query) ||
+      phone.includes(query) ||
+      message.includes(query) ||
+      postTitle.includes(query)
+    );
+  });
+
+  const filteredQuizResponses = quizResponses.filter((response) => {
+    const query = searchQuizResponses.toLowerCase();
+    if (!query) return true;
+
+    const name = response.contact_info?.name?.toLowerCase() || "";
+    const phone = response.contact_info?.phone?.toLowerCase() || "";
+    const email = response.contact_info?.email?.toLowerCase() || "";
+    const quizTitle = getQuizTitle(response.quiz_id).toLowerCase();
+
+    // Search in answer content
+    const answerText = response.answers
+      .map((answer) => {
+        try {
+          return getAnswerText(response.quiz_id, answer.questionId, answer.value);
+        } catch {
+          return String(answer.value);
+        }
+      })
+      .join(" ")
+      .toLowerCase();
+
+    return (
+      name.includes(query) ||
+      phone.includes(query) ||
+      email.includes(query) ||
+      quizTitle.includes(query) ||
+      answerText.includes(query)
+    );
+  });
 
   const handleOpenReply = (response: FormSubmission) => {
     if (!response.email && !response.phone) {
@@ -436,8 +499,21 @@ export function Dashboard({
         {/* Posts List */}
         {activeTab === "posts" && (
           <>
+            {/* Search Bar for Posts */}
+            <div className="mb-6">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                <input
+                  type="text"
+                  placeholder="Search posts by title..."
+                  value={searchPosts}
+                  onChange={(e) => setSearchPosts(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+                />
+              </div>
+            </div>
             <div className="space-y-4">
-              {posts.map((post) => {
+              {filteredPosts.map((post) => {
                 // Strip HTML tags and get plain text preview
                 const plainText = post.content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
                 const wordCount = plainText.split(' ').filter(word => word.length > 0).length;
@@ -514,7 +590,18 @@ export function Dashboard({
               })}
             </div>
 
-            {posts.length === 0 && (
+            {filteredPosts.length === 0 && searchPosts && (
+              <div className="text-center py-16">
+                <Search size={64} className="mx-auto text-gray-300 mb-4" />
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  No posts found
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  No posts match your search query "{searchPosts}".
+                </p>
+              </div>
+            )}
+            {posts.length === 0 && !searchPosts && (
               <div className="text-center py-16">
                 <FileText size={64} className="mx-auto text-gray-300 mb-4" />
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">
@@ -539,6 +626,19 @@ export function Dashboard({
         {/* Responses List */}
         {activeTab === "responses" && (
           <>
+            {/* Search Bar for Responses */}
+            <div className="mb-6">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                <input
+                  type="text"
+                  placeholder="Search by name, phone, email, or message..."
+                  value={searchResponses}
+                  onChange={(e) => setSearchResponses(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+                />
+              </div>
+            </div>
             {loadingResponses ? (
               <div className="text-center py-16">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
@@ -546,7 +646,7 @@ export function Dashboard({
               </div>
             ) : (
               <div className="space-y-4">
-                {responses.map((response) => (
+                {filteredResponses.map((response) => (
                   <div
                     key={response.id}
                     className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
@@ -601,7 +701,18 @@ export function Dashboard({
               </div>
             )}
 
-            {!loadingResponses && responses.length === 0 && (
+            {!loadingResponses && filteredResponses.length === 0 && searchResponses && (
+              <div className="text-center py-16">
+                <Search size={64} className="mx-auto text-gray-300 mb-4" />
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  No responses found
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  No responses match your search query "{searchResponses}".
+                </p>
+              </div>
+            )}
+            {!loadingResponses && responses.length === 0 && !searchResponses && (
               <div className="text-center py-16">
                 <MessageSquare size={64} className="mx-auto text-gray-300 mb-4" />
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">
@@ -618,8 +729,21 @@ export function Dashboard({
         {/* Quizzes List */}
         {activeTab === "quizzes" && (
           <>
+            {/* Search Bar for Quizzes */}
+            <div className="mb-6">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                <input
+                  type="text"
+                  placeholder="Search quizzes by title..."
+                  value={searchQuizzes}
+                  onChange={(e) => setSearchQuizzes(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent"
+                />
+              </div>
+            </div>
             <div className="space-y-4">
-              {quizzes.map((quiz) => (
+              {filteredQuizzes.map((quiz) => (
                 <div
                   key={quiz.id}
                   className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
@@ -685,7 +809,18 @@ export function Dashboard({
               ))}
             </div>
 
-            {quizzes.length === 0 && (
+            {filteredQuizzes.length === 0 && searchQuizzes && (
+              <div className="text-center py-16">
+                <Search size={64} className="mx-auto text-gray-300 mb-4" />
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  No quizzes found
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  No quizzes match your search query "{searchQuizzes}".
+                </p>
+              </div>
+            )}
+            {quizzes.length === 0 && !searchQuizzes && (
               <div className="text-center py-16">
                 <ClipboardList size={64} className="mx-auto text-gray-300 mb-4" />
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">
@@ -709,6 +844,19 @@ export function Dashboard({
         {/* Quiz Responses List */}
         {activeTab === "quiz-responses" && (
           <>
+            {/* Search Bar for Quiz Responses */}
+            <div className="mb-6">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                <input
+                  type="text"
+                  placeholder="Search by name, phone, email, or answer content..."
+                  value={searchQuizResponses}
+                  onChange={(e) => setSearchQuizResponses(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+                />
+              </div>
+            </div>
             {loadingQuizResponses ? (
               <div className="text-center py-16">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
@@ -716,7 +864,17 @@ export function Dashboard({
               </div>
             ) : (
               <div className="space-y-4">
-                {quizResponses.length === 0 ? (
+                {filteredQuizResponses.length === 0 && searchQuizResponses ? (
+                  <div className="text-center py-16">
+                    <Search size={64} className="mx-auto text-gray-300 mb-4" />
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                      No quiz responses found
+                    </h3>
+                    <p className="text-gray-600 mb-6">
+                      No quiz responses match your search query "{searchQuizResponses}".
+                    </p>
+                  </div>
+                ) : filteredQuizResponses.length === 0 && !searchQuizResponses ? (
                   <div className="text-center py-16">
                     <Users size={64} className="mx-auto text-gray-300 mb-4" />
                     <h3 className="text-xl font-semibold text-gray-900 mb-2">
@@ -727,7 +885,7 @@ export function Dashboard({
                     </p>
                   </div>
                 ) : (
-                  quizResponses.map((response) => {
+                  filteredQuizResponses.map((response) => {
                     const isExpanded = expandedQuizResponses.has(response.id);
                     return (
                       <div
