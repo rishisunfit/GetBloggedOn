@@ -3,6 +3,7 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
 import { ImageExtension } from "./ImageExtension";
+import { VideoExtension } from "./VideoExtension";
 import Placeholder from "@tiptap/extension-placeholder";
 import TextAlign from "@tiptap/extension-text-align";
 import Underline from "@tiptap/extension-underline";
@@ -23,6 +24,7 @@ import { EditorToolbar } from "./EditorToolbar";
 import { StyleExtension, FontSizeExtension } from "./StyleExtension";
 import { LinkBubbleMenu } from "./LinkBubbleMenu";
 import { ImageBubbleMenu } from "./ImageBubbleMenu";
+import { VideoBubbleMenu } from "./VideoBubbleMenu";
 
 interface EditorProps {
   postId?: string;
@@ -64,6 +66,7 @@ export function Editor({
         },
       }),
       ImageExtension,
+      VideoExtension,
       Placeholder.configure({
         placeholder: "Start writing your story...",
       }),
@@ -209,6 +212,9 @@ export function Editor({
 
       {/* Image Bubble Menu */}
       {editor && <ImageBubbleMenu editor={editor} />}
+
+      {/* Video Bubble Menu */}
+      {editor && <VideoBubbleMenu editor={editor} />}
 
       {/* Editor Content - Infinite scrollable area */}
       <div className="flex-1 overflow-y-auto bg-gray-50">

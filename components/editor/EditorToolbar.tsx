@@ -29,6 +29,7 @@ import {
   Superscript,
   Type,
   Clock,
+  Video,
 } from "lucide-react";
 import { Editor } from "@tiptap/react";
 import { useState, useRef, useEffect } from "react";
@@ -37,6 +38,7 @@ import { ImagePickerModal } from "./ImagePickerModal";
 import { AIImageGeneratorModal } from "./AIImageGeneratorModal";
 import { ImageHistoryModal } from "./ImageHistoryModal";
 import { TableModal } from "./TableModal";
+import { VideoModal } from "./VideoModal";
 import {
   ImageAttributionModal,
   type ImageAttributionValues,
@@ -92,6 +94,7 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
   const [showAIGenerator, setShowAIGenerator] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showWebImageModal, setShowWebImageModal] = useState(false);
+  const [showVideoModal, setShowVideoModal] = useState(false);
   const [, forceUpdate] = useState({});
   const dragStartRef = useRef<{ x: number; y: number } | null>(null);
   const { showDialog } = useDialog();
@@ -276,6 +279,18 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
 
   const addImage = () => {
     setShowImagePicker(true);
+  };
+
+  const addVideo = () => {
+    setShowVideoModal(true);
+  };
+
+  const handleInsertVideo = (url: string, align: "left" | "center" | "right" = "center") => {
+    // Videos will be sized responsively at 70% via CSS
+    editor.chain().focus().setVideo({
+      src: url,
+      align: align || "center"
+    }).run();
   };
 
   const addImageFromWeb = () => {
@@ -962,6 +977,9 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
             <ToolbarButton onClick={addImage} title="Add Image">
               <Image size={18} />
             </ToolbarButton>
+            <ToolbarButton onClick={addVideo} title="Add Video">
+              <Video size={18} />
+            </ToolbarButton>
             <ToolbarButton
               onClick={() => setShowHistory(true)}
               title="Image History"
@@ -1028,6 +1046,15 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
             .focus()
             .insertTable({ rows, cols, withHeaderRow: true })
             .run();
+        }}
+      />
+
+      {/* Video Modal */}
+      <VideoModal
+        isOpen={showVideoModal}
+        onClose={() => setShowVideoModal(false)}
+        onInsert={(url, align) => {
+          handleInsertVideo(url, align);
         }}
       />
 
