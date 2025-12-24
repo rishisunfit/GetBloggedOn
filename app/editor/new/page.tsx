@@ -22,8 +22,8 @@ export default function NewEditorPage() {
     });
   };
 
-  const handleSave = async (title: string, content: string, silent = false) => {
-    // For new posts, create them first
+  const handleSaveDraft = async (title: string, content: string, silent = false) => {
+    // For new posts, create them first as draft
     try {
       const newPost = await postsApi.create({
         title: title || "Untitled Post",
@@ -35,18 +35,50 @@ export default function NewEditorPage() {
       if (!silent) {
         await showDialog({
           type: "alert",
-          message: "Post created successfully!",
+          message: "Post saved as draft!",
           title: "Success",
         });
       }
     } catch (error) {
-      console.error("Error creating post:", error);
+      console.error("Error saving draft:", error);
       await showDialog({
         type: "alert",
-        message: "Failed to create post",
+        message: "Failed to save draft",
         title: "Error",
       });
     }
+  };
+
+  const handlePublish = async (title: string, content: string, silent = false) => {
+    // For new posts, create them first as published
+    try {
+      const newPost = await postsApi.create({
+        title: title || "Untitled Post",
+        content,
+        status: "published",
+      });
+      // Update URL to include the new post ID
+      router.replace(`/editor/${newPost.id}`);
+      if (!silent) {
+        await showDialog({
+          type: "alert",
+          message: "Post published successfully!",
+          title: "Success",
+        });
+      }
+    } catch (error) {
+      console.error("Error publishing post:", error);
+      await showDialog({
+        type: "alert",
+        message: "Failed to publish post",
+        title: "Error",
+      });
+    }
+  };
+
+  const handleSave = async (title: string, content: string, silent = false) => {
+    // Fallback to save as draft for backward compatibility
+    await handleSaveDraft(title, content, silent);
   };
 
   return (
@@ -59,6 +91,8 @@ export default function NewEditorPage() {
         onBack={handleBack}
         onPreview={handlePreview}
         onSave={handleSave}
+        onSaveDraft={handleSaveDraft}
+        onPublish={handlePublish}
       />
     </ProtectedRoute>
   );

@@ -71,13 +71,15 @@ export default function EditorPage() {
     }
   };
 
-  const handleSave = async (title: string, content: string, silent = false) => {
+  const handleSaveDraft = async (title: string, content: string, silent = false) => {
     if (!id) return;
 
     try {
       await postsApi.update(id, {
         title,
         content,
+        status: "draft",
+        is_draft: true,
       });
 
       // Reload post data to get latest
@@ -86,18 +88,54 @@ export default function EditorPage() {
       if (!silent) {
         await showDialog({
           type: "alert",
-          message: "Post saved successfully!",
+          message: "Post saved as draft!",
           title: "Success",
         });
       }
     } catch (error) {
-      console.error("Error saving post:", error);
+      console.error("Error saving draft:", error);
       await showDialog({
         type: "alert",
-        message: "Failed to save post",
+        message: "Failed to save draft",
         title: "Error",
       });
     }
+  };
+
+  const handlePublish = async (title: string, content: string, silent = false) => {
+    if (!id) return;
+
+    try {
+      await postsApi.update(id, {
+        title,
+        content,
+        status: "published",
+        is_draft: false,
+      });
+
+      // Reload post data to get latest
+      await loadPost();
+
+      if (!silent) {
+        await showDialog({
+          type: "alert",
+          message: "Post published successfully!",
+          title: "Success",
+        });
+      }
+    } catch (error) {
+      console.error("Error publishing post:", error);
+      await showDialog({
+        type: "alert",
+        message: "Failed to publish post",
+        title: "Error",
+      });
+    }
+  };
+
+  const handleSave = async (title: string, content: string, silent = false) => {
+    // Fallback to save as draft for backward compatibility
+    await handleSaveDraft(title, content, silent);
   };
 
   if (loading) {
@@ -118,6 +156,8 @@ export default function EditorPage() {
         onBack={handleBack}
         onPreview={handlePreview}
         onSave={handleSave}
+        onSaveDraft={handleSaveDraft}
+        onPublish={handlePublish}
       />
     </ProtectedRoute>
   );

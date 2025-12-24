@@ -1,4 +1,4 @@
-// Local storage-based posts (will refactor to Supabase later)
+import { supabase } from "@/lib/supabase";
 
 export interface Post {
   id: string;
@@ -40,120 +40,113 @@ export interface UpdatePostData {
   styles?: PostStyles;
 }
 
-const STORAGE_KEY = "blogish_posts";
-
-// Helper to generate UUID
-const generateId = (): string => {
-  return crypto.randomUUID?.() || 
-    'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-      const r = Math.random() * 16 | 0;
-      const v = c === 'x' ? r : (r & 0x3 | 0x8);
-      return v.toString(16);
-    });
-};
-
-// Helper to get posts from localStorage
-const getStoredPosts = (): Post[] => {
-  if (typeof window === 'undefined') {
-    console.warn('Cannot get posts: window is undefined (SSR)');
-    return [];
-  }
-  
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) {
-      console.log('No posts found in localStorage');
-      return [];
-    }
-    const parsed = JSON.parse(stored);
-    console.log(`Loaded ${parsed.length} posts from localStorage`);
-    return parsed;
-  } catch (error) {
-    console.error('Error reading posts from localStorage:', error);
-    // If corrupted, return empty array
-    return [];
-  }
-};
-
-// Helper to save posts to localStorage
-const savePosts = (posts: Post[]): void => {
-  if (typeof window === 'undefined') {
-    console.warn('Cannot save posts: window is undefined (SSR)');
-    return;
-  }
-  
-  try {
-    const serialized = JSON.stringify(posts);
-    localStorage.setItem(STORAGE_KEY, serialized);
-    console.log(`Saved ${posts.length} posts to localStorage`);
-  } catch (error) {
-    console.error('Error saving posts to localStorage:', error);
-    // Check if it's a quota exceeded error
-    if (error instanceof DOMException && error.name === 'QuotaExceededError') {
-      throw new Error('Storage quota exceeded. Please clear some space and try again.');
-    }
-    throw error;
-  }
-};
-
 export const postsApi = {
   async getAll(): Promise<Post[]> {
-    return getStoredPosts();
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData?.user) {
+      throw new Error("User not authenticated");
+    }
+
+    const { data, error } = await supabase
+      .from("posts")
+      .select("*")
+      .eq("user_id", userData.user.id)
+      .order("updated_at", { ascending: false });
+
+    if (error) throw error;
+    return data || [];
   },
 
   async getById(id: string): Promise<Post> {
-    const posts = getStoredPosts();
-    const post = posts.find(p => p.id === id);
-    if (!post) {
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData?.user) {
+      throw new Error("User not authenticated");
+    }
+
+    const { data, error } = await supabase
+      .from("posts")
+      .select("*")
+      .eq("id", id)
+      .eq("user_id", userData.user.id)
+      .single();
+
+    if (error) throw error;
+    if (!data) {
       throw new Error("Post not found");
     }
-    return post;
+    return data;
   },
 
   async create(postData: CreatePostData): Promise<Post> {
-    const posts = getStoredPosts();
-    const now = new Date().toISOString();
-    
-    const newPost: Post = {
-      id: generateId(),
-      ...postData,
-      user_id: "local-user",
-      is_draft: postData.status === "draft",
-      created_at: now,
-      updated_at: now,
-    };
-    
-    posts.unshift(newPost); // Add to beginning
-    savePosts(posts);
-    
-    return newPost;
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData?.user) {
+      throw new Error("User not authenticated");
+    }
+
+    const { data, error } = await supabase
+      .from("posts")
+      .insert({
+        title: postData.title,
+        content: postData.content,
+        status: postData.status,
+        is_draft: postData.status === "draft",
+        user_id: userData.user.id,
+        styles: postData.styles || null,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
   },
 
   async update(id: string, postData: UpdatePostData): Promise<Post> {
-    const posts = getStoredPosts();
-    const index = posts.findIndex(p => p.id === id);
-    
-    if (index === -1) {
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData?.user) {
+      throw new Error("User not authenticated");
+    }
+
+    // Build update object
+    const updateData: any = {};
+    if (postData.title !== undefined) updateData.title = postData.title;
+    if (postData.content !== undefined) updateData.content = postData.content;
+    if (postData.status !== undefined) updateData.status = postData.status;
+    if (postData.is_draft !== undefined) {
+      updateData.is_draft = postData.is_draft;
+    } else if (postData.status !== undefined) {
+      updateData.is_draft = postData.status === "draft";
+    }
+    if (postData.styles !== undefined) updateData.styles = postData.styles;
+    updateData.updated_at = new Date().toISOString();
+
+    const { data, error } = await supabase
+      .from("posts")
+      .update(updateData)
+      .eq("id", id)
+      .eq("user_id", userData.user.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    if (!data) {
       throw new Error("Post not found");
     }
-    
-    const updatedPost: Post = {
-      ...posts[index],
-      ...postData,
-      is_draft: postData.status ? postData.status === "draft" : posts[index].is_draft,
-      updated_at: new Date().toISOString(),
-    };
-    
-    posts[index] = updatedPost;
-    savePosts(posts);
-    
-    return updatedPost;
+    return data;
   },
 
   async delete(id: string): Promise<void> {
-    const posts = getStoredPosts();
-    const filtered = posts.filter(p => p.id !== id);
-    savePosts(filtered);
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData?.user) {
+      throw new Error("User not authenticated");
+    }
+
+    const { error } = await supabase
+      .from("posts")
+      .delete()
+      .eq("id", id)
+      .eq("user_id", userData.user.id);
+
+    if (error) throw error;
   },
 };
 

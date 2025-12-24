@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { MessageCircle, Send } from "lucide-react";
-import { formSubmissionsApi } from "@/services/formSubmissions";
+import { MessageCircle, Send, Loader2 } from "lucide-react";
 import { useDialog } from "@/hooks/useDialog";
+import { supabase } from "@/lib/supabase";
 
 interface CTAFormProps {
   postId?: string;
@@ -10,27 +10,54 @@ interface CTAFormProps {
 export function CTAForm({ postId }: CTAFormProps) {
   const [formData, setFormData] = useState({
     phone: "",
-    subject: "",
     message: "",
   });
   const [submitted, setSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const { showDialog } = useDialog();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
 
     try {
-      await formSubmissionsApi.create({
-        phone: formData.phone,
-        subject: formData.subject,
-        message: formData.message,
-        post_id: postId,
+      // Get the current session to get the access token
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+      if (sessionError || !session) {
+        await showDialog({
+          type: "alert",
+          message: "Please log in to submit a question",
+          title: "Authentication Required",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      const response = await fetch("/api/submit-question", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          phone: formData.phone,
+          message: formData.message,
+          post_id: postId,
+        }),
       });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to submit question");
+      }
+
+      const result = await response.json();
 
       setSubmitted(true);
       setTimeout(() => {
         setSubmitted(false);
-        setFormData({ phone: "", subject: "", message: "" });
+        setFormData({ phone: "", message: "" });
       }, 3000);
     } catch (error) {
       console.error("Error submitting form:", error);
@@ -39,6 +66,8 @@ export function CTAForm({ postId }: CTAFormProps) {
         message: "Failed to send message. Please try again.",
         title: "Error",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -82,7 +111,8 @@ export function CTAForm({ postId }: CTAFormProps) {
               }
               placeholder="+1 (555) 123-4567"
               required
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
+              disabled={isLoading}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black disabled:bg-gray-100 disabled:cursor-not-allowed"
             />
           </div>
 
@@ -102,16 +132,27 @@ export function CTAForm({ postId }: CTAFormProps) {
               placeholder="Your message here..."
               required
               rows={4}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black resize-none"
+              disabled={isLoading}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black resize-none disabled:bg-gray-100 disabled:cursor-not-allowed"
             />
           </div>
 
           <button
             type="submit"
-            className="w-full flex items-center justify-center gap-2 bg-black text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition-colors font-semibold"
+            disabled={isLoading}
+            className="w-full flex items-center justify-center gap-2 bg-black text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition-colors font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
-            <Send size={18} />
-            Send Message
+            {isLoading ? (
+              <>
+                <Loader2 size={18} className="animate-spin" />
+                Sending...
+              </>
+            ) : (
+              <>
+                <Send size={18} />
+                Send Message
+              </>
+            )}
           </button>
         </form>
       )}

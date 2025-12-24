@@ -6,6 +6,7 @@ export interface FormSubmission {
   subject: string;
   message: string;
   post_id: string | null;
+  user_id: string | null;
   created_at: string;
 }
 
@@ -14,6 +15,7 @@ export interface CreateFormSubmissionData {
   subject: string;
   message: string;
   post_id?: string | null;
+  user_id?: string | null;
 }
 
 export const formSubmissionsApi = {

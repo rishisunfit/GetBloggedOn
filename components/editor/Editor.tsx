@@ -31,6 +31,8 @@ interface EditorProps {
   onBack: () => void;
   onPreview: () => void;
   onSave: (title: string, content: string, silent?: boolean) => void;
+  onSaveDraft?: (title: string, content: string, silent?: boolean) => void;
+  onPublish?: (title: string, content: string, silent?: boolean) => void;
 }
 
 export function Editor({
@@ -39,6 +41,8 @@ export function Editor({
   onBack,
   onPreview,
   onSave,
+  onSaveDraft,
+  onPublish,
 }: EditorProps) {
   const [title, setTitle] = useState(initialTitle);
 
@@ -106,13 +110,33 @@ export function Editor({
 
   const handleSave = () => {
     const content = editor?.getHTML() || "";
-    onSave(title, content);
+    // If onPublish is provided, use it; otherwise fall back to onSave
+    if (onPublish) {
+      onPublish(title, content);
+    } else {
+      onSave(title, content);
+    }
+  };
+
+  const handleSaveDraft = () => {
+    const content = editor?.getHTML() || "";
+    // If onSaveDraft is provided, use it; otherwise fall back to onSave
+    if (onSaveDraft) {
+      onSaveDraft(title, content);
+    } else {
+      onSave(title, content);
+    }
   };
 
   const handlePreview = () => {
     // Auto-save content before preview (silently)
     const content = editor?.getHTML() || "";
-    onSave(title, content, true);
+    // Use save draft for preview auto-save
+    if (onSaveDraft) {
+      onSaveDraft(title, content, true);
+    } else {
+      onSave(title, content, true);
+    }
     onPreview();
   };
 
@@ -156,6 +180,15 @@ export function Editor({
                 <Eye size={18} />
                 Preview
               </button>
+              {onSaveDraft && (
+                <button
+                  onClick={handleSaveDraft}
+                  className="flex items-center gap-2 px-4 py-2 text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium"
+                >
+                  <Save size={18} />
+                  Save as Draft
+                </button>
+              )}
               <button
                 onClick={handleSave}
                 className="flex items-center gap-2 px-4 py-2 bg-black text-white hover:bg-gray-800 rounded-lg transition-colors text-sm font-medium shadow-sm"
