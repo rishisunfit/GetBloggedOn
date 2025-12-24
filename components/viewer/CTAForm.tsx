@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { MessageCircle, Send, Loader2 } from "lucide-react";
 import { useDialog } from "@/hooks/useDialog";
-import { supabase } from "@/lib/supabase";
 
 interface CTAFormProps {
   postId?: string;
@@ -9,39 +8,51 @@ interface CTAFormProps {
 
 export function CTAForm({ postId }: CTAFormProps) {
   const [formData, setFormData] = useState({
+    email: "",
     phone: "",
     message: "",
   });
+  const [errors, setErrors] = useState<{ email?: string; phone?: string }>({});
   const [submitted, setSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { showDialog } = useDialog();
 
+  const validateForm = () => {
+    const newErrors: { email?: string; phone?: string } = {};
+
+    // Validate email format if provided
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = "Please enter a valid email address";
+    }
+
+    // At least one contact method is required
+    if (!formData.email.trim() && !formData.phone.trim()) {
+      newErrors.email = "Please provide either an email or phone number";
+      newErrors.phone = "Please provide either an email or phone number";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!validateForm()) {
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      // Get the current session to get the access token
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-
-      if (sessionError || !session) {
-        await showDialog({
-          type: "alert",
-          message: "Please log in to submit a question",
-          title: "Authentication Required",
-        });
-        setIsLoading(false);
-        return;
-      }
-
       const response = await fetch("/api/submit-question", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
-          phone: formData.phone,
+          email: formData.email.trim() || null,
+          phone: formData.phone.trim() || null,
           message: formData.message,
           post_id: postId,
         }),
@@ -57,7 +68,8 @@ export function CTAForm({ postId }: CTAFormProps) {
       setSubmitted(true);
       setTimeout(() => {
         setSubmitted(false);
-        setFormData({ phone: "", message: "" });
+        setFormData({ email: "", phone: "", message: "" });
+        setErrors({});
       }, 3000);
     } catch (error) {
       console.error("Error submitting form:", error);
@@ -97,6 +109,33 @@ export function CTAForm({ postId }: CTAFormProps) {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label
+              htmlFor="email"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
+              Email Address
+            </label>
+            <input
+              type="email"
+              id="email"
+              value={formData.email}
+              onChange={(e) => {
+                setFormData({ ...formData, email: e.target.value });
+                if (errors.email) {
+                  setErrors({ ...errors, email: undefined });
+                }
+              }}
+              placeholder="your.email@example.com"
+              disabled={isLoading}
+              className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black disabled:bg-gray-100 disabled:cursor-not-allowed ${errors.email ? "border-red-500" : "border-gray-300"
+                }`}
+            />
+            {errors.email && (
+              <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+            )}
+          </div>
+
+          <div>
+            <label
               htmlFor="phone"
               className="block text-sm font-medium text-gray-700 mb-2"
             >
@@ -106,15 +145,25 @@ export function CTAForm({ postId }: CTAFormProps) {
               type="tel"
               id="phone"
               value={formData.phone}
-              onChange={(e) =>
-                setFormData({ ...formData, phone: e.target.value })
-              }
+              onChange={(e) => {
+                setFormData({ ...formData, phone: e.target.value });
+                if (errors.phone) {
+                  setErrors({ ...errors, phone: undefined });
+                }
+              }}
               placeholder="+1 (555) 123-4567"
-              required
               disabled={isLoading}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black disabled:bg-gray-100 disabled:cursor-not-allowed"
+              className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black disabled:bg-gray-100 disabled:cursor-not-allowed ${errors.phone ? "border-red-500" : "border-gray-300"
+                }`}
             />
+            {errors.phone && (
+              <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
+            )}
           </div>
+
+          <p className="text-sm text-gray-500 -mt-2">
+            Please provide at least one contact method (email or phone)
+          </p>
 
           <div>
             <label

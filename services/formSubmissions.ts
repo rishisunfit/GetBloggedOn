@@ -2,20 +2,24 @@ import { supabase } from "@/lib/supabase";
 
 export interface FormSubmission {
   id: string;
-  phone: string;
+  email: string | null;
+  phone: string | null;
   subject: string;
   message: string;
   post_id: string | null;
-  user_id: string | null;
+  post_author_id: string | null;
+  session_id: string | null;
   created_at: string;
 }
 
 export interface CreateFormSubmissionData {
-  phone: string;
+  email?: string | null;
+  phone?: string | null;
   subject: string;
   message: string;
   post_id?: string | null;
-  user_id?: string | null;
+  post_author_id?: string | null;
+  session_id?: string | null;
 }
 
 export const formSubmissionsApi = {

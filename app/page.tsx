@@ -82,6 +82,10 @@ export default function HomePage() {
     router.push(`/editor/${postId}`);
   };
 
+  const handlePreviewPost = (postId: string) => {
+    router.push(`/preview/${postId}`);
+  };
+
   const handleDeletePost = async (id: string) => {
     const confirmed = await showDialog({
       type: "confirm",
@@ -181,6 +185,7 @@ export default function HomePage() {
         onCreatePost={handleCreatePost}
         onEditPost={handleEditPost}
         onDeletePost={handleDeletePost}
+        onPreviewPost={handlePreviewPost}
         onCreateQuiz={handleCreateQuiz}
         onEditQuiz={handleEditQuiz}
         onDeleteQuiz={handleDeleteQuiz}

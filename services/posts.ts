@@ -148,5 +148,54 @@ export const postsApi = {
 
     if (error) throw error;
   },
+
+  /**
+   * Public method to get a published post by ID (no authentication required)
+   * Only returns posts with status='published' and is_draft=false
+   * Uses the anon key client which respects RLS policies
+   */
+  async getPublicById(id: string): Promise<Post> {
+    // Create a new client instance without auth to ensure we're using anon key
+    // This is important for RLS policies that allow anonymous access
+    const { createClient } = await import("@supabase/supabase-js");
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      throw new Error("Supabase configuration missing");
+    }
+
+    const publicClient = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    });
+
+    const { data, error } = await publicClient
+      .from("posts")
+      .select("*")
+      .eq("id", id)
+      .eq("status", "published")
+      .eq("is_draft", false)
+      .single();
+
+    if (error) {
+      console.error("Supabase error:", error);
+      // Provide more helpful error messages
+      if (error.code === "PGRST116") {
+        throw new Error("Post not found or not published");
+      }
+      if (error.message?.includes("permission denied") || error.message?.includes("row-level security")) {
+        throw new Error("Access denied. Please check RLS policies allow public read access to published posts.");
+      }
+      throw error;
+    }
+
+    if (!data) {
+      throw new Error("Post not found or not published");
+    }
+    return data;
+  },
 };
 

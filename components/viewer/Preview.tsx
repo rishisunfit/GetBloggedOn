@@ -64,7 +64,7 @@ export function Preview({ title, content, date = new Date(), postId, onBack }: P
         </div>
 
         {/* Reaction Bar */}
-        <ReactionBar />
+        <ReactionBar postId={postId} />
 
         {/* CTA Form */}
         <CTAForm postId={postId} />

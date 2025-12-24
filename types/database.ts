@@ -18,29 +18,35 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          email: string | null
           message: string
-          phone: string
+          phone: string | null
           post_id: string | null
+          post_author_id: string | null
+          session_id: string | null
           subject: string
-          user_id: string | null
         }
         Insert: {
           created_at?: string
           id?: string
+          email?: string | null
           message: string
-          phone: string
+          phone?: string | null
           post_id?: string | null
+          post_author_id?: string | null
+          session_id?: string | null
           subject: string
-          user_id?: string | null
         }
         Update: {
           created_at?: string
           id?: string
+          email?: string | null
           message?: string
-          phone?: string
+          phone?: string | null
           post_id?: string | null
+          post_author_id?: string | null
+          session_id?: string | null
           subject?: string
-          user_id?: string | null
         }
         Relationships: [
           {
@@ -196,6 +202,41 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "reactions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ratings: {
+        Row: {
+          id: string
+          post_id: string
+          session_id: string
+          stars: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          post_id: string
+          session_id: string
+          stars: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          post_id?: string
+          session_id?: string
+          stars?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ratings_post_id_fkey"
             columns: ["post_id"]
             isOneToOne: false
             referencedRelation: "posts"
