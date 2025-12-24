@@ -62,15 +62,46 @@ const generateId = (): string => {
 
 // Helper to get templates from localStorage
 const getStoredTemplates = (): Template[] => {
-  if (typeof window === 'undefined') return [];
-  const stored = localStorage.getItem(STORAGE_KEY);
-  return stored ? JSON.parse(stored) : [];
+  if (typeof window === 'undefined') {
+    console.warn('Cannot get templates: window is undefined (SSR)');
+    return [];
+  }
+  
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored) {
+      console.log('No templates found in localStorage');
+      return [];
+    }
+    const parsed = JSON.parse(stored);
+    console.log(`Loaded ${parsed.length} templates from localStorage`);
+    return parsed;
+  } catch (error) {
+    console.error('Error reading templates from localStorage:', error);
+    // If corrupted, return empty array
+    return [];
+  }
 };
 
 // Helper to save templates to localStorage
 const saveTemplates = (templates: Template[]): void => {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(templates));
+  if (typeof window === 'undefined') {
+    console.warn('Cannot save templates: window is undefined (SSR)');
+    return;
+  }
+  
+  try {
+    const serialized = JSON.stringify(templates);
+    localStorage.setItem(STORAGE_KEY, serialized);
+    console.log(`Saved ${templates.length} templates to localStorage`);
+  } catch (error) {
+    console.error('Error saving templates to localStorage:', error);
+    // Check if it's a quota exceeded error
+    if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+      throw new Error('Storage quota exceeded. Please clear some space and try again.');
+    }
+    throw error;
+  }
 };
 
 export const templatesApi = {

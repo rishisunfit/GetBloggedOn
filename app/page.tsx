@@ -6,9 +6,11 @@ import { LogOut } from "lucide-react";
 import { Dashboard } from "@/components/Dashboard";
 import { DashboardShimmer } from "@/components/DashboardShimmer";
 import { postsApi } from "@/services/posts";
+import { quizzesApi } from "@/services/quizzes";
 import { useAuth } from "@/hooks/useAuth";
 import { useDialog } from "@/hooks/useDialog";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { Quiz } from "@/types/quiz";
 
 type Post = {
   id: string;
@@ -33,29 +35,45 @@ const convertPost = (post: Post) => ({
   is_draft: post.is_draft,
 });
 
+// Helper to convert quiz to UI format
+const convertQuiz = (quiz: Quiz) => ({
+  id: quiz.id,
+  title: quiz.title,
+  questionsCount: quiz.questions.length,
+  createdAt: new Date(quiz.createdAt),
+  updatedAt: new Date(quiz.updatedAt),
+  status: quiz.status,
+});
+
 export default function HomePage() {
   const [posts, setPosts] = useState<ReturnType<typeof convertPost>[]>([]);
+  const [quizzes, setQuizzes] = useState<ReturnType<typeof convertQuiz>[]>([]);
   const [loading, setLoading] = useState(true);
   const { signOut, profile } = useAuth();
   const router = useRouter();
   const { showDialog } = useDialog();
 
-  // Load posts from Supabase on mount
+  // Load posts and quizzes on mount
   useEffect(() => {
-    loadPosts();
+    loadData();
   }, []);
 
-  const loadPosts = async () => {
+  const loadData = async () => {
     try {
-      const data = await postsApi.getAll();
-      setPosts(data.map(convertPost));
+      const [postsData, quizzesData] = await Promise.all([
+        postsApi.getAll(),
+        quizzesApi.getAll(),
+      ]);
+      setPosts(postsData.map(convertPost));
+      setQuizzes(quizzesData.map(convertQuiz));
     } catch (error) {
-      console.error("Error loading posts:", error);
+      console.error("Error loading data:", error);
     } finally {
       setLoading(false);
     }
   };
 
+  // Post handlers
   const handleCreatePost = () => {
     router.push("/editor/new");
   };
@@ -82,6 +100,43 @@ export default function HomePage() {
         await showDialog({
           type: "alert",
           message: "Failed to delete post",
+          title: "Error",
+        });
+      }
+    }
+  };
+
+  // Quiz handlers
+  const handleCreateQuiz = () => {
+    router.push("/quiz/new");
+  };
+
+  const handleEditQuiz = (quizId: string) => {
+    router.push(`/quiz/${quizId}/edit`);
+  };
+
+  const handlePreviewQuiz = (quizId: string) => {
+    router.push(`/quiz/${quizId}`);
+  };
+
+  const handleDeleteQuiz = async (id: string) => {
+    const confirmed = await showDialog({
+      type: "confirm",
+      message: "Are you sure you want to delete this quiz?",
+      title: "Delete Quiz",
+      confirmText: "Delete",
+      cancelText: "Cancel",
+    });
+
+    if (confirmed) {
+      try {
+        await quizzesApi.delete(id);
+        setQuizzes(quizzes.filter((q) => q.id !== id));
+      } catch (error) {
+        console.error("Error deleting quiz:", error);
+        await showDialog({
+          type: "alert",
+          message: "Failed to delete quiz",
           title: "Error",
         });
       }
@@ -126,7 +181,12 @@ export default function HomePage() {
         onCreatePost={handleCreatePost}
         onEditPost={handleEditPost}
         onDeletePost={handleDeletePost}
+        onCreateQuiz={handleCreateQuiz}
+        onEditQuiz={handleEditQuiz}
+        onDeleteQuiz={handleDeleteQuiz}
+        onPreviewQuiz={handlePreviewQuiz}
         posts={posts}
+        quizzes={quizzes}
         isCreating={false}
       />
     </ProtectedRoute>

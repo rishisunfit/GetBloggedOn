@@ -54,15 +54,46 @@ const generateId = (): string => {
 
 // Helper to get posts from localStorage
 const getStoredPosts = (): Post[] => {
-  if (typeof window === 'undefined') return [];
-  const stored = localStorage.getItem(STORAGE_KEY);
-  return stored ? JSON.parse(stored) : [];
+  if (typeof window === 'undefined') {
+    console.warn('Cannot get posts: window is undefined (SSR)');
+    return [];
+  }
+  
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored) {
+      console.log('No posts found in localStorage');
+      return [];
+    }
+    const parsed = JSON.parse(stored);
+    console.log(`Loaded ${parsed.length} posts from localStorage`);
+    return parsed;
+  } catch (error) {
+    console.error('Error reading posts from localStorage:', error);
+    // If corrupted, return empty array
+    return [];
+  }
 };
 
 // Helper to save posts to localStorage
 const savePosts = (posts: Post[]): void => {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(posts));
+  if (typeof window === 'undefined') {
+    console.warn('Cannot save posts: window is undefined (SSR)');
+    return;
+  }
+  
+  try {
+    const serialized = JSON.stringify(posts);
+    localStorage.setItem(STORAGE_KEY, serialized);
+    console.log(`Saved ${posts.length} posts to localStorage`);
+  } catch (error) {
+    console.error('Error saving posts to localStorage:', error);
+    // Check if it's a quota exceeded error
+    if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+      throw new Error('Storage quota exceeded. Please clear some space and try again.');
+    }
+    throw error;
+  }
 };
 
 export const postsApi = {
