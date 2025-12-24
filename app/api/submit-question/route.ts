@@ -113,19 +113,37 @@ export async function POST(request: NextRequest) {
                     })
                     .select()
                     .single();
-                submissionData = result.data;
-                submissionError = result.error;
+
+                if (result.error) {
+                    console.error("❌ Database insert error:", result.error);
+                    console.error("Error details:", {
+                        message: result.error.message,
+                        code: result.error.code,
+                        details: result.error.details,
+                        hint: result.error.hint,
+                    });
+                    submissionError = result.error;
+                } else {
+                    submissionData = result.data;
+                    console.log("✅ Submission saved to database:", submissionData.id);
+                }
+            } else {
+                console.error("❌ Supabase configuration missing - cannot save to database");
             }
         } catch (error) {
-            console.error("Error saving submission to database:", error);
+            console.error("❌ Exception while saving submission to database:", error);
+            submissionError = error instanceof Error ? error : new Error(String(error));
             // Continue with SMS even if database save fails
         }
 
         if (submissionError) {
-            console.error("Error saving submission to database:", submissionError);
-            // Continue with SMS even if database save fails
-        } else if (submissionData) {
-            console.log("Submission saved to database:", submissionData.id);
+            console.error("❌ Final error state - submission NOT saved:", submissionError);
+            // Log full error for debugging
+            if (submissionError instanceof Error) {
+                console.error("Error message:", submissionError.message);
+                console.error("Error stack:", submissionError.stack);
+            }
+            // Continue with SMS even if database save fails, but log the error clearly
         }
 
         // Get Twilio phone number from env

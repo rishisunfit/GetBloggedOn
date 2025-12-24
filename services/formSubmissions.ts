@@ -35,4 +35,18 @@ export const formSubmissionsApi = {
     if (error) throw error;
     return data;
   },
+
+  /**
+   * Get all form submissions for posts authored by the current user
+   */
+  async getByAuthorId(authorId: string): Promise<FormSubmission[]> {
+    const { data, error } = await supabase
+      .from("form_submissions")
+      .select("*")
+      .eq("post_author_id", authorId)
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  },
 };

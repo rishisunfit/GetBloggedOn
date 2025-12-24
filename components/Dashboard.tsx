@@ -1,5 +1,10 @@
-import { useState } from "react";
-import { Plus, FileText, Calendar, Edit, Trash2, ClipboardList, Eye, ExternalLink } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Plus, FileText, Calendar, Edit, Trash2, ClipboardList, Eye, ExternalLink, MessageSquare, Mail, Phone, Reply } from "lucide-react";
+import { formSubmissionsApi, type FormSubmission } from "@/services/formSubmissions";
+import { useAuth } from "@/hooks/useAuth";
+import { ReplyModal } from "./ReplyModal";
+import { supabase } from "@/lib/supabase";
+import { useDialog } from "@/hooks/useDialog";
 
 type Post = {
   id: string;
@@ -19,7 +24,7 @@ type Quiz = {
   status: "draft" | "published";
 };
 
-type ContentTab = "posts" | "quizzes";
+type ContentTab = "posts" | "quizzes" | "responses";
 
 interface DashboardProps {
   onCreatePost: () => void;
@@ -49,12 +54,110 @@ export function Dashboard({
   isCreating = false,
 }: DashboardProps) {
   const [activeTab, setActiveTab] = useState<ContentTab>("posts");
+  const [responses, setResponses] = useState<FormSubmission[]>([]);
+  const [loadingResponses, setLoadingResponses] = useState(false);
+  const [replyModalOpen, setReplyModalOpen] = useState(false);
+  const [selectedResponse, setSelectedResponse] = useState<FormSubmission | null>(null);
+  const { user } = useAuth();
+  const { showDialog } = useDialog();
 
   const formatDate = (date: Date) => {
     return new Date(date).toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
+    });
+  };
+
+  const formatDateTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  // Load responses when user is available (load on mount to get accurate count)
+  useEffect(() => {
+    if (user?.id) {
+      loadResponses();
+    }
+  }, [user?.id]);
+
+  const loadResponses = async () => {
+    if (!user?.id) return;
+
+    setLoadingResponses(true);
+    try {
+      const data = await formSubmissionsApi.getByAuthorId(user.id);
+      setResponses(data);
+    } catch (error) {
+      console.error("Error loading responses:", error);
+    } finally {
+      setLoadingResponses(false);
+    }
+  };
+
+  // Get post title by ID
+  const getPostTitle = (postId: string | null) => {
+    if (!postId) return "Unknown Post";
+    const post = posts.find((p) => p.id === postId);
+    return post?.title || "Unknown Post";
+  };
+
+  const handleOpenReply = (response: FormSubmission) => {
+    if (!response.email && !response.phone) {
+      showDialog({
+        type: "alert",
+        title: "No Contact Information",
+        message: "This submission doesn't have email or phone number to reply to.",
+      });
+      return;
+    }
+    setSelectedResponse(response);
+    setReplyModalOpen(true);
+  };
+
+  const handleSendReply = async (message: string) => {
+    if (!selectedResponse || !user) {
+      throw new Error("Missing response or user information");
+    }
+
+    // Get the session token
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+    if (sessionError || !session) {
+      throw new Error("Please log in to send a reply");
+    }
+
+    const response = await fetch("/api/send-reply", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        submission_id: selectedResponse.id,
+        email: selectedResponse.email,
+        phone: selectedResponse.phone,
+        message: message,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || errorData.details || "Failed to send reply");
+    }
+
+    // Show success message (non-blocking)
+    const contactMethod = selectedResponse.email ? "Email" : "SMS";
+    showDialog({
+      type: "alert",
+      title: "Reply Sent",
+      message: `Your reply has been sent successfully via ${contactMethod}.`,
     });
   };
 
@@ -96,8 +199,8 @@ export function Dashboard({
           <button
             onClick={() => setActiveTab("posts")}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium transition-all ${activeTab === "posts"
-                ? "bg-black text-white shadow-sm"
-                : "text-gray-600 hover:bg-gray-100"
+              ? "bg-black text-white shadow-sm"
+              : "text-gray-600 hover:bg-gray-100"
               }`}
           >
             <FileText size={18} />
@@ -110,8 +213,8 @@ export function Dashboard({
           <button
             onClick={() => setActiveTab("quizzes")}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium transition-all ${activeTab === "quizzes"
-                ? "bg-violet-600 text-white shadow-sm"
-                : "text-gray-600 hover:bg-gray-100"
+              ? "bg-violet-600 text-white shadow-sm"
+              : "text-gray-600 hover:bg-gray-100"
               }`}
           >
             <ClipboardList size={18} />
@@ -119,6 +222,20 @@ export function Dashboard({
             <span className={`text-xs px-2 py-0.5 rounded-full ${activeTab === "quizzes" ? "bg-white/20" : "bg-gray-200"
               }`}>
               {quizzes.length}
+            </span>
+          </button>
+          <button
+            onClick={() => setActiveTab("responses")}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium transition-all ${activeTab === "responses"
+              ? "bg-blue-600 text-white shadow-sm"
+              : "text-gray-600 hover:bg-gray-100"
+              }`}
+          >
+            <MessageSquare size={18} />
+            Responses
+            <span className={`text-xs px-2 py-0.5 rounded-full ${activeTab === "responses" ? "bg-white/20" : "bg-gray-200"
+              }`}>
+              {responses.length}
             </span>
           </button>
         </div>
@@ -171,6 +288,30 @@ export function Dashboard({
           </div>
         )}
 
+        {/* Stats - Responses */}
+        {activeTab === "responses" && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+              <div className="text-3xl font-bold text-gray-900">
+                {responses.length}
+              </div>
+              <div className="text-gray-600 text-sm mt-1">Total Responses</div>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+              <div className="text-3xl font-bold text-blue-600">
+                {responses.filter((r) => r.email).length}
+              </div>
+              <div className="text-gray-600 text-sm mt-1">With Email</div>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+              <div className="text-3xl font-bold text-green-600">
+                {responses.filter((r) => r.phone).length}
+              </div>
+              <div className="text-gray-600 text-sm mt-1">With Phone</div>
+            </div>
+          </div>
+        )}
+
         {/* Posts List */}
         {activeTab === "posts" && (
           <>
@@ -188,8 +329,8 @@ export function Dashboard({
                         </h2>
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-medium ${post.status === "published"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-yellow-100 text-yellow-800"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-yellow-100 text-yellow-800"
                             }`}
                         >
                           {post.status}
@@ -261,6 +402,85 @@ export function Dashboard({
           </>
         )}
 
+        {/* Responses List */}
+        {activeTab === "responses" && (
+          <>
+            {loadingResponses ? (
+              <div className="text-center py-16">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading responses...</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {responses.map((response) => (
+                  <div
+                    key={response.id}
+                    className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="text-lg font-semibold text-gray-900">
+                            {getPostTitle(response.post_id)}
+                          </h3>
+                          <span className="text-sm text-gray-500">
+                            {formatDateTime(response.created_at)}
+                          </span>
+                        </div>
+                        <div className="mb-3">
+                          <p className="text-gray-700 whitespace-pre-wrap">
+                            {response.message}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-4 text-sm text-gray-600">
+                          {response.email && (
+                            <div className="flex items-center gap-1">
+                              <Mail size={14} />
+                              <span>{response.email}</span>
+                            </div>
+                          )}
+                          {response.phone && (
+                            <div className="flex items-center gap-1">
+                              <Phone size={14} />
+                              <span>{response.phone}</span>
+                            </div>
+                          )}
+                          {!response.email && !response.phone && (
+                            <span className="text-gray-400 italic">No contact information</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex gap-2 ml-4">
+                        {(response.email || response.phone) && (
+                          <button
+                            onClick={() => handleOpenReply(response)}
+                            className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Reply"
+                          >
+                            <Reply size={20} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {!loadingResponses && responses.length === 0 && (
+              <div className="text-center py-16">
+                <MessageSquare size={64} className="mx-auto text-gray-300 mb-4" />
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  No responses yet
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  Responses from your published posts will appear here
+                </p>
+              </div>
+            )}
+          </>
+        )}
+
         {/* Quizzes List */}
         {activeTab === "quizzes" && (
           <>
@@ -288,8 +508,8 @@ export function Dashboard({
                         </div>
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-medium ${quiz.status === "published"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-yellow-100 text-yellow-800"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-yellow-100 text-yellow-800"
                             }`}
                         >
                           {quiz.status}
@@ -351,6 +571,18 @@ export function Dashboard({
             )}
           </>
         )}
+
+        {/* Reply Modal */}
+        <ReplyModal
+          isOpen={replyModalOpen}
+          onClose={() => {
+            setReplyModalOpen(false);
+            setSelectedResponse(null);
+          }}
+          email={selectedResponse?.email || null}
+          phone={selectedResponse?.phone || null}
+          onSubmit={handleSendReply}
+        />
       </div>
     </div>
   );
