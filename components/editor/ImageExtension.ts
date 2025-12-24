@@ -1,7 +1,37 @@
 import Image from "@tiptap/extension-image";
+import { mergeAttributes } from "@tiptap/core";
 import { NodeSelection } from "prosemirror-state";
 
 export const ImageExtension = Image.extend({
+    parseHTML() {
+        return [
+            {
+                tag: "figure[data-type=\"image\"]",
+                getAttrs: (element) => {
+                    if (!(element instanceof HTMLElement)) return false;
+                    const img = element.querySelector("img");
+                    if (!img) return false;
+                    return {
+                        src: img.getAttribute("src"),
+                        alt: img.getAttribute("alt"),
+                        title: img.getAttribute("title"),
+                        width: img.getAttribute("width") || (img as HTMLElement).style.width || null,
+                        height: img.getAttribute("height") || (img as HTMLElement).style.height || null,
+                        align: element.getAttribute("data-align") || (element as HTMLElement).style.textAlign || "center",
+                        source_url: element.getAttribute("data-source-url") || null,
+                        source_name: element.getAttribute("data-source-name") || null,
+                        license_note: element.getAttribute("data-license-note") || null,
+                        year: element.getAttribute("data-year") || null,
+                        show_attribution: (element.getAttribute("data-show-attribution") ?? "true") === "true",
+                    };
+                },
+            },
+            {
+                tag: "img[src]",
+            },
+        ];
+    },
+
     addAttributes() {
         return {
             ...this.parent?.(),
@@ -32,7 +62,11 @@ export const ImageExtension = Image.extend({
             align: {
                 default: "center",
                 parseHTML: (element) => {
-                    const align = element.getAttribute("data-align") || element.style.textAlign;
+                    if (element.tagName?.toLowerCase() === "figure") {
+                        const align = element.getAttribute("data-align") || (element as HTMLElement).style.textAlign;
+                        return align || "center";
+                    }
+                    const align = element.getAttribute("data-align") || (element as HTMLElement).style.textAlign;
                     return align || "center";
                 },
                 renderHTML: (attributes) => {
@@ -57,7 +91,153 @@ export const ImageExtension = Image.extend({
                     return {};
                 },
             },
+            source_url: {
+                default: null,
+                parseHTML: (element) => {
+                    if (element.tagName?.toLowerCase() === "figure") {
+                        return element.getAttribute("data-source-url");
+                    }
+                    return element.getAttribute("data-source-url");
+                },
+                renderHTML: (attributes) => {
+                    if (!attributes.source_url) return {};
+                    return { "data-source-url": attributes.source_url };
+                },
+            },
+            source_name: {
+                default: null,
+                parseHTML: (element) => {
+                    if (element.tagName?.toLowerCase() === "figure") {
+                        return element.getAttribute("data-source-name");
+                    }
+                    return element.getAttribute("data-source-name");
+                },
+                renderHTML: (attributes) => {
+                    if (!attributes.source_name) return {};
+                    return { "data-source-name": attributes.source_name };
+                },
+            },
+            license_note: {
+                default: null,
+                parseHTML: (element) => {
+                    if (element.tagName?.toLowerCase() === "figure") {
+                        return element.getAttribute("data-license-note");
+                    }
+                    return element.getAttribute("data-license-note");
+                },
+                renderHTML: (attributes) => {
+                    if (!attributes.license_note) return {};
+                    return { "data-license-note": attributes.license_note };
+                },
+            },
+            year: {
+                default: null,
+                parseHTML: (element) => {
+                    if (element.tagName?.toLowerCase() === "figure") {
+                        return element.getAttribute("data-year");
+                    }
+                    return element.getAttribute("data-year");
+                },
+                renderHTML: (attributes) => {
+                    if (!attributes.year) return {};
+                    return { "data-year": attributes.year };
+                },
+            },
+            show_attribution: {
+                default: true,
+                parseHTML: (element) => {
+                    const val = element.getAttribute("data-show-attribution");
+                    if (val === null) return true;
+                    return val === "true";
+                },
+                renderHTML: (attributes) => {
+                    if (attributes.show_attribution === undefined) return {};
+                    return { "data-show-attribution": attributes.show_attribution ? "true" : "false" };
+                },
+            },
         };
+    },
+
+    renderHTML({ node, HTMLAttributes }) {
+        const n: any = node;
+        const align = n.attrs.align || "center";
+
+        const figureAttrs: Record<string, any> = mergeAttributes(HTMLAttributes, {
+            "data-type": "image",
+            "data-align": align,
+            style: `text-align: ${align};`,
+        });
+        if (n.attrs.source_url) figureAttrs["data-source-url"] = n.attrs.source_url;
+        if (n.attrs.source_name) figureAttrs["data-source-name"] = n.attrs.source_name;
+        if (n.attrs.license_note) figureAttrs["data-license-note"] = n.attrs.license_note;
+        if (n.attrs.year) figureAttrs["data-year"] = n.attrs.year;
+        figureAttrs["data-show-attribution"] = (n.attrs.show_attribution ?? true) ? "true" : "false";
+
+        const imgAttrs = mergeAttributes(this.options.HTMLAttributes, {
+            src: n.attrs.src,
+            alt: n.attrs.alt,
+            title: n.attrs.title,
+            width: n.attrs.width,
+            height: n.attrs.height,
+        });
+
+        // Wrap image in anchor tag if source_url exists (clickable in preview)
+        const imgElement: any[] = ["img", imgAttrs];
+        const children: any[] = n.attrs.source_url
+            ? [
+                [
+                    "a",
+                    {
+                        href: n.attrs.source_url,
+                        target: "_blank",
+                        rel: "noopener noreferrer",
+                        class: "image-source-link",
+                    },
+                    imgElement,
+                ],
+            ]
+            : [imgElement];
+
+        const shouldShowCaption =
+            (n.attrs.show_attribution ?? true) && !!n.attrs.source_url;
+        if (shouldShowCaption) {
+            const sourceName =
+                n.attrs.source_name ||
+                (() => {
+                    try {
+                        return new URL(n.attrs.source_url).hostname.replace(/^www\./, "");
+                    } catch {
+                        return "Source";
+                    }
+                })();
+            const year = n.attrs.year ? ` (${n.attrs.year})` : "";
+            const captionText = `Image: ${sourceName}${year}.`;
+
+            const captionChildren: any[] = [
+                "figcaption",
+                { class: "image-caption" },
+                ["span", {}, captionText + " "],
+                [
+                    "a",
+                    {
+                        href: n.attrs.source_url,
+                        target: "_blank",
+                        rel: "noopener noreferrer",
+                    },
+                    "(link)",
+                ],
+            ];
+            if (n.attrs.license_note) {
+                captionChildren.push([
+                    "span",
+                    { class: "image-license" },
+                    ` — ${n.attrs.license_note}`,
+                ]);
+            }
+            children.push(captionChildren);
+        }
+
+        return ["figure", figureAttrs, ...children];
     },
 
     addCommands() {
@@ -196,6 +376,50 @@ export const ImageExtension = Image.extend({
             inner.appendChild(resizeHandle);
             dom.appendChild(inner);
 
+            // Attribution caption (editor-only UI)
+            const caption = document.createElement("div");
+            caption.className = "image-caption";
+            caption.contentEditable = "false";
+
+            const updateCaption = (n: any) => {
+                const show = (n.attrs.show_attribution ?? true) && !!n.attrs.source_url;
+                if (!show) {
+                    caption.style.display = "none";
+                    caption.textContent = "";
+                    return;
+                }
+                caption.style.display = "";
+                const sourceName =
+                    n.attrs.source_name ||
+                    (() => {
+                        try {
+                            return new URL(n.attrs.source_url).hostname.replace(/^www\./, "");
+                        } catch {
+                            return "Source";
+                        }
+                    })();
+                const year = n.attrs.year ? ` (${n.attrs.year})` : "";
+                caption.innerHTML = "";
+                const span = document.createElement("span");
+                span.textContent = `Image: ${sourceName}${year}. `;
+                const a = document.createElement("a");
+                a.href = n.attrs.source_url;
+                a.target = "_blank";
+                a.rel = "noopener noreferrer";
+                a.textContent = "(link)";
+                caption.appendChild(span);
+                caption.appendChild(a);
+                if (n.attrs.license_note) {
+                    const lic = document.createElement("span");
+                    lic.className = "image-license";
+                    lic.textContent = ` — ${n.attrs.license_note}`;
+                    caption.appendChild(lic);
+                }
+            };
+
+            updateCaption(node);
+            dom.appendChild(caption);
+
             return {
                 dom,
                 update: (updatedNode) => {
@@ -224,6 +448,8 @@ export const ImageExtension = Image.extend({
                     const align = updatedNode.attrs.align || "center";
                     dom.setAttribute("data-align", align);
                     dom.style.textAlign = align === "left" ? "left" : align === "right" ? "right" : "center";
+
+                    updateCaption(updatedNode);
 
                     return true;
                 },

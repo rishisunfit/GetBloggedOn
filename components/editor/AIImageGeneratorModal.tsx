@@ -3,6 +3,7 @@ import { X, Sparkles, Upload } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { uploadDataURLToStorage } from "@/lib/storage";
 import { genHistoryApi } from "@/services/genHistory";
+import { mediaApi } from "@/services/media";
 
 interface AIImageGeneratorModalProps {
   isOpen: boolean;
@@ -159,13 +160,26 @@ export function AIImageGeneratorModal({
             "generated-image.png"
           );
 
-          // Save to history
+          // Save to history (keeping gen_history for backward compatibility)
           await genHistoryApi.create({
             image_url: uploadedUrl,
             prompt: text,
             negative_prompt: negativePrompt || undefined,
             aspect_ratio: aspectRatio,
             model: selectedModel,
+          });
+
+          // Also save to media table
+          await mediaApi.create({
+            type: "image",
+            url: uploadedUrl,
+            source: "ai_generated",
+            metadata: {
+              prompt: text,
+              negative_prompt: negativePrompt || undefined,
+              aspect_ratio: aspectRatio,
+              model: selectedModel,
+            },
           });
         } catch (err) {
           console.error("Error saving to history:", err);
@@ -257,11 +271,10 @@ export function AIImageGeneratorModal({
                   <button
                     type="button"
                     onClick={() => setSelectedModel("gemini-2.5-flash-image")}
-                    className={`w-full p-3 border rounded-lg text-left transition-all ${
-                      selectedModel === "gemini-2.5-flash-image"
+                    className={`w-full p-3 border rounded-lg text-left transition-all ${selectedModel === "gemini-2.5-flash-image"
                         ? "border-gray-900 bg-gray-50"
                         : "border-gray-200 hover:border-gray-300 bg-white"
-                    }`}
+                      }`}
                   >
                     <div className="font-semibold text-gray-900 text-sm">
                       Gemini 2.5 Flash Image
@@ -275,11 +288,10 @@ export function AIImageGeneratorModal({
                     onClick={() =>
                       setSelectedModel("gemini-3-pro-image-preview")
                     }
-                    className={`w-full p-3 border rounded-lg text-left transition-all ${
-                      selectedModel === "gemini-3-pro-image-preview"
+                    className={`w-full p-3 border rounded-lg text-left transition-all ${selectedModel === "gemini-3-pro-image-preview"
                         ? "border-gray-900 bg-gray-50"
                         : "border-gray-200 hover:border-gray-300 bg-white"
-                    }`}
+                      }`}
                   >
                     <div className="font-semibold text-gray-900 text-sm">
                       Gemini 3 Pro Image
@@ -372,11 +384,10 @@ export function AIImageGeneratorModal({
                       key={ratio.value}
                       type="button"
                       onClick={() => setAspectRatio(ratio.value)}
-                      className={`py-2 px-4 border rounded-lg text-sm font-semibold transition-all ${
-                        aspectRatio === ratio.value
+                      className={`py-2 px-4 border rounded-lg text-sm font-semibold transition-all ${aspectRatio === ratio.value
                           ? "border-gray-900 bg-gray-900 text-white"
                           : "border-gray-300 text-gray-700 hover:border-gray-400 bg-white"
-                      }`}
+                        }`}
                     >
                       {ratio.label}
                     </button>

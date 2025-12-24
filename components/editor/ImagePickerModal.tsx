@@ -1,11 +1,13 @@
 import { useRef } from "react";
-import { X, Sparkles, Upload } from "lucide-react";
+import { X, Sparkles, Upload, Globe, History } from "lucide-react";
 
 interface ImagePickerModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSelectFile: (file: File) => void;
   onGenerateWithAI: () => void;
+  onFromWeb: () => void;
+  onFromHistory: () => void;
 }
 
 export function ImagePickerModal({
@@ -13,6 +15,8 @@ export function ImagePickerModal({
   onClose,
   onSelectFile,
   onGenerateWithAI,
+  onFromWeb,
+  onFromHistory,
 }: ImagePickerModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -77,6 +81,42 @@ export function ImagePickerModal({
               <div className="font-semibold text-gray-900">Pick a file</div>
               <div className="text-sm text-gray-600">
                 Upload an image from your device
+              </div>
+            </div>
+          </button>
+
+          <button
+            onClick={() => {
+              onFromWeb();
+              onClose();
+            }}
+            className="w-full p-4 border-2 border-gray-200 rounded-lg hover:border-gray-300 hover:bg-gray-50 transition-colors flex items-center gap-3 text-left"
+          >
+            <div className="p-2 bg-gray-100 rounded-lg">
+              <Globe className="text-gray-900" size={24} />
+            </div>
+            <div>
+              <div className="font-semibold text-gray-900">From Web</div>
+              <div className="text-sm text-gray-600">
+                Paste an image URL and add attribution
+              </div>
+            </div>
+          </button>
+
+          <button
+            onClick={() => {
+              onFromHistory();
+              onClose();
+            }}
+            className="w-full p-4 border-2 border-gray-200 rounded-lg hover:border-gray-300 hover:bg-gray-50 transition-colors flex items-center gap-3 text-left"
+          >
+            <div className="p-2 bg-gray-100 rounded-lg">
+              <History className="text-gray-900" size={24} />
+            </div>
+            <div>
+              <div className="font-semibold text-gray-900">Load from History</div>
+              <div className="text-sm text-gray-600">
+                Select from your previously uploaded images
               </div>
             </div>
           </button>

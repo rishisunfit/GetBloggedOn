@@ -38,10 +38,15 @@ import { AIImageGeneratorModal } from "./AIImageGeneratorModal";
 import { ImageHistoryModal } from "./ImageHistoryModal";
 import { TableModal } from "./TableModal";
 import {
+  ImageAttributionModal,
+  type ImageAttributionValues,
+} from "./ImageAttributionModal";
+import {
   uploadImageToStorage,
   uploadDataURLToStorage,
 } from "@/lib/storage";
 import { useAuth } from "@/hooks/useAuth";
+import { mediaApi } from "@/services/media";
 
 interface EditorToolbarProps {
   editor: Editor;
@@ -86,6 +91,7 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
   const [showImagePicker, setShowImagePicker] = useState(false);
   const [showAIGenerator, setShowAIGenerator] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [showWebImageModal, setShowWebImageModal] = useState(false);
   const [, forceUpdate] = useState({});
   const dragStartRef = useRef<{ x: number; y: number } | null>(null);
   const { showDialog } = useDialog();
@@ -184,6 +190,21 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
       // Insert image into editor (alignment defaults to center via ImageExtension attrs)
       editor.chain().focus().setImage({ src: imageUrl, alt: file.name }).run();
 
+      // Save to media table
+      try {
+        await mediaApi.create({
+          type: "image",
+          url: imageUrl,
+          source: "upload",
+          metadata: {
+            filename: file.name,
+          },
+        });
+      } catch (err) {
+        console.error("Error saving image to media table:", err);
+        // Don't throw - image upload succeeded, media save is optional
+      }
+
       // Wait a bit and verify the image was inserted
       setTimeout(() => {
         const html = editor.getHTML();
@@ -226,6 +247,10 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
       console.log("Generated image uploaded, URL:", uploadedUrl);
       // Insert image into editor (alignment defaults to center via ImageExtension attrs)
       editor.chain().focus().setImage({ src: uploadedUrl, alt: "Generated image" }).run();
+
+      // Note: AIImageGeneratorModal already saves to media table with full metadata (prompt, etc.)
+      // So we don't need to save it again here to avoid duplicates
+
       // Verify the image was inserted
       const html = editor.getHTML();
       console.log("Editor HTML after image insert:", html);
@@ -251,6 +276,52 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
 
   const addImage = () => {
     setShowImagePicker(true);
+  };
+
+  const addImageFromWeb = () => {
+    setShowWebImageModal(true);
+  };
+
+  const handleInsertWebImage = async (values: ImageAttributionValues) => {
+    // Insert as an image node with attribution attrs
+    editor
+      .chain()
+      .focus()
+      .insertContent({
+        type: "image",
+        attrs: {
+          src: values.imageUrl,
+          alt: values.alt || null,
+          source_url: values.sourceUrl,
+          source_name: values.sourceName || null,
+          license_note: values.licenseNote || null,
+          year: values.year || null,
+          show_attribution: values.showAttribution,
+          // Keep alignment defaulting to center (ImageExtension default)
+          align: "center",
+        },
+      })
+      .run();
+
+    // Save to media table
+    if (user) {
+      try {
+        await mediaApi.create({
+          type: "image",
+          url: values.imageUrl,
+          source: "web",
+          metadata: {
+            source_url: values.sourceUrl,
+            source_name: values.sourceName || undefined,
+            year: values.year || undefined,
+            license_note: values.licenseNote || undefined,
+          },
+        });
+      } catch (err) {
+        console.error("Error saving web image to media table:", err);
+        // Don't throw - image insertion succeeded, media save is optional
+      }
+    }
   };
 
   const setColor = (color: string) => {
@@ -777,68 +848,6 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
 
           <Divider />
 
-          {/* Table */}
-          <div className={`flex items-center gap-0 ${editor.isActive("table") ? "bg-blue-50 rounded px-1 py-0.5" : ""}`}>
-            <ToolbarButton
-              onClick={() => setShowTableModal(true)}
-              active={editor.isActive("table")}
-              title="Insert Table"
-            >
-              <Table size={18} />
-            </ToolbarButton>
-            {editor.isActive("table") && (
-              <>
-                <Divider />
-                <ToolbarButton
-                  onClick={() => editor.chain().focus().addColumnBefore().run()}
-                  title="Add Column Before"
-                >
-                  <span className="text-xs font-medium">+Col</span>
-                </ToolbarButton>
-                <ToolbarButton
-                  onClick={() => editor.chain().focus().addColumnAfter().run()}
-                  title="Add Column After"
-                >
-                  <span className="text-xs font-medium">Col+</span>
-                </ToolbarButton>
-                <ToolbarButton
-                  onClick={() => editor.chain().focus().deleteColumn().run()}
-                  title="Delete Column"
-                >
-                  <span className="text-xs font-medium">-Col</span>
-                </ToolbarButton>
-                <Divider />
-                <ToolbarButton
-                  onClick={() => editor.chain().focus().addRowBefore().run()}
-                  title="Add Row Before"
-                >
-                  <span className="text-xs font-medium">+Row</span>
-                </ToolbarButton>
-                <ToolbarButton
-                  onClick={() => editor.chain().focus().addRowAfter().run()}
-                  title="Add Row After"
-                >
-                  <span className="text-xs font-medium">Row+</span>
-                </ToolbarButton>
-                <ToolbarButton
-                  onClick={() => editor.chain().focus().deleteRow().run()}
-                  title="Delete Row"
-                >
-                  <span className="text-xs font-medium">-Row</span>
-                </ToolbarButton>
-                <Divider />
-                <ToolbarButton
-                  onClick={() => editor.chain().focus().deleteTable().run()}
-                  title="Delete Table"
-                >
-                  <span className="text-xs font-medium text-red-600">Del</span>
-                </ToolbarButton>
-              </>
-            )}
-          </div>
-
-          <Divider />
-
           {/* Undo/Redo */}
           <div className="flex items-center gap-0 ">
             <ToolbarButton
@@ -978,6 +987,21 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
           setShowImagePicker(false);
           setShowAIGenerator(true);
         }}
+        onFromWeb={() => {
+          setShowImagePicker(false);
+          setShowWebImageModal(true);
+        }}
+        onFromHistory={() => {
+          setShowImagePicker(false);
+          setShowHistory(true);
+        }}
+      />
+
+      {/* Image from Web (Attribution) Modal */}
+      <ImageAttributionModal
+        isOpen={showWebImageModal}
+        onClose={() => setShowWebImageModal(false)}
+        onInsert={handleInsertWebImage}
       />
 
       {/* AI Image Generator Modal */}

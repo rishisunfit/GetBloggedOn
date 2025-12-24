@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { X, Trash2, Clock } from "lucide-react";
-import { genHistoryApi, type GenHistoryEntry } from "@/services/genHistory";
+import { mediaApi, type MediaEntry } from "@/services/media";
 import { useDialog } from "@/hooks/useDialog";
 
 interface ImageHistoryModalProps {
@@ -14,7 +14,7 @@ export function ImageHistoryModal({
   onClose,
   onSelectImage,
 }: ImageHistoryModalProps) {
-  const [history, setHistory] = useState<GenHistoryEntry[]>([]);
+  const [history, setHistory] = useState<MediaEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const { showDialog } = useDialog();
 
@@ -27,7 +27,8 @@ export function ImageHistoryModal({
   const loadHistory = async () => {
     try {
       setLoading(true);
-      const data = await genHistoryApi.getAll();
+      // Get all images from media table (filter by type: "image")
+      const data = await mediaApi.getAll("image");
       setHistory(data);
     } catch (error) {
       console.error("Error loading history:", error);
@@ -47,7 +48,7 @@ export function ImageHistoryModal({
 
     if (confirmed) {
       try {
-        await genHistoryApi.delete(id);
+        await mediaApi.delete(id);
         setHistory(history.filter((item) => item.id !== id));
       } catch (error) {
         console.error("Error deleting history:", error);
@@ -101,49 +102,62 @@ export function ImageHistoryModal({
           ) : history.length === 0 ? (
             <div className="text-center py-12">
               <Clock className="mx-auto text-gray-400 mb-4" size={48} />
-              <p className="text-gray-600">No generated images yet</p>
+              <p className="text-gray-600">No images yet</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {history.map((item) => (
-                <div
-                  key={item.id}
-                  className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
-                >
-                  <div className="relative aspect-square bg-gray-100">
-                    <img
-                      src={item.image_url}
-                      alt={item.prompt}
-                      className="w-full h-full object-cover cursor-pointer"
-                      onClick={() => {
-                        onSelectImage(item.image_url);
-                        onClose();
-                      }}
-                    />
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(item.id);
-                      }}
-                      className="absolute top-2 right-2 p-2 bg-white rounded-full shadow-md hover:bg-red-50 text-red-600 transition-colors"
-                      title="Delete"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                  <div className="p-3">
-                    <p className="text-sm text-gray-900 line-clamp-2 mb-2">
-                      {item.prompt}
-                    </p>
-                    <div className="flex items-center justify-between text-xs text-gray-500">
-                      <span>{formatDate(item.created_at)}</span>
-                      <span className="px-2 py-1 bg-gray-100 rounded">
-                        {item.aspect_ratio}
-                      </span>
+              {history.map((item) => {
+                // Get display text from metadata or use a default
+                const displayText =
+                  item.metadata?.prompt ||
+                  item.metadata?.filename ||
+                  item.metadata?.source_name ||
+                  "Image";
+                const aspectRatio =
+                  item.metadata?.aspect_ratio || "Unknown";
+
+                return (
+                  <div
+                    key={item.id}
+                    className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
+                  >
+                    <div className="relative aspect-square bg-gray-100">
+                      <img
+                        src={item.url}
+                        alt={displayText}
+                        className="w-full h-full object-cover cursor-pointer"
+                        onClick={() => {
+                          onSelectImage(item.url);
+                          onClose();
+                        }}
+                      />
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(item.id);
+                        }}
+                        className="absolute top-2 right-2 p-2 bg-white rounded-full shadow-md hover:bg-red-50 text-red-600 transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                    <div className="p-3">
+                      <p className="text-sm text-gray-900 line-clamp-2 mb-2">
+                        {displayText}
+                      </p>
+                      <div className="flex items-center justify-between text-xs text-gray-500">
+                        <span>{formatDate(item.created_at)}</span>
+                        {aspectRatio !== "Unknown" && (
+                          <span className="px-2 py-1 bg-gray-100 rounded">
+                            {aspectRatio}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

@@ -152,6 +152,82 @@
   line-height: 1.6;
 }
 
+/* Image attribution caption (editor + preview) */
+.ProseMirror figure[data-type="image"],
+.preview-content figure[data-type="image"] {
+  margin: 1rem 0;
+}
+
+.ProseMirror figure[data-type="image"] figcaption.image-caption,
+.preview-content figure[data-type="image"] figcaption.image-caption,
+.ProseMirror .image-caption,
+.preview-content .image-caption {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: rgb(107 114 128);
+}
+
+.ProseMirror figure[data-type="image"] figcaption.image-caption a,
+.preview-content figure[data-type="image"] figcaption.image-caption a,
+.ProseMirror .image-caption a,
+.preview-content .image-caption a {
+  color: rgb(37 99 235);
+  text-decoration: underline;
+}
+
+.ProseMirror .image-license,
+.preview-content .image-license {
+  color: rgb(107 114 128);
+}
+
+/* Image source link - clickable in preview, not in editor */
+.ProseMirror .image-source-link {
+  pointer-events: none;
+  /* Prevent clicking in editor - clicking should select the image */
+  cursor: default;
+  display: inline-block;
+}
+
+.preview-content .image-source-link {
+  pointer-events: auto;
+  /* Allow clicking in preview */
+  cursor: pointer;
+  display: inline-block;
+  text-decoration: none;
+  transition: opacity 0.2s;
+  border: none;
+  outline: none;
+}
+
+.preview-content .image-source-link:hover {
+  opacity: 0.9;
+}
+
+.preview-content .image-source-link:focus {
+  outline: 2px solid rgb(37 99 235);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+}
+
+.preview-content .image-source-link img {
+  display: block;
+  margin: 0;
+  /* Remove default margin since anchor handles spacing */
+}
+
+/* Image alignment in preview for figure-wrapped images */
+.preview-content figure[data-type="image"][data-align="left"] {
+  text-align: left;
+}
+
+.preview-content figure[data-type="image"][data-align="center"] {
+  text-align: center;
+}
+
+.preview-content figure[data-type="image"][data-align="right"] {
+  text-align: right;
+}
+
 /* Ensure text alignment works with prose */
 .ProseMirror [style*="text-align: left"],
 .preview-content [style*="text-align: left"] {
@@ -175,7 +251,7 @@
 
 /* Line spacing classes */
 .ProseMirror [style*="line-height"] {
-  /* Inline styles will override default */
+  line-height: inherit;
 }
 
 .ProseMirror ul[data-type="taskList"] {
