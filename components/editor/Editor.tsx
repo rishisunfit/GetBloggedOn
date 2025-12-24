@@ -4,6 +4,7 @@ import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
 import { ImageExtension } from "./ImageExtension";
 import { VideoExtension } from "./VideoExtension";
+import { QuizExtension } from "./QuizExtension";
 import Placeholder from "@tiptap/extension-placeholder";
 import TextAlign from "@tiptap/extension-text-align";
 import Underline from "@tiptap/extension-underline";
@@ -19,34 +20,43 @@ import { TableCell } from "@tiptap/extension-table-cell";
 import { TableHeader } from "@tiptap/extension-table-header";
 import Subscript from "@tiptap/extension-subscript";
 import Superscript from "@tiptap/extension-superscript";
-import { ArrowLeft, Eye, Save } from "lucide-react";
+import { ArrowLeft, Eye, Save, Settings } from "lucide-react";
 import { EditorToolbar } from "./EditorToolbar";
 import { StyleExtension, FontSizeExtension } from "./StyleExtension";
 import { LinkBubbleMenu } from "./LinkBubbleMenu";
 import { ImageBubbleMenu } from "./ImageBubbleMenu";
 import { VideoBubbleMenu } from "./VideoBubbleMenu";
+import { QuizBubbleMenu } from "./QuizBubbleMenu";
+import { PostSettingsModal } from "./PostSettingsModal";
 
 interface EditorProps {
   postId?: string;
   initialTitle?: string;
   initialContent?: string;
+  initialQuizId?: string | null;
   onBack: () => void;
   onPreview: () => void;
   onSave: (title: string, content: string, silent?: boolean) => void;
   onSaveDraft?: (title: string, content: string, silent?: boolean) => void;
   onPublish?: (title: string, content: string, silent?: boolean) => void;
+  onUpdateQuizId?: (quizId: string | null) => void;
 }
 
 export function Editor({
+  postId,
   initialTitle = "",
   initialContent = "",
+  initialQuizId = null,
   onBack,
   onPreview,
   onSave,
   onSaveDraft,
   onPublish,
+  onUpdateQuizId,
 }: EditorProps) {
   const [title, setTitle] = useState(initialTitle);
+  const [quizId, setQuizId] = useState<string | null>(initialQuizId);
+  const [showSettings, setShowSettings] = useState(false);
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -67,6 +77,7 @@ export function Editor({
       }),
       ImageExtension,
       VideoExtension,
+      QuizExtension,
       Placeholder.configure({
         placeholder: "Start writing your story...",
       }),
@@ -176,6 +187,16 @@ export function Editor({
             </div>
 
             <div className="flex items-center gap-3 flex-shrink-0">
+              {postId && (
+                <button
+                  onClick={() => setShowSettings(true)}
+                  className="flex items-center gap-2 px-4 py-2 text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium"
+                  title="Post Settings"
+                >
+                  <Settings size={18} />
+                  Settings
+                </button>
+              )}
               <button
                 onClick={handlePreview}
                 className="flex items-center gap-2 px-4 py-2 text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium"
@@ -215,6 +236,24 @@ export function Editor({
 
       {/* Video Bubble Menu */}
       {editor && <VideoBubbleMenu editor={editor} />}
+
+      {/* Quiz Bubble Menu */}
+      {editor && <QuizBubbleMenu editor={editor} />}
+
+      {/* Post Settings Modal */}
+      {postId && (
+        <PostSettingsModal
+          isOpen={showSettings}
+          onClose={() => setShowSettings(false)}
+          quizId={quizId}
+          onSave={(newQuizId) => {
+            setQuizId(newQuizId);
+            if (onUpdateQuizId) {
+              onUpdateQuizId(newQuizId);
+            }
+          }}
+        />
+      )}
 
       {/* Editor Content - Infinite scrollable area */}
       <div className="flex-1 overflow-y-auto bg-gray-50">

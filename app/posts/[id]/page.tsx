@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { Calendar } from "lucide-react";
 import { ReactionBar } from "@/components/viewer/ReactionBar";
 import { CTAForm } from "@/components/viewer/CTAForm";
+import { QuizRenderer } from "@/components/viewer/QuizRenderer";
 import { postsApi } from "@/services/posts";
 
 type Post = {
@@ -16,6 +17,7 @@ type Post = {
     status: "draft" | "published";
     user_id: string;
     is_draft: boolean;
+    quiz_id: string | null;
 };
 
 export default function PublicPostPage() {
@@ -51,15 +53,15 @@ export default function PublicPostPage() {
             setError(null);
             const data = await postsApi.getPublicById(id);
             setPost(data);
-    } catch (err) {
-      console.error("Error loading post:", err);
-      const errorMessage = err instanceof Error ? err.message : "Failed to load post";
-      console.error("Full error details:", {
-        message: errorMessage,
-        error: err,
-      });
-      setError(errorMessage);
-    } finally {
+        } catch (err) {
+            console.error("Error loading post:", err);
+            const errorMessage = err instanceof Error ? err.message : "Failed to load post";
+            console.error("Full error details:", {
+                message: errorMessage,
+                error: err,
+            });
+            setError(errorMessage);
+        } finally {
             setLoading(false);
         }
     };
@@ -135,10 +137,13 @@ export default function PublicPostPage() {
                     }}
                 >
                     {post.content ? (
-                        <div
-                            dangerouslySetInnerHTML={{ __html: post.content }}
-                            className="preview-content"
-                        />
+                        <>
+                            <div
+                                dangerouslySetInnerHTML={{ __html: post.content }}
+                                className="preview-content"
+                            />
+                            <QuizRenderer />
+                        </>
                     ) : (
                         <p className="text-gray-400 italic">No content available.</p>
                     )}
@@ -148,7 +153,7 @@ export default function PublicPostPage() {
                 <ReactionBar postId={post.id} />
 
                 {/* CTA Form */}
-                <CTAForm postId={post.id} />
+                <CTAForm postId={post.id} quizId={post.quiz_id} />
 
                 {/* Footer */}
                 <footer className="mt-16 pt-8 border-t border-gray-200">

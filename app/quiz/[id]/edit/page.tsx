@@ -6,22 +6,25 @@ import { Quiz } from '@/types/quiz';
 import { quizzesApi } from '@/services/quizzes';
 import { QuizBuilder, QuizPlayer } from '@/components/quiz';
 import { Loader2 } from 'lucide-react';
+import { useDialog } from '@/hooks/useDialog';
 
 export default function EditQuizPage() {
   const params = useParams();
   const router = useRouter();
+  const { showDialog } = useDialog();
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [previewQuiz, setPreviewQuiz] = useState<Quiz | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     const loadQuiz = async () => {
       try {
         const quizId = params.id as string;
         const loadedQuiz = await quizzesApi.getById(quizId);
-        
+
         if (!loadedQuiz) {
           setError('Quiz not found');
         } else {
@@ -41,22 +44,49 @@ export default function EditQuizPage() {
   const handleSave = async (quizData: Omit<Quiz, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
     if (!quiz) return;
 
+    setIsSaving(true);
     try {
+      // Update quiz in Supabase
       const updatedQuiz = await quizzesApi.update(quiz.id, quizData);
+
       if (updatedQuiz) {
         setQuiz(updatedQuiz);
-        // Show a brief success message
-        alert('Quiz saved successfully!');
+
+        // Show success message
+        showDialog({
+          type: 'alert',
+          title: 'Quiz Updated',
+          message: 'Your quiz has been successfully updated in Supabase.',
+        });
+      } else {
+        // Quiz not found or user doesn't have permission
+        showDialog({
+          type: 'alert',
+          title: 'Update Failed',
+          message: 'Quiz not found or you do not have permission to update it.',
+        });
       }
     } catch (error) {
-      console.error('Failed to save quiz:', error);
-      alert('Failed to save quiz. Please try again.');
+      console.error('Failed to update quiz in Supabase:', error);
+
+      // Show detailed error message
+      const errorMessage = error instanceof Error
+        ? error.message
+        : 'An unknown error occurred while updating the quiz.';
+
+      showDialog({
+        type: 'alert',
+        title: 'Failed to Update Quiz',
+        message: `Unable to update quiz in Supabase: ${errorMessage}. Please check your connection and try again.`,
+      });
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handlePreview = (quizData: Omit<Quiz, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
     if (!quiz) return;
-    
+
     setPreviewQuiz({
       ...quizData,
       id: quiz.id,

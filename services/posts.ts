@@ -9,6 +9,7 @@ export interface Post {
   status: "draft" | "published";
   user_id: string;
   is_draft: boolean;
+  quiz_id: string | null;
   styles?: PostStyles;
 }
 
@@ -29,6 +30,7 @@ export interface CreatePostData {
   title: string;
   content: string;
   status: "draft" | "published";
+  quiz_id?: string | null;
   styles?: PostStyles;
 }
 
@@ -37,6 +39,7 @@ export interface UpdatePostData {
   content?: string;
   status?: "draft" | "published";
   is_draft?: boolean;
+  quiz_id?: string | null;
   styles?: PostStyles;
 }
 
@@ -91,6 +94,7 @@ export const postsApi = {
         status: postData.status,
         is_draft: postData.status === "draft",
         user_id: userData.user.id,
+        quiz_id: postData.quiz_id || null,
         styles: postData.styles || null,
       })
       .select()
@@ -116,6 +120,7 @@ export const postsApi = {
     } else if (postData.status !== undefined) {
       updateData.is_draft = postData.status === "draft";
     }
+    if (postData.quiz_id !== undefined) updateData.quiz_id = postData.quiz_id;
     if (postData.styles !== undefined) updateData.styles = postData.styles;
     updateData.updated_at = new Date().toISOString();
 

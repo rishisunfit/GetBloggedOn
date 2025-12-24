@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { MessageCircle, Send, Loader2 } from "lucide-react";
 import { useDialog } from "@/hooks/useDialog";
+import { QuizEmbed } from "./QuizEmbed";
 
 interface CTAFormProps {
   postId?: string;
+  quizId?: string | null;
 }
 
-export function CTAForm({ postId }: CTAFormProps) {
+export function CTAForm({ postId, quizId }: CTAFormProps) {
   const [formData, setFormData] = useState({
     email: "",
     phone: "",
@@ -204,6 +206,13 @@ export function CTAForm({ postId }: CTAFormProps) {
             )}
           </button>
         </form>
+      )}
+
+      {/* Quiz at the bottom */}
+      {quizId && (
+        <div className="mt-12">
+          <QuizEmbed quizId={quizId} align="center" />
+        </div>
       )}
     </div>
   );

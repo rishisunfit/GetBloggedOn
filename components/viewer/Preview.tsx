@@ -1,16 +1,18 @@
 import { ArrowLeft, Calendar } from 'lucide-react';
 import { ReactionBar } from './ReactionBar';
 import { CTAForm } from './CTAForm';
+import { QuizRenderer } from './QuizRenderer';
 
 interface PreviewProps {
   title: string;
   content: string;
   date?: Date;
   postId?: string;
+  quizId?: string | null;
   onBack: () => void;
 }
 
-export function Preview({ title, content, date = new Date(), postId, onBack }: PreviewProps) {
+export function Preview({ title, content, date = new Date(), postId, quizId, onBack }: PreviewProps) {
   const formatDate = (date: Date) => {
     return new Date(date).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -46,7 +48,7 @@ export function Preview({ title, content, date = new Date(), postId, onBack }: P
         </header>
 
         {/* Content */}
-        <div 
+        <div
           className="prose prose-lg max-w-none"
           style={{
             color: 'rgb(17 24 39)',
@@ -54,10 +56,13 @@ export function Preview({ title, content, date = new Date(), postId, onBack }: P
           }}
         >
           {content ? (
-            <div 
-              dangerouslySetInnerHTML={{ __html: content }}
-              className="preview-content"
-            />
+            <>
+              <div
+                dangerouslySetInnerHTML={{ __html: content }}
+                className="preview-content"
+              />
+              <QuizRenderer />
+            </>
           ) : (
             <p className="text-gray-400 italic">No content yet. Start writing in the editor!</p>
           )}
@@ -67,7 +72,7 @@ export function Preview({ title, content, date = new Date(), postId, onBack }: P
         <ReactionBar postId={postId} />
 
         {/* CTA Form */}
-        <CTAForm postId={postId} />
+        <CTAForm postId={postId} quizId={quizId} />
 
         {/* Footer */}
         <footer className="mt-16 pt-8 border-t border-gray-200">

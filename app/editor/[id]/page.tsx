@@ -17,6 +17,7 @@ type Post = {
   status: "draft" | "published";
   user_id: string;
   is_draft: boolean;
+  quiz_id: string | null;
 };
 
 export default function EditorPage() {
@@ -26,6 +27,7 @@ export default function EditorPage() {
   const { showDialog } = useDialog();
   const [post, setPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
+  const [quizId, setQuizId] = useState<string | null>(null);
 
   const loadPost = useCallback(async () => {
     if (!id) return;
@@ -33,6 +35,7 @@ export default function EditorPage() {
     try {
       const data = await postsApi.getById(id);
       setPost(data);
+      setQuizId(data.quiz_id);
     } catch (error) {
       console.error("Error loading post:", error);
       await showDialog({
@@ -71,6 +74,20 @@ export default function EditorPage() {
     }
   };
 
+
+  const handleUpdateQuizId = async (newQuizId: string | null) => {
+    if (!id) return;
+    try {
+      await postsApi.update(id, {
+        quiz_id: newQuizId,
+      });
+      setQuizId(newQuizId);
+      await loadPost();
+    } catch (error) {
+      console.error("Error updating quiz:", error);
+    }
+  };
+
   const handleSaveDraft = async (title: string, content: string, silent = false) => {
     if (!id) return;
 
@@ -80,6 +97,7 @@ export default function EditorPage() {
         content,
         status: "draft",
         is_draft: true,
+        quiz_id: quizId,
       });
 
       // Reload post data to get latest
@@ -111,6 +129,7 @@ export default function EditorPage() {
         content,
         status: "published",
         is_draft: false,
+        quiz_id: quizId,
       });
 
       // Reload post data to get latest
@@ -153,11 +172,13 @@ export default function EditorPage() {
         postId={id}
         initialTitle={post?.title || ""}
         initialContent={post?.content || ""}
+        initialQuizId={post?.quiz_id || null}
         onBack={handleBack}
         onPreview={handlePreview}
         onSave={handleSave}
         onSaveDraft={handleSaveDraft}
         onPublish={handlePublish}
+        onUpdateQuizId={handleUpdateQuizId}
       />
     </ProtectedRoute>
   );

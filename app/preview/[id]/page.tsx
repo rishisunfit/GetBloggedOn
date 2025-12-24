@@ -17,6 +17,7 @@ type Post = {
   status: "draft" | "published";
   user_id: string;
   is_draft: boolean;
+  quiz_id: string | null;
 };
 
 export default function PreviewPage() {
@@ -82,6 +83,7 @@ export default function PreviewPage() {
         content={post.content}
         date={new Date(post.created_at)}
         postId={post.id}
+        quizId={post.quiz_id}
         onBack={handleBack}
       />
     </ProtectedRoute>

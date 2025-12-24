@@ -1,10 +1,13 @@
 import { useState, useEffect } from "react";
-import { Plus, FileText, Calendar, Edit, Trash2, ClipboardList, Eye, ExternalLink, MessageSquare, Mail, Phone, Reply } from "lucide-react";
+import { Plus, FileText, Calendar, Edit, Trash2, ClipboardList, Eye, ExternalLink, MessageSquare, Mail, Phone, Reply, Users, ChevronDown, ChevronUp } from "lucide-react";
 import { formSubmissionsApi, type FormSubmission } from "@/services/formSubmissions";
+import { quizSubmissionsApi, type QuizSubmission } from "@/services/quizSubmissions";
 import { useAuth } from "@/hooks/useAuth";
 import { ReplyModal } from "./ReplyModal";
 import { supabase } from "@/lib/supabase";
 import { useDialog } from "@/hooks/useDialog";
+import { quizzesApi } from "@/services/quizzes";
+import type { Quiz as FullQuiz, QuizQuestion } from "@/types/quiz";
 
 type Post = {
   id: string;
@@ -24,7 +27,7 @@ type Quiz = {
   status: "draft" | "published";
 };
 
-type ContentTab = "posts" | "quizzes" | "responses";
+type ContentTab = "posts" | "quizzes" | "responses" | "quiz-responses";
 
 interface DashboardProps {
   onCreatePost: () => void;
@@ -55,9 +58,13 @@ export function Dashboard({
 }: DashboardProps) {
   const [activeTab, setActiveTab] = useState<ContentTab>("posts");
   const [responses, setResponses] = useState<FormSubmission[]>([]);
+  const [quizResponses, setQuizResponses] = useState<QuizSubmission[]>([]);
   const [loadingResponses, setLoadingResponses] = useState(false);
+  const [loadingQuizResponses, setLoadingQuizResponses] = useState(false);
   const [replyModalOpen, setReplyModalOpen] = useState(false);
   const [selectedResponse, setSelectedResponse] = useState<FormSubmission | null>(null);
+  const [expandedQuizResponses, setExpandedQuizResponses] = useState<Set<string>>(new Set());
+  const [quizDataCache, setQuizDataCache] = useState<Map<string, FullQuiz>>(new Map());
   const { user } = useAuth();
   const { showDialog } = useDialog();
 
@@ -84,6 +91,7 @@ export function Dashboard({
   useEffect(() => {
     if (user?.id) {
       loadResponses();
+      loadQuizResponses();
     }
   }, [user?.id]);
 
@@ -101,11 +109,110 @@ export function Dashboard({
     }
   };
 
+  const loadQuizResponses = async () => {
+    if (!user?.id) return;
+
+    setLoadingQuizResponses(true);
+    try {
+      const data = await quizSubmissionsApi.getByAuthorId(user.id);
+      setQuizResponses(data);
+    } catch (error) {
+      console.error("Error loading quiz responses:", error);
+    } finally {
+      setLoadingQuizResponses(false);
+    }
+  };
+
   // Get post title by ID
   const getPostTitle = (postId: string | null) => {
     if (!postId) return "Unknown Post";
     const post = posts.find((p) => p.id === postId);
     return post?.title || "Unknown Post";
+  };
+
+  // Get quiz title by ID
+  const getQuizTitle = (quizId: string) => {
+    const quiz = quizzes.find((q) => q.id === quizId);
+    return quiz?.title || "Unknown Quiz";
+  };
+
+  // Load quiz data for a specific quiz ID
+  const loadQuizData = async (quizId: string): Promise<FullQuiz | null> => {
+    // Check cache first
+    if (quizDataCache.has(quizId)) {
+      return quizDataCache.get(quizId) || null;
+    }
+
+    try {
+      const quiz = await quizzesApi.getById(quizId);
+      if (quiz) {
+        setQuizDataCache((prev) => new Map(prev).set(quizId, quiz));
+        return quiz;
+      }
+      return null;
+    } catch (error) {
+      console.error(`Error loading quiz ${quizId}:`, error);
+      return null;
+    }
+  };
+
+  // Get question text by question ID
+  const getQuestionText = (quizId: string, questionId: string): string => {
+    const quiz = quizDataCache.get(quizId);
+    if (!quiz) return `Question ${questionId}`;
+    const question = quiz.questions.find((q) => q.id === questionId);
+    return question?.question || `Question ${questionId}`;
+  };
+
+  // Get formatted answer text
+  const getAnswerText = (quizId: string, questionId: string, answerValue: string | string[] | number): string => {
+    const quiz = quizDataCache.get(quizId);
+    if (!quiz) {
+      // Fallback: return raw value
+      return Array.isArray(answerValue) ? answerValue.join(", ") : String(answerValue);
+    }
+
+    const question = quiz.questions.find((q: QuizQuestion) => q.id === questionId);
+    if (!question) {
+      return Array.isArray(answerValue) ? answerValue.join(", ") : String(answerValue);
+    }
+
+    // Handle different question types
+    if (question.type === 'rating') {
+      return `${answerValue} out of 5 stars`;
+    }
+
+    if (question.type === 'text' || question.type === 'email' || question.type === 'phone') {
+      return (answerValue as string) || 'Not provided';
+    }
+
+    if (question.type === 'multiple_choice') {
+      const selectedIds = answerValue as string[];
+      const selectedOptions = question.options?.filter((o: { id: string; text: string }) => selectedIds.includes(o.id)) || [];
+      return selectedOptions.map((o: { text: string }) => o.text).join(', ') || 'None selected';
+    }
+
+    // Single choice
+    const selectedOption = question.options?.find((o: { id: string; text: string }) => o.id === answerValue);
+    return selectedOption?.text || String(answerValue);
+  };
+
+  // Toggle expanded state for a quiz response
+  const toggleQuizResponse = async (responseId: string, quizId: string) => {
+    const isExpanded = expandedQuizResponses.has(responseId);
+    if (isExpanded) {
+      setExpandedQuizResponses((prev) => {
+        const next = new Set(prev);
+        next.delete(responseId);
+        return next;
+      });
+    } else {
+      // Load quiz data if not cached
+      if (!quizDataCache.has(quizId)) {
+        await loadQuizData(quizId);
+      }
+      setExpandedQuizResponses((prev) => new Set(prev).add(responseId));
+    }
   };
 
   const handleOpenReply = (response: FormSubmission) => {
@@ -238,6 +345,20 @@ export function Dashboard({
               {responses.length}
             </span>
           </button>
+          <button
+            onClick={() => setActiveTab("quiz-responses")}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium transition-all ${activeTab === "quiz-responses"
+              ? "bg-purple-600 text-white shadow-sm"
+              : "text-gray-600 hover:bg-gray-100"
+              }`}
+          >
+            <Users size={18} />
+            Quiz Responses
+            <span className={`text-xs px-2 py-0.5 rounded-full ${activeTab === "quiz-responses" ? "bg-white/20" : "bg-gray-200"
+              }`}>
+              {quizResponses.length}
+            </span>
+          </button>
         </div>
 
         {/* Stats - Posts */}
@@ -316,68 +437,81 @@ export function Dashboard({
         {activeTab === "posts" && (
           <>
             <div className="space-y-4">
-              {posts.map((post) => (
-                <div
-                  key={post.id}
-                  className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
-                >
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h2 className="text-2xl font-bold text-gray-900">
-                          {post.title}
-                        </h2>
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-medium ${post.status === "published"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-yellow-100 text-yellow-800"
-                            }`}
-                        >
-                          {post.status}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
-                        <div className="flex items-center gap-1">
-                          <Calendar size={16} />
-                          {formatDate(post.createdAt)}
+              {posts.map((post) => {
+                // Strip HTML tags and get plain text preview
+                const plainText = post.content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+                const wordCount = plainText.split(' ').filter(word => word.length > 0).length;
+                const preview = plainText.substring(0, 120);
+
+                return (
+                  <div
+                    key={post.id}
+                    className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex justify-between items-start gap-4">
+                      <div className="flex-1 min-w-0">
+                        {/* Header: Title and Status */}
+                        <div className="flex items-start justify-between gap-3 mb-3">
+                          <h2 className="text-xl font-bold text-gray-900 flex-1">
+                            {post.title}
+                          </h2>
+                          <span
+                            className={`px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap flex-shrink-0 ${post.status === "published"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-yellow-100 text-yellow-800"
+                              }`}
+                          >
+                            {post.status}
+                          </span>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <FileText size={16} />
-                          {post.content.split(" ").length} words
+
+                        {/* Content Preview */}
+                        {plainText ? (
+                          <p className="text-gray-600 text-sm line-clamp-2 mb-3">
+                            {preview}{plainText.length > 120 ? '...' : ''}
+                          </p>
+                        ) : (
+                          <p className="text-gray-400 italic text-sm mb-3">No content yet</p>
+                        )}
+
+                        {/* Metadata - Subtle footer */}
+                        <div className="flex items-center gap-3 text-xs text-gray-500">
+                          <span>{formatDate(post.createdAt)}</span>
+                          <span>•</span>
+                          <span>{wordCount} {wordCount === 1 ? 'word' : 'words'}</span>
                         </div>
                       </div>
-                      <p className="text-gray-600 line-clamp-2">
-                        {post.content.substring(0, 150)}...
-                      </p>
-                    </div>
-                    <div className="flex gap-2 ml-4">
-                      {onPreviewPost && (
+
+                      {/* Action Buttons */}
+                      <div className="flex gap-2 flex-shrink-0">
+                        {onPreviewPost && (
+                          <button
+                            onClick={() => onPreviewPost(post.id)}
+                            className="p-2 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                            title="Preview"
+                          >
+                            <Eye size={20} />
+                          </button>
+                        )}
                         <button
-                          onClick={() => onPreviewPost(post.id)}
-                          className="p-2 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                          title="Preview"
+                          onClick={() => onEditPost(post.id)}
+                          className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="Edit"
                         >
-                          <Eye size={20} />
+                          <Edit size={20} />
                         </button>
-                      )}
-                      <button
-                        onClick={() => onEditPost(post.id)}
-                        className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="Edit"
-                      >
-                        <Edit size={20} />
-                      </button>
-                      <button
-                        onClick={() => onDeletePost(post.id)}
-                        className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title="Delete"
-                      >
-                        <Trash2 size={20} />
-                      </button>
+                        <button
+                          onClick={() => onDeletePost(post.id)}
+                          className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Delete"
+                        >
+                          <Trash2 size={20} />
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {posts.length === 0 && (
@@ -567,6 +701,150 @@ export function Dashboard({
                   <Plus size={20} />
                   Create Your First Quiz
                 </button>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Quiz Responses List */}
+        {activeTab === "quiz-responses" && (
+          <>
+            {loadingQuizResponses ? (
+              <div className="text-center py-16">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading quiz responses...</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {quizResponses.length === 0 ? (
+                  <div className="text-center py-16">
+                    <Users size={64} className="mx-auto text-gray-300 mb-4" />
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                      No quiz responses yet
+                    </h3>
+                    <p className="text-gray-600 mb-6">
+                      Responses from your published quizzes will appear here.
+                    </p>
+                  </div>
+                ) : (
+                  quizResponses.map((response) => {
+                    const isExpanded = expandedQuizResponses.has(response.id);
+                    return (
+                      <div
+                        key={response.id}
+                        className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow overflow-hidden"
+                      >
+                        {/* Header - Always visible */}
+                        <div
+                          className="p-6 cursor-pointer"
+                          onClick={() => toggleQuizResponse(response.id, response.quiz_id)}
+                        >
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-2">
+                                <h3 className="text-lg font-semibold text-gray-900">
+                                  {getQuizTitle(response.quiz_id)}
+                                </h3>
+                                <span className="text-sm text-gray-500">
+                                  {formatDateTime(response.completed_at)}
+                                </span>
+                              </div>
+                              {response.contact_info && (
+                                <div className="mb-2">
+                                  <div className="flex items-center gap-4 text-sm text-gray-600">
+                                    {response.contact_info.name && (
+                                      <div className="flex items-center gap-1">
+                                        <span className="font-medium">Name:</span>
+                                        <span>{response.contact_info.name}</span>
+                                      </div>
+                                    )}
+                                    {response.contact_info.email && (
+                                      <div className="flex items-center gap-1">
+                                        <Mail size={14} />
+                                        <span>{response.contact_info.email}</span>
+                                      </div>
+                                    )}
+                                    {response.contact_info.phone && (
+                                      <div className="flex items-center gap-1">
+                                        <Phone size={14} />
+                                        <span>{response.contact_info.phone}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                              {!response.contact_info && (
+                                <p className="text-gray-400 italic text-sm mb-2">No contact information provided</p>
+                              )}
+                              <div className="flex items-center gap-2 text-sm text-gray-500">
+                                <span>{response.answers.length} question{response.answers.length !== 1 ? 's' : ''} answered</span>
+                                {isExpanded ? (
+                                  <ChevronUp size={16} className="text-gray-400" />
+                                ) : (
+                                  <ChevronDown size={16} className="text-gray-400" />
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex gap-2 ml-4" onClick={(e) => e.stopPropagation()}>
+                              {(response.contact_info?.email || response.contact_info?.phone) && (
+                                <button
+                                  onClick={() => {
+                                    setSelectedResponse({
+                                      id: response.id,
+                                      email: response.contact_info?.email || null,
+                                      phone: response.contact_info?.phone || null,
+                                      subject: "Quiz Response",
+                                      message: `Quiz: ${getQuizTitle(response.quiz_id)}`,
+                                      post_id: null,
+                                      post_author_id: null,
+                                      session_id: null,
+                                      created_at: response.completed_at,
+                                    } as FormSubmission);
+                                    setReplyModalOpen(true);
+                                  }}
+                                  className="p-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                                  title="Reply"
+                                >
+                                  <Reply size={20} />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Expandable Content */}
+                        {isExpanded && (
+                          <div className="px-6 pb-6 border-t border-gray-100 pt-4">
+                            <p className="text-sm text-gray-600 font-medium mb-3">Answers:</p>
+                            <div className="space-y-4">
+                              {response.answers.map((answer, idx) => {
+                                const questionText = getQuestionText(response.quiz_id, answer.questionId);
+                                const answerText = getAnswerText(response.quiz_id, answer.questionId, answer.value);
+                                return (
+                                  <div key={idx} className="bg-gray-50 rounded-lg p-4">
+                                    <div className="flex items-start gap-3">
+                                      <div className="w-7 h-7 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center flex-shrink-0 text-xs font-semibold">
+                                        {idx + 1}
+                                      </div>
+                                      <div className="flex-1">
+                                        <p className="text-sm font-medium text-gray-900 mb-1">
+                                          {questionText}
+                                        </p>
+                                        <p className="text-sm text-gray-700 bg-white px-3 py-2 rounded border border-gray-200">
+                                          {answerText}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
               </div>
             )}
           </>

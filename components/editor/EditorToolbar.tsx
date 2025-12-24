@@ -30,6 +30,7 @@ import {
   Type,
   Clock,
   Video,
+  ClipboardList,
 } from "lucide-react";
 import { Editor } from "@tiptap/react";
 import { useState, useRef, useEffect } from "react";
@@ -39,6 +40,7 @@ import { AIImageGeneratorModal } from "./AIImageGeneratorModal";
 import { ImageHistoryModal } from "./ImageHistoryModal";
 import { TableModal } from "./TableModal";
 import { VideoModal } from "./VideoModal";
+import { QuizModal } from "./QuizModal";
 import {
   ImageAttributionModal,
   type ImageAttributionValues,
@@ -95,6 +97,7 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
   const [showHistory, setShowHistory] = useState(false);
   const [showWebImageModal, setShowWebImageModal] = useState(false);
   const [showVideoModal, setShowVideoModal] = useState(false);
+  const [showQuizModal, setShowQuizModal] = useState(false);
   const [, forceUpdate] = useState({});
   const dragStartRef = useRef<{ x: number; y: number } | null>(null);
   const { showDialog } = useDialog();
@@ -289,6 +292,17 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
     // Videos will be sized responsively at 70% via CSS
     editor.chain().focus().setVideo({
       src: url,
+      align: align || "center"
+    }).run();
+  };
+
+  const addQuiz = () => {
+    setShowQuizModal(true);
+  };
+
+  const handleInsertQuiz = (quizId: string, align: "left" | "center" | "right" = "center") => {
+    editor.chain().focus().setQuiz({
+      quizId: quizId,
       align: align || "center"
     }).run();
   };
@@ -1055,6 +1069,15 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
         onClose={() => setShowVideoModal(false)}
         onInsert={(url, align) => {
           handleInsertVideo(url, align);
+        }}
+      />
+
+      {/* Quiz Modal */}
+      <QuizModal
+        isOpen={showQuizModal}
+        onClose={() => setShowQuizModal(false)}
+        onSelect={(quizId) => {
+          handleInsertQuiz(quizId, "center");
         }}
       />
 

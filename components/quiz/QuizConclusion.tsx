@@ -12,10 +12,10 @@ interface QuizConclusionProps {
   contactInfo?: { name?: string; email?: string; phone?: string };
 }
 
-export function QuizConclusion({ 
-  conclusion, 
-  styles, 
-  questions = [], 
+export function QuizConclusion({
+  conclusion,
+  styles,
+  questions = [],
   answers = {},
 }: QuizConclusionProps) {
   const [isSending, setIsSending] = useState(false);
@@ -73,16 +73,16 @@ export function QuizConclusion({
   };
 
   return (
-    <div 
+    <div
       className="min-h-screen flex flex-col px-4 md:px-6 py-12"
       style={{ fontFamily: styles.fontFamily }}
     >
       <div className="max-w-2xl mx-auto w-full">
         {/* Success Header */}
         <div className="text-center mb-10">
-          <div 
+          <div
             className="w-16 h-16 rounded-full flex items-center justify-center mb-6 mx-auto"
-            style={{ 
+            style={{
               backgroundColor: `${styles.secondaryColor}12`,
               color: styles.secondaryColor,
             }}
@@ -90,7 +90,7 @@ export function QuizConclusion({
             <CheckCircle2 size={32} strokeWidth={1.5} />
           </div>
 
-          <h1 
+          <h1
             className="text-3xl md:text-4xl font-bold mb-3"
             style={{ color: styles.textColor }}
           >
@@ -98,7 +98,7 @@ export function QuizConclusion({
           </h1>
 
           {conclusion.subtitle && (
-            <p 
+            <p
               className="text-base md:text-lg opacity-70"
               style={{ color: styles.textColor }}
             >
@@ -109,9 +109,9 @@ export function QuizConclusion({
 
         {/* Response Summary - Always Expanded */}
         {questions.length > 0 && (
-          <div 
+          <div
             className="mb-8"
-            style={{ 
+            style={{
               backgroundColor: styles.cardBackgroundColor,
               borderRadius: getBorderRadius(),
               border: `1px solid ${styles.textColor}08`,
@@ -119,7 +119,7 @@ export function QuizConclusion({
             }}
           >
             <div className="p-6 border-b" style={{ borderColor: `${styles.textColor}08` }}>
-              <h2 
+              <h2
                 className="text-lg font-semibold"
                 style={{ color: styles.textColor }}
               >
@@ -130,15 +130,15 @@ export function QuizConclusion({
             {/* Full Summary - Always Visible */}
             <div className="p-6 space-y-5 max-h-[28rem] overflow-y-auto">
               {questions.map((question, index) => (
-                <div 
-                  key={question.id} 
+                <div
+                  key={question.id}
                   className="pb-5 border-b last:border-0 last:pb-0"
                   style={{ borderColor: `${styles.textColor}08` }}
                 >
                   <div className="flex gap-4">
-                    <div 
+                    <div
                       className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-semibold"
-                      style={{ 
+                      style={{
                         backgroundColor: `${styles.secondaryColor}12`,
                         color: styles.secondaryColor,
                       }}
@@ -146,15 +146,15 @@ export function QuizConclusion({
                       {index + 1}
                     </div>
                     <div className="flex-1">
-                      <p 
+                      <p
                         className="text-sm font-medium mb-1"
                         style={{ color: styles.textColor }}
                       >
                         {question.question}
                       </p>
-                      <div 
+                      <div
                         className="text-sm px-3 py-2 rounded-lg inline-block"
-                        style={{ 
+                        style={{
                           backgroundColor: `${styles.secondaryColor}08`,
                           color: styles.textColor,
                         }}
@@ -170,21 +170,21 @@ export function QuizConclusion({
         )}
 
         {/* AI Results Option */}
-        <div 
+        <div
           className="p-6 text-center mb-4"
-          style={{ 
+          style={{
             backgroundColor: styles.cardBackgroundColor,
             borderRadius: getBorderRadius(),
             border: `1px solid ${styles.textColor}08`,
           }}
         >
-          <h3 
+          <h3
             className="text-lg font-semibold mb-2"
             style={{ color: styles.textColor }}
           >
             Instant AI Analysis
           </h3>
-          <p 
+          <p
             className="text-sm opacity-70 mb-6 max-w-md mx-auto"
             style={{ color: styles.textColor }}
           >
@@ -204,7 +204,7 @@ export function QuizConclusion({
             >
               {isGeneratingAI ? (
                 <>
-                  <div 
+                  <div
                     className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"
                   />
                   Generating...
@@ -217,7 +217,7 @@ export function QuizConclusion({
               )}
             </button>
           ) : (
-            <div 
+            <div
               className="w-full max-w-sm mx-auto px-8 py-4 text-base font-semibold flex items-center justify-center gap-3"
               style={{
                 backgroundColor: '#10b981',
@@ -231,7 +231,7 @@ export function QuizConclusion({
           )}
 
           {aiGenerated && (
-            <p 
+            <p
               className="text-sm opacity-60 mt-4"
               style={{ color: styles.textColor }}
             >
@@ -241,21 +241,21 @@ export function QuizConclusion({
         </div>
 
         {/* Main CTA - Build My Custom Knee Plan */}
-        <div 
+        <div
           className="p-6 text-center"
-          style={{ 
+          style={{
             backgroundColor: styles.cardBackgroundColor,
             borderRadius: getBorderRadius(),
             border: `1px solid ${styles.textColor}08`,
           }}
         >
-          <h3 
+          <h3
             className="text-lg font-semibold mb-2"
             style={{ color: styles.textColor }}
           >
             Ready for Expert Review
           </h3>
-          <p 
+          <p
             className="text-sm opacity-70 mb-6 max-w-md mx-auto"
             style={{ color: styles.textColor }}
           >
@@ -275,7 +275,7 @@ export function QuizConclusion({
             >
               {isSending ? (
                 <>
-                  <div 
+                  <div
                     className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"
                   />
                   Sending...
@@ -288,7 +288,7 @@ export function QuizConclusion({
               )}
             </button>
           ) : (
-            <div 
+            <div
               className="w-full max-w-sm mx-auto px-8 py-4 text-base font-semibold flex items-center justify-center gap-3"
               style={{
                 backgroundColor: '#10b981',
@@ -302,7 +302,7 @@ export function QuizConclusion({
           )}
 
           {isSent && (
-            <p 
+            <p
               className="text-sm opacity-60 mt-4"
               style={{ color: styles.textColor }}
             >
@@ -314,27 +314,43 @@ export function QuizConclusion({
         {/* Secondary CTAs */}
         {conclusion.ctaButtons && conclusion.ctaButtons.length > 0 && (
           <div className="flex flex-col sm:flex-row gap-3 mt-6">
-            {conclusion.ctaButtons.map((button) => (
-              <a
-                key={button.id}
-                href={button.url || '#'}
-                className="flex-1 px-6 py-3 text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 hover:opacity-80"
-                style={{
-                  backgroundColor: 'transparent',
-                  color: styles.textColor,
-                  borderRadius: getBorderRadius(),
-                  border: `1px solid ${styles.textColor}20`,
-                }}
-              >
-                {button.text}
-              </a>
-            ))}
+            {conclusion.ctaButtons.map((button) => {
+              // Map specific button texts to URLs
+              let buttonUrl = button.url;
+              if (!buttonUrl) {
+                if (button.text === "Get Your Personalized Plan" || button.text.includes("Personalized Plan")) {
+                  buttonUrl = "https://rishfits.ptflow.io/";
+                } else if (button.text === "Book a Consultation" || button.text.includes("Consultation")) {
+                  buttonUrl = "https://rishfits.ptflow.io/discovery";
+                } else {
+                  buttonUrl = "#";
+                }
+              }
+
+              return (
+                <a
+                  key={button.id}
+                  href={buttonUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 px-6 py-3 text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 hover:opacity-80"
+                  style={{
+                    backgroundColor: 'transparent',
+                    color: styles.textColor,
+                    borderRadius: getBorderRadius(),
+                    border: `1px solid ${styles.textColor}20`,
+                  }}
+                >
+                  {button.text}
+                </a>
+              );
+            })}
           </div>
         )}
 
         {/* Authority Footer */}
         <div className="mt-12 pt-8 border-t text-center" style={{ borderColor: `${styles.textColor}10` }}>
-          <p 
+          <p
             className="text-xs opacity-40"
             style={{ color: styles.textColor }}
           >
