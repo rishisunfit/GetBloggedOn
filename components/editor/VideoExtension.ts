@@ -11,84 +11,111 @@ declare module "@tiptap/core" {
     interface Commands<ReturnType> {
         video: {
             /**
-             * Insert a video
+             * Insert a Cloudflare Stream video
              */
             setVideo: (options: {
                 src: string;
                 align?: "left" | "center" | "right";
                 width?: number;
                 height?: number;
+                primaryColor?: string; // Hex color for player theme (e.g., "#F48120")
             }) => ReturnType;
             /**
              * Set video alignment
              */
             setVideoAlign: (align: "left" | "center" | "right") => ReturnType;
+            /**
+             * Set video theme color
+             */
+            setVideoTheme: (primaryColor: string) => ReturnType;
         };
     }
 }
 
-// Helper function to detect video type from URL
-function getVideoType(url: string): "youtube" | "vimeo" | "direct" {
-    // Check for YouTube (including Cloudflare links that point to YouTube)
-    if (url.includes("youtube.com") || url.includes("youtu.be") || url.includes("watch?v=")) {
-        return "youtube";
+/**
+ * Normalize URL by adding https:// if missing
+ */
+function normalizeUrl(url: string): string {
+    const trimmed = url.trim();
+    if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+        return trimmed;
     }
-    // Check for Vimeo
-    if (url.includes("vimeo.com")) {
-        return "vimeo";
-    }
-    return "direct";
+    return `https://${trimmed}`;
 }
 
-// Helper function to extract YouTube video ID
-// Handles standard YouTube URLs and Cloudflare-proxied URLs
-function getYouTubeId(url: string): string | null {
-    // Try multiple patterns to extract YouTube video ID
-    // Pattern 1: Standard YouTube URLs (youtube.com/watch?v=VIDEO_ID)
-    let match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/)([^#&?\/\s]{11})/);
-    if (match && match[1]) {
-        return match[1];
+/**
+ * Extract Cloudflare Stream video ID and customer code from URL
+ * Supports formats like:
+ * - https://customer-CODE.cloudflarestream.com/VIDEO_UID/iframe
+ * - customer-CODE.cloudflarestream.com/VIDEO_UID/manifest/video.m3u8
+ * - https://watch.cloudflarestream.com/VIDEO_UID
+ * - Direct VIDEO_UID
+ */
+function extractCloudflareStreamId(url: string): { customerCode: string | null; videoId: string | null } {
+    // Normalize URL first
+    const normalizedUrl = normalizeUrl(url);
+    // Pattern 1: customer-CODE.cloudflarestream.com/VIDEO_UID/iframe
+    let match = normalizedUrl.match(/customer-([a-zA-Z0-9]+)\.cloudflarestream\.com\/([a-zA-Z0-9]+)\/iframe/);
+    if (match && match[1] && match[2]) {
+        return { customerCode: match[1], videoId: match[2] };
     }
 
-    // Pattern 2: Cloudflare or other proxy URLs that might have the video ID
-    match = url.match(/[?&]v=([^#&?\/\s]{11})/);
-    if (match && match[1]) {
-        return match[1];
+    // Pattern 2: customer-CODE.cloudflarestream.com/VIDEO_UID/manifest/video.m3u8
+    match = normalizedUrl.match(/customer-([a-zA-Z0-9]+)\.cloudflarestream\.com\/([a-zA-Z0-9]+)\/manifest\/video\.m3u8/);
+    if (match && match[1] && match[2]) {
+        return { customerCode: match[1], videoId: match[2] };
     }
 
-    // Pattern 3: Direct 11-character video ID in URL
-    match = url.match(/\/([a-zA-Z0-9_-]{11})(?:[?&#]|$)/);
-    if (match && match[1]) {
-        return match[1];
+    // Pattern 3: customer-CODE.cloudflarestream.com/VIDEO_UID (any path after)
+    match = normalizedUrl.match(/customer-([a-zA-Z0-9]+)\.cloudflarestream\.com\/([a-zA-Z0-9]+)/);
+    if (match && match[1] && match[2]) {
+        return { customerCode: match[1], videoId: match[2] };
     }
 
-    return null;
+    // Pattern 4: watch.cloudflarestream.com/VIDEO_UID
+    match = normalizedUrl.match(/watch\.cloudflarestream\.com\/([a-zA-Z0-9]+)/);
+    if (match && match[1]) {
+        return { customerCode: null, videoId: match[1] };
+    }
+
+    // Pattern 5: Direct video UID (alphanumeric, typically 16+ chars)
+    match = normalizedUrl.match(/\/([a-zA-Z0-9]{16,})/);
+    if (match && match[1]) {
+        return { customerCode: null, videoId: match[1] };
+    }
+
+    // Pattern 6: Just the video ID itself
+    if (/^[a-zA-Z0-9]{16,}$/.test(url.trim())) {
+        return { customerCode: null, videoId: url.trim() };
+    }
+
+    return { customerCode: null, videoId: null };
 }
 
-// Helper function to extract Vimeo video ID
-function getVimeoId(url: string): string | null {
-    const regExp = /(?:vimeo)\.com.*(?:videos|video|channels|)\/([\d]+)/i;
-    const match = url.match(regExp);
-    return match ? match[1] : null;
-}
-
-// Helper function to render embed URL
-function getEmbedUrl(url: string): string | null {
-    const type = getVideoType(url);
-    if (type === "youtube") {
-        const videoId = getYouTubeId(url);
-        if (videoId) {
-            return `https://www.youtube.com/embed/${videoId}`;
-        }
-    } else if (type === "vimeo") {
-        const videoId = getVimeoId(url);
-        if (videoId) {
-            return `https://player.vimeo.com/video/${videoId}`;
-        }
-    } else if (type === "direct") {
-        return url;
+/**
+ * Build Cloudflare Stream iframe embed URL
+ */
+function buildCloudflareEmbedUrl(
+    videoId: string,
+    customerCode: string | null = null,
+    primaryColor?: string
+): string {
+    // Default customer code if not provided (you may want to set this from env)
+    const code = customerCode || process.env.NEXT_PUBLIC_CLOUDFLARE_STREAM_CUSTOMER_CODE;
+    if (!code) {
+        console.error("Customer code is required for Cloudflare Stream embed URL");
+        return "";
     }
-    return null;
+    const baseUrl = `https://customer-${code}.cloudflarestream.com/${videoId}/iframe`;
+
+    const params = new URLSearchParams();
+    if (primaryColor) {
+        // URLSearchParams will automatically encode # as %23
+        params.append("primaryColor", primaryColor);
+    }
+
+    const queryString = params.toString();
+    return queryString ? `${baseUrl}?${queryString}` : baseUrl;
 }
 
 
@@ -119,14 +146,10 @@ export const VideoExtension = Node.create<VideoOptions>({
                 default: null,
                 parseHTML: (element) => {
                     const iframe = element.querySelector("iframe");
-                    const video = element.querySelector("video");
                     if (iframe) {
                         return iframe.getAttribute("src");
                     }
-                    if (video) {
-                        return video.getAttribute("src");
-                    }
-                    return element.getAttribute("data-src") || element.getAttribute("src");
+                    return element.getAttribute("data-src") || element.getAttribute("data-video-id");
                 },
                 renderHTML: (attributes) => {
                     if (!attributes.src) {
@@ -134,6 +157,48 @@ export const VideoExtension = Node.create<VideoOptions>({
                     }
                     return {
                         "data-src": attributes.src,
+                    };
+                },
+            },
+            videoId: {
+                default: null,
+                parseHTML: (element) => {
+                    return element.getAttribute("data-video-id");
+                },
+                renderHTML: (attributes) => {
+                    if (!attributes.videoId) {
+                        return {};
+                    }
+                    return {
+                        "data-video-id": attributes.videoId,
+                    };
+                },
+            },
+            customerCode: {
+                default: null,
+                parseHTML: (element) => {
+                    return element.getAttribute("data-customer-code");
+                },
+                renderHTML: (attributes) => {
+                    if (!attributes.customerCode) {
+                        return {};
+                    }
+                    return {
+                        "data-customer-code": attributes.customerCode,
+                    };
+                },
+            },
+            primaryColor: {
+                default: null,
+                parseHTML: (element) => {
+                    return element.getAttribute("data-primary-color");
+                },
+                renderHTML: (attributes) => {
+                    if (!attributes.primaryColor) {
+                        return {};
+                    }
+                    return {
+                        "data-primary-color": attributes.primaryColor,
                     };
                 },
             },
@@ -149,38 +214,28 @@ export const VideoExtension = Node.create<VideoOptions>({
                 },
             },
             width: {
-                default: null, // Use CSS for responsive sizing (70% of content area)
+                default: null,
                 parseHTML: (element) => {
                     const iframe = element.querySelector("iframe");
-                    const video = element.querySelector("video");
                     if (iframe) {
                         return iframe.getAttribute("width");
-                    }
-                    if (video) {
-                        return video.getAttribute("width");
                     }
                     return element.getAttribute("data-width");
                 },
                 renderHTML: (attributes) => {
-                    // Don't set fixed width - use CSS for responsive sizing
                     return {};
                 },
             },
             height: {
-                default: null, // Height will be auto-calculated to maintain aspect ratio
+                default: null,
                 parseHTML: (element) => {
                     const iframe = element.querySelector("iframe");
-                    const video = element.querySelector("video");
                     if (iframe) {
                         return iframe.getAttribute("height");
-                    }
-                    if (video) {
-                        return video.getAttribute("height");
                     }
                     return element.getAttribute("data-height");
                 },
                 renderHTML: (attributes) => {
-                    // Don't set fixed height - use CSS for responsive sizing
                     return {};
                 },
             },
@@ -193,38 +248,20 @@ export const VideoExtension = Node.create<VideoOptions>({
                 tag: 'div[data-type="video"]',
             },
             {
-                tag: "iframe[src*='youtube.com']",
+                tag: "iframe[src*='cloudflarestream.com']",
                 getAttrs: (element) => {
                     if (typeof element === "string") return false;
                     const iframe = element as HTMLIFrameElement;
+                    const src = iframe.src;
+                    const { videoId } = extractCloudflareStreamId(src);
+                    const primaryColorMatch = src.match(/primaryColor=%23([a-fA-F0-9]{6})/);
+                    const primaryColor = primaryColorMatch ? `#${primaryColorMatch[1]}` : null;
                     return {
-                        src: iframe.src,
+                        src: src,
+                        videoId: videoId,
+                        primaryColor: primaryColor,
                         width: iframe.width,
                         height: iframe.height,
-                    };
-                },
-            },
-            {
-                tag: "iframe[src*='vimeo.com']",
-                getAttrs: (element) => {
-                    if (typeof element === "string") return false;
-                    const iframe = element as HTMLIFrameElement;
-                    return {
-                        src: iframe.src,
-                        width: iframe.width,
-                        height: iframe.height,
-                    };
-                },
-            },
-            {
-                tag: "video",
-                getAttrs: (element) => {
-                    if (typeof element === "string") return false;
-                    const video = element as HTMLVideoElement;
-                    return {
-                        src: video.src,
-                        width: video.width,
-                        height: video.height,
                     };
                 },
             },
@@ -232,20 +269,39 @@ export const VideoExtension = Node.create<VideoOptions>({
     },
 
     renderHTML({ HTMLAttributes, node }) {
-        const { src, align, width, height } = node.attrs;
-        const embedUrl = getEmbedUrl(src || HTMLAttributes.src);
+        const { src, videoId, customerCode, primaryColor, align } = node.attrs;
+        const sourceUrl = src || HTMLAttributes.src;
 
-        if (!embedUrl) {
-            return ["div", { class: "video-error" }, "Invalid video URL"];
+        // Extract video ID and customer code from URL if not already stored
+        let finalVideoId = videoId;
+        let finalCustomerCode = customerCode;
+        if ((!finalVideoId || !finalCustomerCode) && sourceUrl) {
+            const extracted = extractCloudflareStreamId(sourceUrl);
+            if (extracted.videoId) finalVideoId = extracted.videoId;
+            if (extracted.customerCode) finalCustomerCode = extracted.customerCode;
         }
 
-        const videoType = getVideoType(src || HTMLAttributes.src);
+        if (!finalVideoId) {
+            return ["div", { class: "video-error" }, "Invalid Cloudflare Stream video URL"];
+        }
+
+        if (!finalCustomerCode) {
+            return ["div", { class: "video-error" }, "Customer code not found. Please use format: customer-CODE.cloudflarestream.com/VIDEO_ID"];
+        }
+
+        const embedUrl = buildCloudflareEmbedUrl(finalVideoId, finalCustomerCode, primaryColor);
+        if (!embedUrl) {
+            return ["div", { class: "video-error" }, "Failed to build embed URL"];
+        }
         const alignmentStyle = `text-align: ${align || "center"};`;
 
         const wrapperAttrs = {
             class: "video-wrapper",
             "data-type": "video",
+            "data-video-id": finalVideoId,
+            "data-customer-code": finalCustomerCode || "",
             "data-align": align || "center",
+            "data-primary-color": primaryColor || "",
             style: alignmentStyle,
         };
 
@@ -253,54 +309,52 @@ export const VideoExtension = Node.create<VideoOptions>({
             class: "video-inner",
         };
 
-        if (videoType === "youtube" || videoType === "vimeo") {
-            return [
+        return [
+            "div",
+            wrapperAttrs,
+            [
                 "div",
-                wrapperAttrs,
+                innerAttrs,
                 [
-                    "div",
-                    innerAttrs,
-                    [
-                        "iframe",
-                        {
-                            src: embedUrl,
-                            frameborder: "0",
-                            allow:
-                                "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture",
-                            allowfullscreen: "true",
-                            style: "width: 100%; height: auto; aspect-ratio: 16 / 9;",
-                        },
-                    ],
+                    "iframe",
+                    {
+                        src: embedUrl,
+                        frameborder: "0",
+                        allow:
+                            "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture",
+                        allowfullscreen: "true",
+                        style: "width: 100%; height: auto; aspect-ratio: 16 / 9;",
+                    },
                 ],
-            ];
-        } else {
-            return [
-                "div",
-                wrapperAttrs,
-                [
-                    "div",
-                    innerAttrs,
-                    [
-                        "video",
-                        {
-                            src: embedUrl,
-                            controls: "true",
-                            style: "width: 100%; height: auto; aspect-ratio: 16 / 9;",
-                        },
-                    ],
-                ],
-            ];
-        }
+            ],
+        ];
     },
 
     addNodeView() {
         return ({ node, HTMLAttributes, getPos, editor }) => {
-            const { src, align, width, height } = node.attrs;
-            const embedUrl = getEmbedUrl(src);
+            const { src, videoId, customerCode, primaryColor, align } = node.attrs;
+
+            // Extract video ID and customer code from URL if not already stored
+            let finalVideoId = videoId;
+            let finalCustomerCode = customerCode;
+            if ((!finalVideoId || !finalCustomerCode) && src) {
+                const extracted = extractCloudflareStreamId(src);
+                if (extracted.videoId) finalVideoId = extracted.videoId;
+                if (extracted.customerCode) finalCustomerCode = extracted.customerCode;
+            }
 
             const wrapper = document.createElement("div");
             wrapper.setAttribute("data-type", "video");
             wrapper.setAttribute("data-align", align || "center");
+            if (finalVideoId) {
+                wrapper.setAttribute("data-video-id", finalVideoId);
+            }
+            if (finalCustomerCode) {
+                wrapper.setAttribute("data-customer-code", finalCustomerCode);
+            }
+            if (primaryColor) {
+                wrapper.setAttribute("data-primary-color", primaryColor);
+            }
             wrapper.style.textAlign = align || "center";
             wrapper.style.width = "100%";
             wrapper.className = "video-wrapper";
@@ -321,69 +375,48 @@ export const VideoExtension = Node.create<VideoOptions>({
                 }
             };
 
-            // Make wrapper clickable but don't prevent iframe clicks from being handled by overlay
             wrapper.addEventListener("click", (e) => {
-                // Only handle if click is directly on wrapper, not on children
                 if (e.target === wrapper) {
                     handleClick(e);
                 }
             });
 
-            if (!embedUrl) {
+            if (!finalVideoId) {
                 const errorDiv = document.createElement("div");
                 errorDiv.style.padding = "20px";
                 errorDiv.style.border = "2px dashed #ccc";
                 errorDiv.style.textAlign = "center";
                 errorDiv.style.color = "#666";
-                errorDiv.textContent = "Invalid video URL";
+                errorDiv.textContent = "Invalid Cloudflare Stream video URL";
                 wrapper.appendChild(errorDiv);
                 return {
                     dom: wrapper,
                 };
             }
 
-            const videoType = getVideoType(src);
+            const embedUrl = buildCloudflareEmbedUrl(finalVideoId, finalCustomerCode, primaryColor);
             const innerDiv = document.createElement("div");
             innerDiv.className = "video-inner";
             innerDiv.style.display = "inline-block";
             innerDiv.style.position = "relative";
             innerDiv.style.lineHeight = "0";
 
-            if (videoType === "youtube" || videoType === "vimeo") {
-                const iframe = document.createElement("iframe");
-                // Use a placeholder image URL for YouTube/Vimeo in edit mode to prevent playback
-                // We'll use the embed URL with autoplay=0 and controls=0, but also add pointer-events: none
-                iframe.src = embedUrl + (embedUrl.includes("?") ? "&" : "?") + "autoplay=0&controls=0";
-                iframe.frameBorder = "0";
-                iframe.setAttribute(
-                    "allow",
-                    "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                );
-                iframe.allowFullscreen = true;
-                // Use responsive sizing - CSS will handle 70% width
-                iframe.style.width = "100%";
-                iframe.style.height = "auto";
-                iframe.style.aspectRatio = "16 / 9";
-                // Disable pointer events so clicks go through to the wrapper
-                iframe.style.pointerEvents = "none";
-                iframe.style.userSelect = "none";
-                innerDiv.appendChild(iframe);
-            } else {
-                const video = document.createElement("video");
-                video.src = embedUrl;
-                video.controls = true;
-                // Use responsive sizing - CSS will handle 70% width
-                video.style.width = "100%";
-                video.style.height = "auto";
-                video.style.aspectRatio = "16 / 9";
-                video.textContent = "Your browser does not support the video tag.";
-                // Disable pointer events for direct video as well
-                video.style.pointerEvents = "none";
-                video.style.userSelect = "none";
-                innerDiv.appendChild(video);
-            }
+            const iframe = document.createElement("iframe");
+            iframe.src = embedUrl;
+            iframe.frameBorder = "0";
+            iframe.setAttribute(
+                "allow",
+                "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            );
+            iframe.allowFullscreen = true;
+            iframe.style.width = "100%";
+            iframe.style.height = "auto";
+            iframe.style.aspectRatio = "16 / 9";
+            // Disable pointer events so clicks go through to the wrapper
+            iframe.style.pointerEvents = "none";
+            iframe.style.userSelect = "none";
+            innerDiv.appendChild(iframe);
 
-            // Clicking anywhere on the video container should select the node + show BubbleMenu
             innerDiv.addEventListener("click", handleClick);
             wrapper.appendChild(innerDiv);
 
@@ -401,13 +434,27 @@ export const VideoExtension = Node.create<VideoOptions>({
                     align?: "left" | "center" | "right";
                     width?: number;
                     height?: number;
+                    primaryColor?: string;
                 }) =>
                     ({ commands }) => {
+                        const { videoId, customerCode } = extractCloudflareStreamId(options.src);
+                        if (!videoId) {
+                            console.error("Invalid Cloudflare Stream URL - video ID not found:", options.src);
+                            return false;
+                        }
+                        if (!customerCode) {
+                            console.error("Customer code not found in URL. Please use format: customer-CODE.cloudflarestream.com/VIDEO_ID/...");
+                            console.error("Original URL:", options.src);
+                            return false;
+                        }
                         return commands.insertContent({
                             type: this.name,
                             attrs: {
                                 src: options.src,
+                                videoId: videoId,
+                                customerCode: customerCode,
                                 align: options.align || "center",
+                                primaryColor: options.primaryColor,
                                 width: options.width,
                                 height: options.height,
                             },
@@ -422,6 +469,23 @@ export const VideoExtension = Node.create<VideoOptions>({
                             tr.setNodeMarkup(pos, undefined, {
                                 ...selection.node.attrs,
                                 align,
+                            });
+                            if (dispatch) {
+                                dispatch(tr);
+                            }
+                            return true;
+                        }
+                        return false;
+                    },
+            setVideoTheme:
+                (primaryColor: string) =>
+                    ({ tr, state, dispatch }) => {
+                        const { selection } = state;
+                        if (selection instanceof NodeSelection && selection.node.type === this.type) {
+                            const pos = selection.$anchor.pos;
+                            tr.setNodeMarkup(pos, undefined, {
+                                ...selection.node.attrs,
+                                primaryColor,
                             });
                             if (dispatch) {
                                 dispatch(tr);

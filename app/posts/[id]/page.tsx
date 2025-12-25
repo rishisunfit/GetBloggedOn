@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useState, useEffect, useMemo } from "react";
+import { useParams, useSearchParams } from "next/navigation";
 import { Calendar } from "lucide-react";
 import { ReactionBar } from "@/components/viewer/ReactionBar";
 import { CTAForm } from "@/components/viewer/CTAForm";
 import { QuizRenderer } from "@/components/viewer/QuizRenderer";
+import { VideoTimestamps } from "@/components/viewer/VideoTimestamps";
+import { VideoJsPlayer, extractCloudflareVideoIdFromUrl } from "@/components/viewer/VideoJsPlayer";
 import { postsApi, PostStyles } from "@/services/posts";
 import { normalizeTemplateData, splitTemplateFromHtml, type PostTemplateData } from "@/services/postTemplate";
 
@@ -51,6 +53,7 @@ const defaultStyles: PostStyles = {
 
 export default function PublicPostPage() {
     const params = useParams();
+    const searchParams = useSearchParams();
     const id = params.id as string;
     const [post, setPost] = useState<Post | null>(null);
     const [template, setTemplate] = useState<PostTemplateData | null>(null);
@@ -75,6 +78,46 @@ export default function PublicPostPage() {
             document.title = "Blogish";
         }
     }, [post]);
+
+    const extractedVideo = useMemo(() => {
+        if (typeof window === "undefined" || !bodyHtml) {
+            return { src: null, id: null, primaryColor: null };
+        }
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(bodyHtml, "text/html");
+        const iframe = doc.querySelector<HTMLIFrameElement>(
+            'iframe[src*="cloudflarestream.com"], iframe[src*="videodelivery.net"]'
+        );
+        const src = iframe?.getAttribute("src") || null;
+        const normalizedSrc = src ? (src.startsWith("http") ? src : `https://${src.replace(/^\/\//, "")}`) : null;
+        const { videoId } = normalizedSrc ? extractCloudflareVideoIdFromUrl(normalizedSrc) : { videoId: null };
+
+        // Extract primaryColor from URL
+        let primaryColor: string | null = null;
+        if (normalizedSrc) {
+            try {
+                const urlObj = new URL(normalizedSrc);
+                const pc = urlObj.searchParams.get("primaryColor");
+                if (pc) {
+                    primaryColor = pc.startsWith("#") ? pc : `#${pc.replace(/^%23/, "")}`;
+                } else {
+                    // Try regex fallback
+                    const match = normalizedSrc.match(/primaryColor=%23([a-fA-F0-9]{6})/);
+                    if (match) {
+                        primaryColor = `#${match[1]}`;
+                    }
+                }
+            } catch {
+                // Invalid URL, try regex
+                const match = normalizedSrc.match(/primaryColor=%23([a-fA-F0-9]{6})/);
+                if (match) {
+                    primaryColor = `#${match[1]}`;
+                }
+            }
+        }
+
+        return { src: normalizedSrc, id: videoId, primaryColor };
+    }, [bodyHtml]);
 
     const loadPost = async () => {
         if (!id) return;
@@ -162,6 +205,7 @@ export default function PublicPostPage() {
     const bodyFont = fontOptions.find(f => f.name === styles.bodyFont)?.value || styles.bodyFont;
 
     const safeTemplate = normalizeTemplateData(template, post.created_at);
+    const enableVideoJs = searchParams?.get("player") === "videojs";
 
     return (
         <div
@@ -262,6 +306,22 @@ export default function PublicPostPage() {
                                     fontWeight: styles.bodyWeight,
                                 }}
                             />
+                            {bodyHtml && <VideoTimestamps postId={post.id} key={bodyHtml} />}
+                            {enableVideoJs && extractedVideo.src && extractedVideo.id ? (
+                                <VideoJsPlayer
+                                    key={`videojs-${post.id}-${extractedVideo.id}`}
+                                    postId={post.id}
+                                    videoUrl={extractedVideo.src}
+                                    videoId={extractedVideo.id}
+                                    primaryColor={extractedVideo.primaryColor}
+                                />
+                            ) : enableVideoJs ? (
+                                <div className="mt-12 p-4 bg-yellow-50 border border-yellow-200 rounded">
+                                    <p className="text-sm text-yellow-800">
+                                        Video.js enabled but no video found. Debug: src={extractedVideo.src ? "exists" : "null"}, id={extractedVideo.id ? "exists" : "null"}
+                                    </p>
+                                </div>
+                            ) : null}
                             <QuizRenderer />
                         </>
                     ) : (

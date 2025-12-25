@@ -39,6 +39,8 @@ import { ImageHistoryModal } from "./ImageHistoryModal";
 import { AIImageGeneratorModal } from "./AIImageGeneratorModal";
 import { ImageAttributionModal, type ImageAttributionValues } from "./ImageAttributionModal";
 import { VideoModal } from "./VideoModal";
+import { VideoTimestampModal } from "./VideoTimestampModal";
+import { NodeSelection } from "prosemirror-state";
 import { uploadImageToStorage, uploadDataURLToStorage } from "@/lib/storage";
 import { useAuth } from "@/hooks/useAuth";
 import { mediaApi } from "@/services/media";
@@ -106,6 +108,14 @@ export function Editor({
   const [showAIGenerator, setShowAIGenerator] = useState(false);
   const [showWebImageModal, setShowWebImageModal] = useState(false);
   const [showVideoModal, setShowVideoModal] = useState(false);
+  const [showVideoTimestampModal, setShowVideoTimestampModal] = useState(false);
+  const [selectedVideoId, setSelectedVideoId] = useState<string>("");
+  const [selectedVideo, setSelectedVideo] = useState<{
+    videoId: string;
+    customerCode: string | null;
+    primaryColor: string | null;
+    align: string;
+  } | null>(null);
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
   const [showBlockMenu, setShowBlockMenu] = useState(false);
@@ -402,10 +412,11 @@ export function Editor({
   };
 
   // Video handler
-  const handleInsertVideo = (url: string, align: "left" | "center" | "right" = "center") => {
+  const handleInsertVideo = (url: string, align: "left" | "center" | "right" = "center", primaryColor?: string) => {
     editor?.chain().focus().setVideo({
       src: url,
-      align: align || "center"
+      align: align || "center",
+      primaryColor: primaryColor,
     }).run();
   };
 
@@ -680,6 +691,146 @@ export function Editor({
       editor.off("update", handleUpdate);
     };
   }, [editor, templateData, styles]);
+
+  // Track video selection
+  useEffect(() => {
+    if (!editor) return;
+
+    const updateVideoSelection = () => {
+      const { selection } = editor.state;
+      if (selection instanceof NodeSelection && selection.node.type.name === "video") {
+        const node = selection.node;
+        const videoId = node.attrs.videoId || node.attrs.src;
+        let finalVideoId = videoId;
+        let finalCustomerCode = node.attrs.customerCode;
+
+        // Extract video ID from URL if needed
+        if (videoId && videoId.includes("cloudflarestream.com")) {
+          // Try iframe pattern
+          const match = videoId.match(/customer-([a-zA-Z0-9]+)\.cloudflarestream\.com\/([a-zA-Z0-9]+)\/iframe/);
+          if (match && match[2]) {
+            finalVideoId = match[2];
+            finalCustomerCode = match[1];
+          } else {
+            // Try manifest pattern
+            const match2 = videoId.match(/customer-([a-zA-Z0-9]+)\.cloudflarestream\.com\/([a-zA-Z0-9]+)\/manifest\/video\.m3u8/);
+            if (match2 && match2[2]) {
+              finalVideoId = match2[2];
+              finalCustomerCode = match2[1];
+            } else {
+              // Try general pattern
+              const match3 = videoId.match(/customer-([a-zA-Z0-9]+)\.cloudflarestream\.com\/([a-zA-Z0-9]+)/);
+              if (match3 && match3[2]) {
+                finalVideoId = match3[2];
+                finalCustomerCode = match3[1];
+              }
+            }
+          }
+        }
+
+        setSelectedVideo({
+          videoId: finalVideoId,
+          customerCode: finalCustomerCode,
+          primaryColor: node.attrs.primaryColor || null,
+          align: node.attrs.align || "center",
+        });
+      } else {
+        setSelectedVideo(null);
+      }
+    };
+
+    editor.on("selectionUpdate", updateVideoSelection);
+    editor.on("transaction", updateVideoSelection);
+    updateVideoSelection(); // Initial check
+
+    return () => {
+      editor.off("selectionUpdate", updateVideoSelection);
+      editor.off("transaction", updateVideoSelection);
+    };
+  }, [editor]);
+
+  // Handle video theme color change
+  const handleVideoThemeChange = useCallback((color: string) => {
+    if (!editor || !selectedVideo) return;
+
+    const { state } = editor;
+    const { selection } = state;
+
+    if (!(selection instanceof NodeSelection) || selection.node.type.name !== "video") {
+      return;
+    }
+
+    const videoPos = selection.from;
+    editor.commands.command(({ tr }) => {
+      const node = tr.doc.nodeAt(videoPos);
+      if (!node || node.type.name !== "video") return false;
+      tr.setNodeMarkup(videoPos, undefined, {
+        ...node.attrs,
+        primaryColor: color,
+      });
+      tr.setSelection(NodeSelection.create(tr.doc, videoPos));
+      return true;
+    });
+    editor.commands.focus();
+
+    // Update local state
+    setSelectedVideo({
+      ...selectedVideo,
+      primaryColor: color,
+    });
+  }, [editor, selectedVideo]);
+
+  // Handle video alignment change
+  const handleVideoAlignChange = useCallback((align: "left" | "center" | "right") => {
+    if (!editor || !selectedVideo) return;
+
+    const { state } = editor;
+    const { selection } = state;
+
+    if (!(selection instanceof NodeSelection) || selection.node.type.name !== "video") {
+      return;
+    }
+
+    const videoPos = selection.from;
+    editor.commands.command(({ tr }) => {
+      const node = tr.doc.nodeAt(videoPos);
+      if (!node || node.type.name !== "video") return false;
+      tr.setNodeMarkup(videoPos, undefined, {
+        ...node.attrs,
+        align,
+      });
+      tr.setSelection(NodeSelection.create(tr.doc, videoPos));
+      return true;
+    });
+    editor.commands.focus();
+
+    // Update local state
+    setSelectedVideo({
+      ...selectedVideo,
+      align,
+    });
+  }, [editor, selectedVideo]);
+
+  // Handle delete video
+  const handleDeleteVideo = useCallback(() => {
+    if (!editor || !selectedVideo) return;
+
+    const { state } = editor;
+    const { selection } = state;
+
+    if (!(selection instanceof NodeSelection) || selection.node.type.name !== "video") {
+      return;
+    }
+
+    const videoPos = selection.from;
+    editor.commands.command(({ tr }) => {
+      tr.setSelection(NodeSelection.create(tr.doc, videoPos));
+      tr.deleteSelection();
+      return true;
+    });
+    editor.commands.focus();
+    setSelectedVideo(null);
+  }, [editor, selectedVideo]);
 
   // Generate dynamic styles
   const editorStyles = {
@@ -1421,6 +1572,90 @@ export function Editor({
 
         {/* Controls Scroll Area */}
         <div className="flex-1 overflow-y-auto px-4 pb-4">
+          {/* Video Options - Show when video is selected */}
+          {selectedVideo && !showPreview && (
+            <div className="mb-6 pb-6 border-b border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                <SectionHeader title="Video Settings" />
+                <button
+                  onClick={handleDeleteVideo}
+                  className="text-red-600 hover:text-red-700 text-sm font-medium"
+                >
+                  Delete
+                </button>
+              </div>
+
+              {/* Video Alignment */}
+              <div className="mb-4">
+                <label className="block text-xs font-medium text-gray-500 mb-2">Alignment</label>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleVideoAlignChange("left")}
+                    className={`flex-1 px-3 py-2 rounded-lg border text-sm transition-colors ${selectedVideo.align === "left"
+                        ? "bg-black text-white border-black"
+                        : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                      }`}
+                  >
+                    Left
+                  </button>
+                  <button
+                    onClick={() => handleVideoAlignChange("center")}
+                    className={`flex-1 px-3 py-2 rounded-lg border text-sm transition-colors ${selectedVideo.align === "center"
+                        ? "bg-black text-white border-black"
+                        : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                      }`}
+                  >
+                    Center
+                  </button>
+                  <button
+                    onClick={() => handleVideoAlignChange("right")}
+                    className={`flex-1 px-3 py-2 rounded-lg border text-sm transition-colors ${selectedVideo.align === "right"
+                        ? "bg-black text-white border-black"
+                        : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                      }`}
+                  >
+                    Right
+                  </button>
+                </div>
+              </div>
+
+              {/* Video Theme Color */}
+              <div className="mb-4">
+                <label className="block text-xs font-medium text-gray-500 mb-2">Player Theme Color</label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="color"
+                    value={selectedVideo.primaryColor || "#F48120"}
+                    onChange={(e) => handleVideoThemeChange(e.target.value)}
+                    className="w-16 h-10 rounded border border-gray-300 cursor-pointer"
+                  />
+                  <input
+                    type="text"
+                    value={selectedVideo.primaryColor || "#F48120"}
+                    onChange={(e) => handleVideoThemeChange(e.target.value)}
+                    placeholder="#F48120"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black text-sm font-mono"
+                  />
+                </div>
+                <p className="mt-1 text-xs text-gray-500">
+                  Customize the seekbar and play button color
+                </p>
+              </div>
+
+              {/* Timestamps Button */}
+              <button
+                onClick={() => {
+                  setSelectedVideoId(selectedVideo.videoId);
+                  setShowVideoTimestampModal(true);
+                }}
+                className="w-full px-4 py-2 bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg transition-colors text-sm font-medium flex items-center justify-center gap-2"
+              >
+                <Clock size={16} />
+                Manage Timestamps
+              </button>
+            </div>
+          )}
+
           {/* Colors Section */}
           <div className="mb-6">
             <SectionHeader title="Colors" />
@@ -1670,6 +1905,17 @@ export function Editor({
         isOpen={showVideoModal}
         onClose={() => setShowVideoModal(false)}
         onInsert={handleInsertVideo}
+      />
+
+      {/* Video Timestamp Modal */}
+      <VideoTimestampModal
+        isOpen={showVideoTimestampModal}
+        onClose={() => {
+          setShowVideoTimestampModal(false);
+          setSelectedVideoId("");
+        }}
+        videoId={selectedVideoId}
+        postId={postId}
       />
 
       {/* Unsaved Changes Warning Modal */}
