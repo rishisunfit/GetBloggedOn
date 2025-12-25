@@ -86,7 +86,7 @@ export function CTAForm({ postId, quizId }: CTAFormProps) {
   };
 
   return (
-    <div className="bg-gray-50 rounded-2xl p-8 mt-12">
+    <div className="bg-gray-50 rounded-2xl p-8 mt-12" data-cta-id={`cta-form-${postId || 'default'}`}>
       <div className="flex items-start gap-4 mb-6">
         <div className="p-3 bg-black rounded-full">
           <MessageCircle className="text-white" size={24} />

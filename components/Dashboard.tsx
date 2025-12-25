@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, FileText, Calendar, Edit, Trash2, ClipboardList, Eye, ExternalLink, MessageSquare, Mail, Phone, Reply, Users, ChevronDown, ChevronUp, Search } from "lucide-react";
+import { Plus, FileText, Calendar, Edit, Trash2, ClipboardList, Eye, ExternalLink, MessageSquare, Mail, Phone, Reply, Users, ChevronDown, ChevronUp, Search, BarChart3 } from "lucide-react";
 import { formSubmissionsApi, type FormSubmission } from "@/services/formSubmissions";
 import { quizSubmissionsApi, type QuizSubmission } from "@/services/quizSubmissions";
 import { useAuth } from "@/hooks/useAuth";
@@ -34,6 +34,7 @@ interface DashboardProps {
   onEditPost: (postId: string) => void;
   onDeletePost: (postId: string) => void;
   onPreviewPost?: (postId: string) => void;
+  onViewAnalytics?: (postId: string) => void;
   onCreateQuiz?: () => void;
   onEditQuiz?: (quizId: string) => void;
   onDeleteQuiz?: (quizId: string) => void;
@@ -48,6 +49,7 @@ export function Dashboard({
   onEditPost,
   onDeletePost,
   onPreviewPost,
+  onViewAnalytics,
   onCreateQuiz = () => { },
   onEditQuiz = () => { },
   onDeleteQuiz = () => { },
@@ -560,13 +562,22 @@ export function Dashboard({
 
                       {/* Action Buttons */}
                       <div className="flex gap-2 flex-shrink-0">
-                        {onPreviewPost && (
+                        {/* {onPreviewPost && (
                           <button
                             onClick={() => onPreviewPost(post.id)}
                             className="p-2 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
                             title="Preview"
                           >
                             <Eye size={20} />
+                          </button>
+                        )} */}
+                        {onViewAnalytics && (
+                          <button
+                            onClick={() => onViewAnalytics(post.id)}
+                            className="p-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                            title="Analytics"
+                          >
+                            <BarChart3 size={20} />
                           </button>
                         )}
                         <button

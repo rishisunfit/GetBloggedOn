@@ -7,6 +7,7 @@ import { ReactionBar } from "@/components/viewer/ReactionBar";
 import { CTAForm } from "@/components/viewer/CTAForm";
 import { QuizRenderer } from "@/components/viewer/QuizRenderer";
 import { VideoJsPlayer, extractCloudflareVideoIdFromUrl } from "@/components/viewer/VideoJsPlayer";
+import { HeatmapTracker } from "@/components/viewer/HeatmapTracker";
 import { postsApi, PostStyles } from "@/services/posts";
 import { normalizeTemplateData, splitTemplateFromHtml, type PostTemplateData } from "@/services/postTemplate";
 
@@ -77,19 +78,24 @@ export default function PublicPostPage() {
         }
     }, [post]);
 
-    // Extract all videos from the content
-    const extractedVideos = useMemo(() => {
+    // Get styles from post or use defaults
+    const styles = post?.styles || defaultStyles;
+
+    // Process HTML to replace iframes with placeholders and extract video data
+    const { processedHtml, extractedVideos } = useMemo(() => {
         if (typeof window === "undefined" || !bodyHtml) {
-            return [];
+            return { processedHtml: bodyHtml, extractedVideos: [] };
         }
         const parser = new DOMParser();
         const doc = parser.parseFromString(bodyHtml, "text/html");
         const iframes = doc.querySelectorAll<HTMLIFrameElement>(
             'iframe[src*="cloudflarestream.com"], iframe[src*="videodelivery.net"]'
         );
+        const videoTags = doc.querySelectorAll<HTMLVideoElement>('video');
 
-        const videos: Array<{ src: string; id: string | null; primaryColor: string | null; index: number }> = [];
+        const videos: Array<{ src: string; id: string | null; primaryColor: string | null; index: number; placeholderId: string }> = [];
 
+        // Handle iframes
         iframes.forEach((iframe, index) => {
             const src = iframe.getAttribute("src");
             if (!src) return;
@@ -120,12 +126,59 @@ export default function PublicPostPage() {
             }
 
             if (videoId) {
-                videos.push({ src: normalizedSrc, id: videoId, primaryColor, index });
+                const postId = post?.id || id || 'unknown';
+                const placeholderId = `video-placeholder-${postId}-${videoId}-${index}`;
+                videos.push({ src: normalizedSrc, id: videoId, primaryColor, index, placeholderId });
+
+                // Replace iframe with placeholder div
+                const placeholder = doc.createElement("div");
+                placeholder.id = placeholderId;
+                placeholder.className = "video-js-placeholder";
+                placeholder.setAttribute("data-video-src", normalizedSrc);
+                placeholder.setAttribute("data-video-id", videoId);
+                if (primaryColor) {
+                    placeholder.setAttribute("data-primary-color", primaryColor);
+                }
+                iframe.parentNode?.replaceChild(placeholder, iframe);
             }
         });
 
-        return videos;
-    }, [bodyHtml]);
+        // Handle video tags
+        videoTags.forEach((videoTag, index) => {
+            const src = videoTag.getAttribute("src") || videoTag.querySelector('source')?.getAttribute('src');
+            if (!src) return;
+
+            const normalizedSrc = src.startsWith("http") ? src : `https://${src.replace(/^\/\//, "")}`;
+
+            // For local/direct videos, we might not have a Cloudflare ID, but we can still use VideoJsPlayer
+            const { videoId } = extractCloudflareVideoIdFromUrl(normalizedSrc);
+            const finalVideoId = videoId || `direct-${index}`;
+
+            const postId = post?.id || id || 'unknown';
+            const placeholderId = `video-placeholder-tag-${postId}-${finalVideoId}-${index}`;
+
+            videos.push({
+                src: normalizedSrc,
+                id: finalVideoId,
+                primaryColor: styles?.primaryColor || "#3B82F6",
+                index: iframes.length + index,
+                placeholderId
+            });
+
+            // Replace video tag with placeholder div
+            const placeholder = doc.createElement("div");
+            placeholder.id = placeholderId;
+            placeholder.className = "video-js-placeholder";
+            placeholder.setAttribute("data-video-src", normalizedSrc);
+
+            videoTag.parentNode?.replaceChild(placeholder, videoTag);
+        });
+
+        return {
+            processedHtml: doc.documentElement.outerHTML,
+            extractedVideos: videos,
+        };
+    }, [bodyHtml, post?.id, id, styles]);
 
     const loadPost = async () => {
         if (!id) return;
@@ -205,9 +258,6 @@ export default function PublicPostPage() {
         );
     }
 
-    // Get styles from post or use defaults (only when post exists)
-    const styles = post.styles || defaultStyles;
-
     // Get font values
     const headingFont = fontOptions.find(f => f.name === styles.headingFont)?.value || styles.headingFont;
     const bodyFont = fontOptions.find(f => f.name === styles.bodyFont)?.value || styles.bodyFont;
@@ -222,6 +272,9 @@ export default function PublicPostPage() {
                 color: styles.textColor,
             }}
         >
+            {/* Heatmap Tracker */}
+            <HeatmapTracker postId={post.id} />
+
             {/* Article */}
             <article
                 className="max-w-3xl mx-auto px-4 py-12"
@@ -308,24 +361,37 @@ export default function PublicPostPage() {
                                     .preview-content iframe[src*="videodelivery.net"] {
                                         display: none !important;
                                     }
+                                    /* Style video placeholders */
+                                    .preview-content .video-js-placeholder {
+                                        display: block;
+                                        width: 80%;
+                                        max-width: 760px;
+                                        aspect-ratio: 16 / 9;
+                                        background-color: #000;
+                                        border-radius: 0.5rem;
+                                        overflow: hidden;
+                                        position: relative;
+                                        margin: 1.5rem auto;
+                                    }
                                 `
                             }} />
                             <div
-                                dangerouslySetInnerHTML={{ __html: bodyHtml }}
+                                dangerouslySetInnerHTML={{ __html: processedHtml }}
                                 className="preview-content"
                                 style={{
                                     fontFamily: bodyFont,
                                     fontWeight: styles.bodyWeight,
                                 }}
                             />
-                            {/* Replace video iframes with Video.js players */}
+                            {/* Mount Video.js players in their placeholder positions */}
                             {extractedVideos.map((video) => (
                                 <VideoJsPlayer
-                                    key={`videojs-${post.id}-${video.id}-${video.index}`}
-                                    postId={post.id}
+                                    key={`videojs-${post?.id || id}-${video.id}-${video.index}`}
+                                    postId={post?.id || id}
                                     videoUrl={video.src}
                                     videoId={video.id}
                                     primaryColor={video.primaryColor}
+                                    placeholderId={video.placeholderId}
                                 />
                             ))}
                             <QuizRenderer />

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import videojs from "video.js";
 import type Player from "video.js/dist/types/player";
 import Hls from "hls.js";
@@ -16,6 +17,7 @@ type VideoJsPlayerProps = {
     videoId?: string | null;
     primaryColor?: string | null;
     className?: string;
+    placeholderId?: string;
 };
 
 export function extractCloudflareVideoIdFromUrl(url: string): { videoId: string | null; customerCode: string | null } {
@@ -87,7 +89,7 @@ function extractPrimaryColorFromUrl(url: string): string | null {
     return null;
 }
 
-export function VideoJsPlayer({ postId, videoUrl, videoId: providedVideoId, primaryColor: providedPrimaryColor, className }: VideoJsPlayerProps) {
+export function VideoJsPlayer({ postId, videoUrl, videoId: providedVideoId, primaryColor: providedPrimaryColor, className, placeholderId }: VideoJsPlayerProps) {
     const { videoId: extractedVideoId } = extractCloudflareVideoIdFromUrl(videoUrl);
     const resolvedVideoId = providedVideoId || extractedVideoId;
     const extractedPrimaryColor = providedPrimaryColor || extractPrimaryColorFromUrl(videoUrl) || "#3B82F6";
@@ -129,18 +131,21 @@ export function VideoJsPlayer({ postId, videoUrl, videoId: providedVideoId, prim
 
         const video = videoRef.current;
         const hlsManifestUrl = convertToHlsManifestUrl(videoUrl);
-        console.log("Initializing player with HLS URL:", hlsManifestUrl);
+        const isHls = !!hlsManifestUrl;
+        const finalUrl = hlsManifestUrl || videoUrl;
 
-        if (!hlsManifestUrl) {
-            console.error("Could not convert URL to HLS manifest");
-            return;
-        }
+        console.log("Initializing player with URL:", finalUrl, "isHls:", isHls);
 
+        // IMPORTANT:
+        // The post renderer already constrains the video container to 16:9 via `.video-wrapper` in `app/globals.css`.
+        // Using Video.js "fluid" mode (which creates its own aspect-ratio box) causes nested aspect-ratio containers
+        // and can clip the control bar (especially after fullscreen exit). So we disable `fluid` and let the parent
+        // container define sizing.
         const player = videojs(video, {
             autoplay: false,
             controls: true,
             preload: "metadata",
-            fluid: true,
+            fluid: false,
             html5: {
                 vhs: {
                     overrideNative: true,
@@ -192,14 +197,14 @@ export function VideoJsPlayer({ postId, videoUrl, videoId: providedVideoId, prim
             });
         }
 
-        if (Hls.isSupported()) {
+        if (isHls && Hls.isSupported()) {
             const hls = new Hls({
                 enableWorker: true,
                 lowLatencyMode: false,
             });
             hlsRef.current = hls;
 
-            hls.loadSource(hlsManifestUrl);
+            hls.loadSource(finalUrl);
             hls.attachMedia(video);
 
             hls.on(Hls.Events.MANIFEST_PARSED, () => {
@@ -224,8 +229,11 @@ export function VideoJsPlayer({ postId, videoUrl, videoId: providedVideoId, prim
                     }
                 }
             });
-        } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-            video.src = hlsManifestUrl;
+        } else if (isHls && video.canPlayType("application/vnd.apple.mpegurl")) {
+            video.src = finalUrl;
+        } else if (!isHls) {
+            // Direct video (e.g. MP4)
+            player.src({ src: finalUrl, type: videoUrl.includes(".mp4") ? "video/mp4" : "video/webm" });
         } else {
             console.error("HLS is not supported in this browser");
         }
@@ -233,6 +241,14 @@ export function VideoJsPlayer({ postId, videoUrl, videoId: providedVideoId, prim
         player.on("error", () => {
             const error = player.error();
             console.error("Video.js player error:", error);
+        });
+
+        // Force a resize check when entering/exiting fullscreen
+        player.on("fullscreenchange", () => {
+            console.log("Fullscreen changed, triggering resize");
+            setTimeout(() => {
+                player.trigger("resize");
+            }, 100);
         });
 
         return () => {
@@ -374,20 +390,53 @@ export function VideoJsPlayer({ postId, videoUrl, videoId: providedVideoId, prim
         };
     }, [timestamps, extractedPrimaryColor]);
 
+    const [placeholderElement, setPlaceholderElement] = useState<HTMLElement | null>(null);
+
+    // Find placeholder element when it's available in the DOM
+    useEffect(() => {
+        if (placeholderId) {
+            const findPlaceholder = () => {
+                const placeholder = document.getElementById(placeholderId);
+                if (placeholder) {
+                    setPlaceholderElement(placeholder);
+                } else {
+                    // Retry after a short delay if not found
+                    setTimeout(findPlaceholder, 100);
+                }
+            };
+            findPlaceholder();
+        }
+    }, [placeholderId]);
+
     if (!videoUrl || !resolvedVideoId) {
         return null;
     }
 
-    return (
+    // If placeholderId is provided, render into placeholder using portal
+    const containerClassName = placeholderId
+        ? `rounded-xl border border-gray-200 overflow-hidden bg-black ${className ?? ""}`
+        : `mt-12 rounded-xl border border-gray-200 overflow-hidden bg-black ${className ?? ""}`;
+
+    const playerContent = (
         <div
             id={playerId}
             ref={containerRef}
-            className={`mt-12 rounded-xl border border-gray-200 overflow-hidden bg-black ${className ?? ""}`}
+            className={containerClassName}
             style={{
                 "--vjs-primary-color": extractedPrimaryColor,
+                maxWidth: "100%",
+                margin: "0 auto",
+                ...(placeholderId
+                    ? ({
+                        position: "absolute",
+                        inset: 0,
+                        width: "100%",
+                        height: "100%",
+                    } as React.CSSProperties)
+                    : ({} as React.CSSProperties)),
             } as React.CSSProperties}
         >
-            <div data-vjs-player>
+            <div data-vjs-player style={{ width: "100%", height: "100%", position: "relative" }}>
                 <video
                     ref={(el) => {
                         videoRef.current = el;
@@ -401,6 +450,60 @@ export function VideoJsPlayer({ postId, videoUrl, videoId: providedVideoId, prim
                 />
             </div>
             <style jsx global>{`
+                #${playerId} {
+                    width: 100% !important;
+                    margin: 0 auto !important;
+                }
+                #${playerId} .video-js {
+                    width: 100% !important;
+                    height: 100% !important;
+                    margin: 0 auto !important;
+                    position: relative !important;
+                }
+                #${playerId} .video-js,
+                #${playerId} .video-js .vjs-tech,
+                #${playerId} .video-js .vjs-poster {
+                    width: 100% !important;
+                    height: 100% !important;
+                }
+                #${playerId} .video-js .vjs-tech {
+                    object-fit: contain !important;
+                }
+                #${playerId} .video-js .vjs-poster {
+                    background-size: contain !important;
+                }
+                #${playerId} .video-js .vjs-control-bar {
+                    z-index: 10 !important;
+                    display: flex !important;
+                    opacity: 1 !important;
+                    visibility: visible !important;
+                    bottom: 0 !important;
+                    left: 0 !important;
+                    right: 0 !important;
+                    height: 48px !important;
+                    background-color: rgba(0, 0, 0, 0.8) !important;
+                    transform: none !important;
+                    transition: none !important;
+                    position: absolute !important;
+                }
+                
+                #${playerId} .video-js .vjs-control-bar.vjs-hidden {
+                    display: flex !important;
+                }
+                
+                /* Ensure controls are visible even when user is "inactive" or transitioning */
+                #${playerId} .video-js.vjs-user-inactive .vjs-control-bar,
+                #${playerId} .video-js.vjs-fullscreen .vjs-control-bar {
+                    display: flex !important;
+                    opacity: 1 !important;
+                    visibility: visible !important;
+                }
+                #${playerId} .video-js video {
+                    object-fit: contain !important;
+                    top: 0 !important;
+                    height: 100% !important;
+                    width: 100% !important;
+                }
                 #${playerId} .video-js .vjs-play-progress,
                 #${playerId} .video-js .vjs-load-progress {
                     background-color: ${extractedPrimaryColor} !important;
@@ -469,6 +572,14 @@ export function VideoJsPlayer({ postId, videoUrl, videoId: providedVideoId, prim
             `}</style>
         </div>
     );
+
+    // If placeholder is provided, render into it using portal
+    if (placeholderId && placeholderElement) {
+        return createPortal(playerContent, placeholderElement);
+    }
+
+    // Otherwise render normally
+    return playerContent;
 }
 
 // Manual marker creation function
