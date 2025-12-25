@@ -15,8 +15,8 @@ import { TextStyle } from "@tiptap/extension-text-style";
 import CodeBlock from "@tiptap/extension-code-block";
 import Subscript from "@tiptap/extension-subscript";
 import Superscript from "@tiptap/extension-superscript";
-import { 
-  LayoutGrid, Edit3, FileText, Users, BarChart2, CreditCard, 
+import {
+  LayoutGrid, Edit3, FileText, Users, BarChart2, CreditCard,
   Search, Maximize2, ChevronDown, Monitor, Smartphone, ArrowUpRight,
   Calendar, Type, Image as ImageIcon, Code, Bold, Italic, Underline as UnderlineIcon,
   AlignLeft, AlignCenter, AlignRight, Heading1, Heading2, Heading3,
@@ -156,7 +156,7 @@ const EditorUI = () => {
   // Insert block at cursor position
   const insertBlock = useCallback((type: string) => {
     if (!editor) return;
-    
+
     switch (type) {
       case 'title':
         editor.chain().focus().toggleHeading({ level: 1 }).run();
@@ -202,8 +202,8 @@ const EditorUI = () => {
         // Insert a stylish reading time badge using mark with background
         editor.chain().focus()
           .insertContent('<p style="text-align: center;">')
-          .insertContent({ 
-            type: 'text', 
+          .insertContent({
+            type: 'text',
             text: '3 minute read',
             marks: [{ type: 'highlight', attrs: { color: '#dbeafe' } }]
           })
@@ -213,8 +213,8 @@ const EditorUI = () => {
       case 'badge':
         // Insert a badge with highlight
         editor.chain().focus()
-          .insertContent({ 
-            type: 'text', 
+          .insertContent({
+            type: 'text',
             text: 'BADGE',
             marks: [{ type: 'highlight', attrs: { color: '#c7d2fe' } }]
           })
@@ -223,8 +223,8 @@ const EditorUI = () => {
       case 'badge-outline':
         // Insert an outline-style badge (just bold + colored text)
         editor.chain().focus()
-          .insertContent({ 
-            type: 'text', 
+          .insertContent({
+            type: 'text',
             text: 'LABEL',
             marks: [
               { type: 'bold' },
@@ -287,7 +287,7 @@ const EditorUI = () => {
     setIsSaving(true);
     try {
       const content = editor?.getHTML() || "";
-      
+
       if (currentArticleId) {
         // Update existing article
         await postsApi.update(currentArticleId, {
@@ -305,7 +305,7 @@ const EditorUI = () => {
         });
         setCurrentArticleId(newArticle.id);
       }
-      
+
       await loadArticles(); // Refresh the list
       alert("Article saved successfully!");
     } catch (error: unknown) {
@@ -323,7 +323,7 @@ const EditorUI = () => {
     setIsSaving(true);
     try {
       const content = editor?.getHTML() || "";
-      
+
       // Always create new article
       const newArticle = await postsApi.create({
         title: templateName,
@@ -332,7 +332,7 @@ const EditorUI = () => {
         styles: styles as PostStyles,
       });
       setCurrentArticleId(newArticle.id);
-      
+
       await loadArticles(); // Refresh the list
       alert("New article created successfully!");
     } catch (error: unknown) {
@@ -359,11 +359,11 @@ const EditorUI = () => {
   // Delete an article
   const handleDeleteArticle = async (articleId: string) => {
     if (!confirm("Are you sure you want to delete this article?")) return;
-    
+
     try {
       await postsApi.delete(articleId);
       await loadArticles();
-      
+
       // If we deleted the current article, reset to new
       if (currentArticleId === articleId) {
         setCurrentArticleId(null);
@@ -424,7 +424,7 @@ const EditorUI = () => {
   ${content}
 </body>
 </html>`;
-    
+
     const blob = new Blob([fullHTML], { type: "text/html" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -458,17 +458,17 @@ const EditorUI = () => {
 
   return (
     <div className="flex h-screen w-full bg-[#F3F4F6] text-slate-800 font-sans overflow-hidden">
-      
+
       {/* LEFT SIDEBAR: Navigation */}
       <div className="w-16 bg-white border-r border-gray-200 flex flex-col items-center py-6 gap-6 shrink-0 z-20">
         <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold mb-2">
           B
         </div>
-        <NavItem 
-          icon={<LayoutGrid size={20} />} 
-          tooltip="My Articles" 
+        <NavItem
+          icon={<LayoutGrid size={20} />}
+          tooltip="My Articles"
           active={showArticlesPanel}
-          onClick={() => setShowArticlesPanel(!showArticlesPanel)} 
+          onClick={() => setShowArticlesPanel(!showArticlesPanel)}
         />
         <NavItem icon={<Edit3 size={20} />} active={!showArticlesPanel} tooltip="Editor" onClick={() => setShowArticlesPanel(false)} />
         <NavItem icon={<FileText size={20} />} tooltip="Templates" />
@@ -483,7 +483,7 @@ const EditorUI = () => {
           <div className="p-4 border-b border-gray-200">
             <div className="flex justify-between items-center mb-4">
               <h2 className="font-bold text-lg">My Articles</h2>
-              <button 
+              <button
                 onClick={() => setShowArticlesPanel(false)}
                 className="p-1 hover:bg-gray-100 rounded"
               >
@@ -498,7 +498,7 @@ const EditorUI = () => {
               New Article
             </button>
           </div>
-          
+
           <div className="flex-1 overflow-y-auto p-4">
             {savedArticles.length === 0 ? (
               <div className="text-center py-8">
@@ -511,22 +511,20 @@ const EditorUI = () => {
                 {savedArticles.map((article) => (
                   <div
                     key={article.id}
-                    className={`p-3 rounded-lg border transition-all cursor-pointer ${
-                      currentArticleId === article.id
+                    className={`p-3 rounded-lg border transition-all cursor-pointer ${currentArticleId === article.id
                         ? 'border-indigo-300 bg-indigo-50'
                         : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                    }`}
+                      }`}
                     onClick={() => handleLoadArticle(article)}
                   >
                     <div className="flex justify-between items-start">
                       <div className="flex-1 min-w-0">
                         <h3 className="font-medium text-sm truncate">{article.title}</h3>
                         <div className="flex items-center gap-2 mt-1">
-                          <span className={`text-xs px-1.5 py-0.5 rounded ${
-                            article.status === 'published' 
-                              ? 'bg-green-100 text-green-700' 
+                          <span className={`text-xs px-1.5 py-0.5 rounded ${article.status === 'published'
+                              ? 'bg-green-100 text-green-700'
                               : 'bg-yellow-100 text-yellow-700'
-                          }`}>
+                            }`}>
                             {article.status}
                           </span>
                           <span className="text-xs text-gray-500">
@@ -549,10 +547,10 @@ const EditorUI = () => {
                       </button>
                     </div>
                     {/* Preview snippet */}
-                    <div 
+                    <div
                       className="mt-2 text-xs text-gray-400 line-clamp-2"
-                      dangerouslySetInnerHTML={{ 
-                        __html: article.content.replace(/<[^>]*>/g, ' ').substring(0, 100) + '...' 
+                      dangerouslySetInnerHTML={{
+                        __html: article.content.replace(/<[^>]*>/g, ' ').substring(0, 100) + '...'
                       }}
                     />
                   </div>
@@ -565,7 +563,7 @@ const EditorUI = () => {
 
       {/* CENTER AREA: The Editor */}
       <div className="flex-1 flex flex-col min-w-0 relative">
-        
+
         {/* Top Header */}
         <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shrink-0">
           <div className="flex items-center gap-4">
@@ -586,66 +584,66 @@ const EditorUI = () => {
               <Edit3 size={12} className="text-gray-400" />
             </div>
           </div>
-          
+
           <div className="flex items-center gap-3">
             {/* Device Toggle */}
             <div className="flex bg-gray-100 rounded-md p-0.5 mr-4">
-              <button 
+              <button
                 onClick={() => setViewMode('desktop')}
                 className={`flex items-center gap-2 px-3 py-1 rounded text-xs font-medium transition-all ${viewMode === 'desktop' ? 'bg-white shadow-sm' : 'text-gray-500'}`}
               >
-                <Monitor size={12}/> Desktop
+                <Monitor size={12} /> Desktop
               </button>
-              <button 
+              <button
                 onClick={() => setViewMode('mobile')}
                 className={`flex items-center gap-2 px-3 py-1 rounded text-xs font-medium transition-all ${viewMode === 'mobile' ? 'bg-white shadow-sm' : 'text-gray-500'}`}
               >
-                <Smartphone size={12}/> Mobile
+                <Smartphone size={12} /> Mobile
               </button>
             </div>
-            
+
             {/* Preview Button */}
-            <button 
+            <button
               onClick={() => setShowPreview(!showPreview)}
               className={`flex items-center gap-2 px-3 py-1.5 border rounded text-sm transition-all ${showPreview ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'border-gray-200 hover:bg-gray-50'}`}
             >
               <Eye size={14} /> {showPreview ? 'Edit' : 'Preview'}
             </button>
-            
+
             {/* Save Dropdown */}
             <div className="relative">
               <div className="flex items-center">
-                <button 
+                <button
                   onClick={handleSaveArticle}
                   disabled={isSaving}
                   className="px-4 py-1.5 bg-gray-900 text-white text-sm rounded-l hover:bg-black disabled:opacity-50"
                 >
                   {isSaving ? 'Saving...' : 'Save'}
                 </button>
-                <button 
+                <button
                   onClick={() => setShowSaveDropdown(!showSaveDropdown)}
                   className="px-2 py-1.5 bg-gray-900 text-white border-l border-gray-700 rounded-r hover:bg-black"
                 >
                   <ChevronDown size={14} />
                 </button>
               </div>
-              
+
               {showSaveDropdown && (
                 <div className="absolute right-0 top-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg py-2 min-w-[180px] z-50">
-                  <button 
+                  <button
                     onClick={handleSaveArticle}
                     className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
                   >
                     <Save size={14} /> Save Article
                   </button>
-                  <button 
+                  <button
                     onClick={handleSaveAsNewArticle}
                     className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
                   >
                     <Plus size={14} /> Save as New Article
                   </button>
                   <div className="border-t border-gray-100 my-1" />
-                  <button 
+                  <button
                     onClick={handleExportHTML}
                     className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
                   >
@@ -661,218 +659,218 @@ const EditorUI = () => {
         {editor && !showPreview && (
           <div className="h-12 bg-white border-b border-gray-200 flex items-center px-4 gap-1 shrink-0 overflow-x-auto">
             {/* Undo/Redo */}
-            <ToolbarButton 
+            <ToolbarButton
               onClick={() => editor.chain().focus().undo().run()}
               disabled={!editor.can().undo()}
               title="Undo"
             >
               <Undo size={16} />
             </ToolbarButton>
-            <ToolbarButton 
+            <ToolbarButton
               onClick={() => editor.chain().focus().redo().run()}
               disabled={!editor.can().redo()}
               title="Redo"
             >
               <Redo size={16} />
             </ToolbarButton>
-            
+
             <Divider />
-            
+
             {/* Normal Text & Headings */}
-            <ToolbarButton 
+            <ToolbarButton
               onClick={() => editor.chain().focus().setParagraph().run()}
               active={editor.isActive('paragraph') && !editor.isActive('heading')}
               title="Normal Text (convert heading to paragraph)"
             >
               <Pilcrow size={16} />
             </ToolbarButton>
-            <ToolbarButton 
+            <ToolbarButton
               onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
               active={editor.isActive('heading', { level: 1 })}
               title="Heading 1"
             >
               <Heading1 size={16} />
             </ToolbarButton>
-            <ToolbarButton 
+            <ToolbarButton
               onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
               active={editor.isActive('heading', { level: 2 })}
               title="Heading 2"
             >
               <Heading2 size={16} />
             </ToolbarButton>
-            <ToolbarButton 
+            <ToolbarButton
               onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
               active={editor.isActive('heading', { level: 3 })}
               title="Heading 3"
             >
               <Heading3 size={16} />
             </ToolbarButton>
-            
+
             <Divider />
-            
+
             {/* Text Formatting */}
-            <ToolbarButton 
+            <ToolbarButton
               onClick={() => editor.chain().focus().toggleBold().run()}
               active={editor.isActive('bold')}
               title="Bold (Ctrl+B)"
             >
               <Bold size={16} />
             </ToolbarButton>
-            <ToolbarButton 
+            <ToolbarButton
               onClick={() => editor.chain().focus().toggleItalic().run()}
               active={editor.isActive('italic')}
               title="Italic (Ctrl+I)"
             >
               <Italic size={16} />
             </ToolbarButton>
-            <ToolbarButton 
+            <ToolbarButton
               onClick={() => editor.chain().focus().toggleUnderline().run()}
               active={editor.isActive('underline')}
               title="Underline (Ctrl+U)"
             >
               <UnderlineIcon size={16} />
             </ToolbarButton>
-            <ToolbarButton 
+            <ToolbarButton
               onClick={() => editor.chain().focus().toggleStrike().run()}
               active={editor.isActive('strike')}
               title="Strikethrough"
             >
               <Strikethrough size={16} />
             </ToolbarButton>
-            
+
             <Divider />
-            
+
             {/* Alignment */}
-            <ToolbarButton 
+            <ToolbarButton
               onClick={() => editor.chain().focus().setTextAlign('left').run()}
               active={editor.isActive({ textAlign: 'left' })}
               title="Align Left"
             >
               <AlignLeft size={16} />
             </ToolbarButton>
-            <ToolbarButton 
+            <ToolbarButton
               onClick={() => editor.chain().focus().setTextAlign('center').run()}
               active={editor.isActive({ textAlign: 'center' })}
               title="Align Center"
             >
               <AlignCenter size={16} />
             </ToolbarButton>
-            <ToolbarButton 
+            <ToolbarButton
               onClick={() => editor.chain().focus().setTextAlign('right').run()}
               active={editor.isActive({ textAlign: 'right' })}
               title="Align Right"
             >
               <AlignRight size={16} />
             </ToolbarButton>
-            <ToolbarButton 
+            <ToolbarButton
               onClick={() => insertBlock('centerspace')}
               title="Insert Line Break"
             >
               <Space size={16} />
             </ToolbarButton>
-            <ToolbarButton 
+            <ToolbarButton
               onClick={() => insertBlock('center-all')}
               title="Center All Text"
             >
               <AlignCenterHorizontal size={16} />
             </ToolbarButton>
-            
+
             <Divider />
-            
+
             {/* Quick Colors (for your writing style) */}
-            <ToolbarButton 
+            <ToolbarButton
               onClick={() => editor.chain().focus().setColor('#000000').run()}
               title="Black Text"
             >
               <div className="w-4 h-4 rounded-full bg-black border border-gray-300" />
             </ToolbarButton>
-            <ToolbarButton 
+            <ToolbarButton
               onClick={() => editor.chain().focus().setColor('#B8860B').run()}
               title="Gold Text"
             >
               <div className="w-4 h-4 rounded-full bg-yellow-600 border border-gray-300" />
             </ToolbarButton>
-            <ToolbarButton 
+            <ToolbarButton
               onClick={() => editor.chain().focus().setColor('#DB2777').run()}
               title="Pink Text"
             >
               <div className="w-4 h-4 rounded-full bg-pink-600 border border-gray-300" />
             </ToolbarButton>
-            <ToolbarButton 
+            <ToolbarButton
               onClick={() => editor.chain().focus().setColor('#16A34A').run()}
               title="Green Text"
             >
               <div className="w-4 h-4 rounded-full bg-green-600 border border-gray-300" />
             </ToolbarButton>
-            
+
             <Divider />
-            
+
             {/* Badges */}
-            <ToolbarButton 
+            <ToolbarButton
               onClick={() => insertBlock('reading-time')}
               title="Insert Reading Time Badge"
             >
               <Clock size={16} />
             </ToolbarButton>
-            <ToolbarButton 
+            <ToolbarButton
               onClick={() => insertBlock('badge')}
               title="Insert Badge"
             >
               <Badge size={16} />
             </ToolbarButton>
-            <ToolbarButton 
+            <ToolbarButton
               onClick={() => insertBlock('line-dots')}
               title="Insert Divider (dots)"
             >
               <MoreHorizontal size={16} />
             </ToolbarButton>
-            <ToolbarButton 
+            <ToolbarButton
               onClick={() => insertBlock('line-thin')}
               title="Insert Divider (line)"
             >
               <Minus size={16} />
             </ToolbarButton>
-            
+
             <Divider />
-            
+
             {/* Lists */}
-            <ToolbarButton 
+            <ToolbarButton
               onClick={() => editor.chain().focus().toggleBulletList().run()}
               active={editor.isActive('bulletList')}
               title="Bullet List"
             >
               <List size={16} />
             </ToolbarButton>
-            <ToolbarButton 
+            <ToolbarButton
               onClick={() => editor.chain().focus().toggleOrderedList().run()}
               active={editor.isActive('orderedList')}
               title="Numbered List"
             >
               <ListOrdered size={16} />
             </ToolbarButton>
-            
+
             <Divider />
-            
+
             {/* Quote & Code */}
-            <ToolbarButton 
+            <ToolbarButton
               onClick={() => editor.chain().focus().toggleBlockquote().run()}
               active={editor.isActive('blockquote')}
               title="Quote"
             >
               <Quote size={16} />
             </ToolbarButton>
-            <ToolbarButton 
+            <ToolbarButton
               onClick={() => editor.chain().focus().toggleCodeBlock().run()}
               active={editor.isActive('codeBlock')}
               title="Code Block"
             >
               <Code size={16} />
             </ToolbarButton>
-            
+
             <Divider />
-            
+
             {/* Link */}
-            <ToolbarButton 
+            <ToolbarButton
               onClick={() => {
                 if (editor.isActive('link')) {
                   editor.chain().focus().unsetLink().run();
@@ -885,9 +883,9 @@ const EditorUI = () => {
             >
               <LinkIcon size={16} />
             </ToolbarButton>
-            
+
             {/* Image */}
-            <ToolbarButton 
+            <ToolbarButton
               onClick={() => {
                 const url = prompt("Enter image URL:");
                 if (url) {
@@ -898,12 +896,12 @@ const EditorUI = () => {
             >
               <ImageIcon size={16} />
             </ToolbarButton>
-            
+
             <Divider />
-            
+
             {/* Callout Box */}
             <div className="relative" id="callout-button-container">
-              <ToolbarButton 
+              <ToolbarButton
                 onClick={() => setShowCalloutPicker(!showCalloutPicker)}
                 active={editor.isActive('callout')}
                 title="Add Callout Box"
@@ -918,7 +916,7 @@ const EditorUI = () => {
         {showCalloutPicker && editor && (
           <>
             <div className="fixed inset-0 z-40" onClick={() => setShowCalloutPicker(false)} />
-            <div 
+            <div
               className="fixed bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-50"
               style={{
                 top: '120px', // Below toolbar
@@ -978,74 +976,74 @@ const EditorUI = () => {
 
         {/* Bubble Menu for selected text */}
         {editor && (
-          <BubbleMenu 
-            editor={editor} 
+          <BubbleMenu
+            editor={editor}
             className="bg-gray-900 rounded-lg shadow-xl p-1 flex items-center gap-1"
           >
-            <BubbleButton 
+            <BubbleButton
               onClick={() => editor.chain().focus().toggleBold().run()}
               active={editor.isActive('bold')}
             >
               <Bold size={14} />
             </BubbleButton>
-            <BubbleButton 
+            <BubbleButton
               onClick={() => editor.chain().focus().toggleItalic().run()}
               active={editor.isActive('italic')}
             >
               <Italic size={14} />
             </BubbleButton>
-            <BubbleButton 
+            <BubbleButton
               onClick={() => editor.chain().focus().toggleUnderline().run()}
               active={editor.isActive('underline')}
             >
               <UnderlineIcon size={14} />
             </BubbleButton>
             <div className="w-px h-4 bg-gray-600 mx-1" />
-            <BubbleButton 
+            <BubbleButton
               onClick={() => editor.chain().focus().setParagraph().run()}
               active={editor.isActive('paragraph') && !editor.isActive('heading')}
             >
               <Pilcrow size={14} />
             </BubbleButton>
-            <BubbleButton 
+            <BubbleButton
               onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
               active={editor.isActive('heading', { level: 1 })}
             >
               H1
             </BubbleButton>
-            <BubbleButton 
+            <BubbleButton
               onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
               active={editor.isActive('heading', { level: 2 })}
             >
               H2
             </BubbleButton>
-            <BubbleButton 
+            <BubbleButton
               onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
               active={editor.isActive('heading', { level: 3 })}
             >
               H3
             </BubbleButton>
             <div className="w-px h-4 bg-gray-600 mx-1" />
-            <BubbleButton 
+            <BubbleButton
               onClick={() => editor.chain().focus().setTextAlign('left').run()}
               active={editor.isActive({ textAlign: 'left' })}
             >
               <AlignLeft size={14} />
             </BubbleButton>
-            <BubbleButton 
+            <BubbleButton
               onClick={() => editor.chain().focus().setTextAlign('center').run()}
               active={editor.isActive({ textAlign: 'center' })}
             >
               <AlignCenter size={14} />
             </BubbleButton>
-            <BubbleButton 
+            <BubbleButton
               onClick={() => editor.chain().focus().setTextAlign('right').run()}
               active={editor.isActive({ textAlign: 'right' })}
             >
               <AlignRight size={14} />
             </BubbleButton>
             <div className="w-px h-4 bg-gray-600 mx-1" />
-            <BubbleButton 
+            <BubbleButton
               onClick={() => {
                 const url = prompt("Enter URL:");
                 if (url) {
@@ -1075,7 +1073,7 @@ const EditorUI = () => {
 
         {/* Scrollable Canvas Area */}
         <main className="flex-1 overflow-y-auto overflow-x-hidden p-8 flex justify-center bg-[#F9FAFB]">
-          <div 
+          <div
             className={`bg-white shadow-sm min-h-[1000px] relative transition-all duration-300 overflow-x-hidden ${viewMode === 'mobile' ? 'w-[430px] mobile-preview' : 'w-full max-w-[800px]'}`}
             style={{
               ...editorStyles,
@@ -1096,14 +1094,14 @@ const EditorUI = () => {
             )}
 
             {/* Editor or Preview Content */}
-            <div 
+            <div
               className={viewMode === 'mobile' ? 'p-6' : 'p-16'}
               style={{
                 fontFamily: fontOptions.find(f => f.name === styles.bodyFont)?.value,
               }}
             >
               {showPreview ? (
-                <div 
+                <div
                   className="preview-content prose prose-lg max-w-none"
                   dangerouslySetInnerHTML={{ __html: editor?.getHTML() || "" }}
                   style={{
@@ -1111,8 +1109,8 @@ const EditorUI = () => {
                   }}
                 />
               ) : (
-                <EditorContent 
-                  editor={editor} 
+                <EditorContent
+                  editor={editor}
                   className="editorial-editor"
                 />
               )}
@@ -1125,14 +1123,14 @@ const EditorUI = () => {
       {showBlockMenu && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setShowBlockMenu(false)} />
-          <div 
+          <div
             className="fixed z-50 bg-white rounded-xl shadow-xl border border-gray-100 p-4 w-64"
             style={{ top: blockMenuPosition.top, left: blockMenuPosition.left }}
           >
             <div className="flex justify-between items-center mb-4">
               <span className="font-bold text-sm">Add Block</span>
               <button onClick={() => setShowBlockMenu(false)}>
-                <X size={14} className="text-gray-400"/>
+                <X size={14} className="text-gray-400" />
               </button>
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -1189,21 +1187,21 @@ const EditorUI = () => {
         {/* Search */}
         <div className="p-4 border-b border-gray-100">
           <div className="relative">
-            <Search size={14} className="absolute left-3 top-3 text-gray-400"/>
-            <input type="text" placeholder="Search..." className="w-full bg-gray-50 rounded border border-gray-200 pl-9 pr-3 py-2 text-sm focus:outline-none focus:border-gray-400"/>
+            <Search size={14} className="absolute left-3 top-3 text-gray-400" />
+            <input type="text" placeholder="Search..." className="w-full bg-gray-50 rounded border border-gray-200 pl-9 pr-3 py-2 text-sm focus:outline-none focus:border-gray-400" />
           </div>
         </div>
 
         {/* Tabs */}
         <div className="p-4">
           <div className="flex bg-gray-100 p-1 rounded-lg">
-            <button 
+            <button
               onClick={() => setMode('Basic')}
               className={`flex-1 text-sm font-medium py-1.5 rounded-md transition-all ${mode === 'Basic' ? 'bg-white shadow-sm' : 'text-gray-500'}`}
             >
               Basic
             </button>
-            <button 
+            <button
               onClick={() => setMode('Advanced')}
               className={`flex-1 text-sm font-medium py-1.5 rounded-md transition-all ${mode === 'Advanced' ? 'bg-white shadow-sm' : 'text-gray-500'}`}
             >
@@ -1214,42 +1212,42 @@ const EditorUI = () => {
 
         {/* Controls Scroll Area */}
         <div className="flex-1 overflow-y-auto px-4 pb-4">
-          
+
           {/* Colors Section */}
           <div className="mb-6">
             <SectionHeader title="Colors" />
             <div className="space-y-3">
-              <ColorInput 
-                label="Background" 
-                value={styles.backgroundColor} 
-                onChange={(v) => updateStyle('backgroundColor', v)} 
+              <ColorInput
+                label="Background"
+                value={styles.backgroundColor}
+                onChange={(v) => updateStyle('backgroundColor', v)}
               />
-              <ColorInput 
-                label="Text on background" 
-                value={styles.textColor} 
-                onChange={(v) => updateStyle('textColor', v)} 
+              <ColorInput
+                label="Text on background"
+                value={styles.textColor}
+                onChange={(v) => updateStyle('textColor', v)}
               />
-              <ColorInput 
-                label="Primary" 
-                value={styles.primaryColor} 
-                onChange={(v) => updateStyle('primaryColor', v)} 
-                info 
+              <ColorInput
+                label="Primary"
+                value={styles.primaryColor}
+                onChange={(v) => updateStyle('primaryColor', v)}
+                info
               />
-              <ColorInput 
-                label="Text on primary" 
-                value={styles.primaryTextColor} 
-                onChange={(v) => updateStyle('primaryTextColor', v)} 
+              <ColorInput
+                label="Text on primary"
+                value={styles.primaryTextColor}
+                onChange={(v) => updateStyle('primaryTextColor', v)}
               />
-              <ColorInput 
-                label="Secondary" 
-                value={styles.secondaryColor} 
-                onChange={(v) => updateStyle('secondaryColor', v)} 
-                info 
+              <ColorInput
+                label="Secondary"
+                value={styles.secondaryColor}
+                onChange={(v) => updateStyle('secondaryColor', v)}
+                info
               />
-              <ColorInput 
-                label="Link text" 
-                value={styles.linkColor} 
-                onChange={(v) => updateStyle('linkColor', v)} 
+              <ColorInput
+                label="Link text"
+                value={styles.linkColor}
+                onChange={(v) => updateStyle('linkColor', v)}
               />
             </div>
           </div>
@@ -1263,16 +1261,16 @@ const EditorUI = () => {
                 <div className="text-xs font-medium text-gray-400 uppercase tracking-wide">Heading</div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-500">Font family</span>
-                  <FontSelect 
-                    value={styles.headingFont} 
-                    onChange={(v) => updateStyle('headingFont', v)} 
+                  <FontSelect
+                    value={styles.headingFont}
+                    onChange={(v) => updateStyle('headingFont', v)}
                   />
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-500">Font weight</span>
-                  <WeightSelect 
-                    value={styles.headingWeight} 
-                    onChange={(v) => updateStyle('headingWeight', v)} 
+                  <WeightSelect
+                    value={styles.headingWeight}
+                    onChange={(v) => updateStyle('headingWeight', v)}
                   />
                 </div>
               </div>
@@ -1283,16 +1281,16 @@ const EditorUI = () => {
                   <div className="text-xs font-medium text-gray-400 uppercase tracking-wide">Body</div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-500">Font family</span>
-                    <FontSelect 
-                      value={styles.bodyFont} 
-                      onChange={(v) => updateStyle('bodyFont', v)} 
+                    <FontSelect
+                      value={styles.bodyFont}
+                      onChange={(v) => updateStyle('bodyFont', v)}
                     />
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-500">Font weight</span>
-                    <WeightSelect 
-                      value={styles.bodyWeight} 
-                      onChange={(v) => updateStyle('bodyWeight', v)} 
+                    <WeightSelect
+                      value={styles.bodyWeight}
+                      onChange={(v) => updateStyle('bodyWeight', v)}
                     />
                   </div>
                 </div>
@@ -1305,16 +1303,16 @@ const EditorUI = () => {
             <div className="mb-6 border-t border-gray-100 pt-4">
               <SectionHeader title="Quick Presets" />
               <div className="grid grid-cols-2 gap-2">
-                <PresetButton 
-                  label="Editorial" 
+                <PresetButton
+                  label="Editorial"
                   onClick={() => setStyles({
                     ...defaultStyles,
                     headingFont: "PT Serif",
                     bodyFont: "Georgia",
-                  })} 
+                  })}
                 />
-                <PresetButton 
-                  label="Modern" 
+                <PresetButton
+                  label="Modern"
                   onClick={() => setStyles({
                     ...defaultStyles,
                     backgroundColor: "#1F2937",
@@ -1322,19 +1320,19 @@ const EditorUI = () => {
                     headingFont: "Inter",
                     bodyFont: "Inter",
                     linkColor: "#60A5FA",
-                  })} 
+                  })}
                 />
-                <PresetButton 
-                  label="Minimal" 
+                <PresetButton
+                  label="Minimal"
                   onClick={() => setStyles({
                     ...defaultStyles,
                     headingFont: "Inter",
                     bodyFont: "Inter",
                     primaryColor: "#000000",
-                  })} 
+                  })}
                 />
-                <PresetButton 
-                  label="Warm" 
+                <PresetButton
+                  label="Warm"
                   onClick={() => setStyles({
                     ...defaultStyles,
                     backgroundColor: "#FFFBEB",
@@ -1343,7 +1341,7 @@ const EditorUI = () => {
                     linkColor: "#B45309",
                     headingFont: "Playfair Display",
                     bodyFont: "Lora",
-                  })} 
+                  })}
                 />
               </div>
             </div>
@@ -1361,7 +1359,7 @@ const EditorUI = () => {
 
 // Helper Components
 const NavItem = ({ icon, active, tooltip, onClick }: { icon: React.ReactNode; active?: boolean; tooltip?: string; onClick?: () => void }) => (
-  <button 
+  <button
     onClick={onClick}
     className={`p-2 rounded-lg transition-colors relative group ${active ? 'bg-indigo-50 text-indigo-600' : 'text-gray-400 hover:bg-gray-50 hover:text-gray-600'}`}
     title={tooltip}
@@ -1375,11 +1373,11 @@ const NavItem = ({ icon, active, tooltip, onClick }: { icon: React.ReactNode; ac
   </button>
 );
 
-const ToolbarButton = ({ onClick, active, disabled, children, title }: { 
-  onClick: () => void; 
-  active?: boolean; 
+const ToolbarButton = ({ onClick, active, disabled, children, title }: {
+  onClick: () => void;
+  active?: boolean;
   disabled?: boolean;
-  children: React.ReactNode; 
+  children: React.ReactNode;
   title: string;
 }) => (
   <button
@@ -1404,7 +1402,7 @@ const BubbleButton = ({ onClick, active, children }: { onClick: () => void; acti
 const Divider = () => <div className="w-px h-6 bg-gray-200 mx-1" />;
 
 const BlockMenuItem = ({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick: () => void }) => (
-  <button 
+  <button
     onClick={onClick}
     className="border border-gray-100 hover:bg-gray-50 hover:border-gray-200 rounded p-3 flex flex-col items-center justify-center cursor-pointer transition-all"
   >
@@ -1441,15 +1439,15 @@ const ColorInput = ({ label, value, onChange, info }: { label: string; value: st
 
 const FontSelect = ({ value, onChange }: { value: string; onChange: (v: string) => void }) => {
   const [isOpen, setIsOpen] = useState(false);
-  
+
   return (
     <div className="relative">
-      <button 
+      <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 border border-gray-200 rounded px-2 py-1 bg-white cursor-pointer w-32 justify-between hover:border-gray-300"
       >
         <span className="text-sm truncate">{value}</span>
-        <ChevronDown size={12} className="text-gray-400"/>
+        <ChevronDown size={12} className="text-gray-400" />
       </button>
       {isOpen && (
         <>
@@ -1475,15 +1473,15 @@ const FontSelect = ({ value, onChange }: { value: string; onChange: (v: string) 
 const WeightSelect = ({ value, onChange }: { value: string; onChange: (v: string) => void }) => {
   const [isOpen, setIsOpen] = useState(false);
   const currentWeight = fontWeights.find(w => w.value === value) || fontWeights[1];
-  
+
   return (
     <div className="relative">
-      <button 
+      <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 border border-gray-200 rounded px-2 py-1 bg-white cursor-pointer w-32 justify-between hover:border-gray-300"
       >
         <span className="text-sm">{currentWeight.name}</span>
-        <ChevronDown size={12} className="text-gray-400"/>
+        <ChevronDown size={12} className="text-gray-400" />
       </button>
       {isOpen && (
         <>

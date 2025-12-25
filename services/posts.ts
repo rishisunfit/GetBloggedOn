@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import type { PostTemplateData } from "@/services/postTemplate";
 
 export interface Post {
   id: string;
@@ -11,6 +12,7 @@ export interface Post {
   is_draft: boolean;
   quiz_id: string | null;
   styles?: PostStyles;
+  template_data?: PostTemplateData | null;
 }
 
 export interface PostStyles {
@@ -32,6 +34,7 @@ export interface CreatePostData {
   status: "draft" | "published";
   quiz_id?: string | null;
   styles?: PostStyles;
+  template_data?: PostTemplateData | null;
 }
 
 export interface UpdatePostData {
@@ -41,6 +44,7 @@ export interface UpdatePostData {
   is_draft?: boolean;
   quiz_id?: string | null;
   styles?: PostStyles;
+  template_data?: PostTemplateData | null;
 }
 
 export const postsApi = {
@@ -96,6 +100,7 @@ export const postsApi = {
         user_id: userData.user.id,
         quiz_id: postData.quiz_id || null,
         styles: postData.styles || null,
+        template_data: postData.template_data ?? null,
       })
       .select()
       .single();
@@ -122,6 +127,7 @@ export const postsApi = {
     }
     if (postData.quiz_id !== undefined) updateData.quiz_id = postData.quiz_id;
     if (postData.styles !== undefined) updateData.styles = postData.styles;
+    if (postData.template_data !== undefined) updateData.template_data = postData.template_data;
     updateData.updated_at = new Date().toISOString();
 
     const { data, error } = await supabase

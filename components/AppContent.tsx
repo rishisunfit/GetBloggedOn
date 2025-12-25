@@ -8,28 +8,21 @@ import { Preview } from "@/components/viewer/Preview";
 import { postsApi } from "@/services/posts";
 import { useAuth } from "@/hooks/useAuth";
 import { useDialog } from "@/hooks/useDialog";
-
-type Post = {
-  id: string;
-  title: string;
-  content: string;
-  created_at: string;
-  updated_at: string;
-  status: "draft" | "published";
-  user_id: string;
-  is_draft: boolean;
-};
+import type { Post as DbPost, PostStyles } from "@/services/posts";
+import { getDefaultTemplateData, normalizeTemplateData, splitTemplateFromHtml, type PostTemplateData } from "@/services/postTemplate";
 
 type View = "dashboard" | "editor" | "preview";
 
 // Helper to convert DB post to UI format
-const convertPost = (post: Post) => ({
+const convertPost = (post: DbPost) => ({
   id: post.id,
   title: post.title,
   content: post.content,
   createdAt: new Date(post.created_at),
   updatedAt: new Date(post.updated_at),
   status: post.status as "draft" | "published",
+  styles: post.styles,
+  template_data: post.template_data,
 });
 
 export function AppContent() {
@@ -65,10 +58,12 @@ export function AppContent() {
 
     setCreatingPost(true);
     try {
+      const template = getDefaultTemplateData();
       const newPost = await postsApi.create({
-        title: "Untitled Post",
+        title: template.title || "Untitled Post",
         content: "",
         status: "draft",
+        template_data: template,
       });
       const convertedPost = convertPost(newPost);
 
@@ -100,17 +95,19 @@ export function AppContent() {
   };
 
   const handleSavePost = async (
-    title: string,
+    template: PostTemplateData,
     content: string,
+    styles?: PostStyles,
     silent = false
   ) => {
     if (!currentPost) return;
 
     try {
-      const updatedPost = await postsApi.update(currentPost.id, {
-        title,
-        content,
-      });
+      const title = template?.title || "Untitled Post";
+      const updateData: any = { title, content, template_data: template };
+      if (styles) updateData.styles = styles;
+
+      const updatedPost = await postsApi.update(currentPost.id, updateData);
 
       const converted = convertPost(updatedPost);
       setCurrentPost(converted);
@@ -223,14 +220,26 @@ export function AppContent() {
       )}
 
       {currentView === "editor" && currentPost && (
-        <Editor
-          postId={currentPost.id}
-          initialTitle={currentPost.title}
-          initialContent={currentPost.content}
-          onBack={handleBackToDashboard}
-          onPreview={handlePreview}
-          onSave={handleSavePost}
-        />
+        (() => {
+          const created = currentPost.createdAt?.toISOString?.() || undefined;
+          const derived = currentPost.template_data
+            ? {
+              template: normalizeTemplateData(currentPost.template_data as any, created),
+              body: currentPost.content || "",
+            }
+            : splitTemplateFromHtml(currentPost.content || "", created);
+
+          return (
+            <Editor
+              postId={currentPost.id}
+              initialTemplateData={derived.template}
+              initialContent={derived.body}
+              onBack={handleBackToDashboard}
+              onPreview={handlePreview}
+              onSave={handleSavePost}
+            />
+          );
+        })()
       )}
 
       {currentView === "preview" && currentPost && (

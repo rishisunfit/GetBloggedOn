@@ -34,12 +34,12 @@ interface DashboardProps {
   onEditPost: (postId: string) => void;
   onDeletePost: (postId: string) => void;
   onPreviewPost?: (postId: string) => void;
-  onCreateQuiz: () => void;
-  onEditQuiz: (quizId: string) => void;
-  onDeleteQuiz: (quizId: string) => void;
-  onPreviewQuiz: (quizId: string) => void;
+  onCreateQuiz?: () => void;
+  onEditQuiz?: (quizId: string) => void;
+  onDeleteQuiz?: (quizId: string) => void;
+  onPreviewQuiz?: (quizId: string) => void;
   posts: Post[];
-  quizzes: Quiz[];
+  quizzes?: Quiz[];
   isCreating?: boolean;
 }
 
@@ -48,12 +48,12 @@ export function Dashboard({
   onEditPost,
   onDeletePost,
   onPreviewPost,
-  onCreateQuiz,
-  onEditQuiz,
-  onDeleteQuiz,
-  onPreviewQuiz,
+  onCreateQuiz = () => { },
+  onEditQuiz = () => { },
+  onDeleteQuiz = () => { },
+  onPreviewQuiz = () => { },
   posts,
-  quizzes,
+  quizzes = [],
   isCreating = false,
 }: DashboardProps) {
   const [activeTab, setActiveTab] = useState<ContentTab>("posts");

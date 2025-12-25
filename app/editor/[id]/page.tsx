@@ -7,17 +7,12 @@ import { postsApi } from "@/services/posts";
 import { useDialog } from "@/hooks/useDialog";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { EditorShimmer } from "@/components/EditorShimmer";
+import { normalizeTemplateData, splitTemplateFromHtml, type PostTemplateData } from "@/services/postTemplate";
 
-type Post = {
-  id: string;
-  title: string;
-  content: string;
-  created_at: string;
-  updated_at: string;
-  status: "draft" | "published";
-  user_id: string;
-  is_draft: boolean;
-  quiz_id: string | null;
+import type { Post, PostStyles } from "@/services/posts";
+
+type PostWithStyles = Post & {
+  styles?: PostStyles;
 };
 
 export default function EditorPage() {
@@ -25,7 +20,7 @@ export default function EditorPage() {
   const id = params.id as string;
   const router = useRouter();
   const { showDialog } = useDialog();
-  const [post, setPost] = useState<Post | null>(null);
+  const [post, setPost] = useState<PostWithStyles | null>(null);
   const [loading, setLoading] = useState(true);
   const [quizId, setQuizId] = useState<string | null>(null);
 
@@ -34,6 +29,29 @@ export default function EditorPage() {
 
     try {
       const data = await postsApi.getById(id);
+      // Derive template/header data
+      let template: PostTemplateData | null | undefined = (data as any).template_data;
+      let bodyContent: any = data.content || "";
+
+      // Legacy fallback: older posts may have header embedded in HTML content
+      if (!template && typeof bodyContent === "string" && bodyContent.trim() !== "") {
+        const split = splitTemplateFromHtml(bodyContent, data.created_at);
+        template = split.template;
+        bodyContent = split.body;
+      } else {
+        template = normalizeTemplateData(template, data.created_at);
+      }
+
+      // Ensure editor body does not include the header section
+      (data as any).template_data = template;
+      data.content = bodyContent || "";
+
+      // Keep posts.title in sync for dashboard lists
+      if (!data.title || data.title === "Untitled Post") {
+        const t = (template?.title || "").trim();
+        if (t) data.title = t;
+      }
+
       setPost(data);
       setQuizId(data.quiz_id);
     } catch (error) {
@@ -62,16 +80,9 @@ export default function EditorPage() {
     router.push("/");
   };
 
-  const handlePreview = async () => {
-    if (id) {
-      router.push(`/preview/${id}`);
-    } else {
-      await showDialog({
-        type: "alert",
-        message: "Please save the post before previewing",
-        title: "Preview",
-      });
-    }
+  const handlePreview = () => {
+    // Preview is now handled internally in the Editor component
+    // This function can be empty or used for other purposes
   };
 
 
@@ -88,17 +99,26 @@ export default function EditorPage() {
     }
   };
 
-  const handleSaveDraft = async (title: string, content: string, silent = false) => {
+  const handleSaveDraft = async (template: PostTemplateData, content: string, styles?: PostStyles, silent = false) => {
     if (!id) return;
 
     try {
-      await postsApi.update(id, {
+      const title = template?.title || "Untitled Post";
+      const updateData: any = {
         title,
         content,
         status: "draft",
         is_draft: true,
         quiz_id: quizId,
-      });
+        template_data: template,
+      };
+
+      // Only include styles if provided and not empty
+      if (styles) {
+        updateData.styles = styles;
+      }
+
+      await postsApi.update(id, updateData);
 
       // Reload post data to get latest
       await loadPost();
@@ -112,25 +132,41 @@ export default function EditorPage() {
       }
     } catch (error) {
       console.error("Error saving draft:", error);
+      let errorMessage = error instanceof Error ? error.message : String(error);
+
+      // Check if it's a database column error
+      if (errorMessage.includes('column') && errorMessage.includes('does not exist')) {
+        errorMessage = "Database migration required. Please run the migration to add the 'styles' column to the posts table. See migrations/add_styles_to_posts.sql";
+      }
+
       await showDialog({
         type: "alert",
-        message: "Failed to save draft",
+        message: `Failed to save draft: ${errorMessage}`,
         title: "Error",
       });
     }
   };
 
-  const handlePublish = async (title: string, content: string, silent = false) => {
+  const handlePublish = async (template: PostTemplateData, content: string, styles?: PostStyles, silent = false) => {
     if (!id) return;
 
     try {
-      await postsApi.update(id, {
+      const title = template?.title || "Untitled Post";
+      const updateData: any = {
         title,
         content,
         status: "published",
         is_draft: false,
         quiz_id: quizId,
-      });
+        template_data: template,
+      };
+
+      // Only include styles if provided and not empty
+      if (styles) {
+        updateData.styles = styles;
+      }
+
+      await postsApi.update(id, updateData);
 
       // Reload post data to get latest
       await loadPost();
@@ -144,17 +180,24 @@ export default function EditorPage() {
       }
     } catch (error) {
       console.error("Error publishing post:", error);
+      let errorMessage = error instanceof Error ? error.message : String(error);
+
+      // Check if it's a database column error
+      if (errorMessage.includes('column') && errorMessage.includes('does not exist')) {
+        errorMessage = "Database migration required. Please run the migration to add the 'styles' column to the posts table. See migrations/add_styles_to_posts.sql";
+      }
+
       await showDialog({
         type: "alert",
-        message: "Failed to publish post",
+        message: `Failed to publish post: ${errorMessage}`,
         title: "Error",
       });
     }
   };
 
-  const handleSave = async (title: string, content: string, silent = false) => {
+  const handleSave = async (template: PostTemplateData, content: string, styles?: PostStyles, silent = false) => {
     // Fallback to save as draft for backward compatibility
-    await handleSaveDraft(title, content, silent);
+    await handleSaveDraft(template, content, styles, silent);
   };
 
   if (loading) {
@@ -170,9 +213,10 @@ export default function EditorPage() {
       <Editor
         key={post?.id || "new"}
         postId={id}
-        initialTitle={post?.title || ""}
+        initialTemplateData={(post as any)?.template_data}
         initialContent={post?.content || ""}
         initialQuizId={post?.quiz_id || null}
+        initialStyles={post?.styles}
         onBack={handleBack}
         onPreview={handlePreview}
         onSave={handleSave}

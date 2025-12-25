@@ -1056,3 +1056,38 @@
     font-size: 1.25rem;
   }
 }
+
+/* Template required elements styling */
+.ProseMirror [data-template-required="true"],
+.preview-content [data-template-required="true"] {
+  position: relative;
+}
+
+/* Template element specific styles */
+.ProseMirror [data-template-type="series"],
+.preview-content [data-template-type="series"] {
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #9ca3af;
+  margin-bottom: 1rem;
+}
+
+.ProseMirror [data-template-type="subtitle"],
+.preview-content [data-template-type="subtitle"] {
+  font-size: 1.25rem;
+  font-style: italic;
+  color: #6b7280;
+  margin-bottom: 2rem;
+}
+
+.ProseMirror [data-template-type="byline"],
+.preview-content [data-template-type="byline"] {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 1rem;
+  margin-bottom: 3rem;
+}
