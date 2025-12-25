@@ -78,13 +78,25 @@ function extractCloudflareStreamId(url: string): { customerCode: string | null; 
         return { customerCode: null, videoId: match[1] };
     }
 
-    // Pattern 5: Direct video UID (alphanumeric, typically 16+ chars)
+    // Pattern 5: videodelivery.net/VIDEO_UID or iframe.videodelivery.net/VIDEO_UID
+    match = normalizedUrl.match(/(?:iframe\.)?videodelivery\.net\/([a-zA-Z0-9]+)/);
+    if (match && match[1]) {
+        return { customerCode: null, videoId: match[1] };
+    }
+
+    // Pattern 6: videodelivery.net/VIDEO_UID/manifest/video.m3u8
+    match = normalizedUrl.match(/videodelivery\.net\/([a-zA-Z0-9]+)\/manifest\/video\.m3u8/);
+    if (match && match[1]) {
+        return { customerCode: null, videoId: match[1] };
+    }
+
+    // Pattern 7: Direct video UID (alphanumeric, typically 16+ chars)
     match = normalizedUrl.match(/\/([a-zA-Z0-9]{16,})/);
     if (match && match[1]) {
         return { customerCode: null, videoId: match[1] };
     }
 
-    // Pattern 6: Just the video ID itself
+    // Pattern 8: Just the video ID itself
     if (/^[a-zA-Z0-9]{16,}$/.test(url.trim())) {
         return { customerCode: null, videoId: url.trim() };
     }
@@ -442,8 +454,12 @@ export const VideoExtension = Node.create<VideoOptions>({
                             console.error("Invalid Cloudflare Stream URL - video ID not found:", options.src);
                             return false;
                         }
-                        if (!customerCode) {
-                            console.error("Customer code not found in URL. Please use format: customer-CODE.cloudflarestream.com/VIDEO_ID/...");
+                        // If customer code is not in URL, use the one from environment variable
+                        // This handles videodelivery.net URLs which don't include customer code
+                        const finalCustomerCode = customerCode || process.env.NEXT_PUBLIC_CLOUDFLARE_STREAM_CUSTOMER_CODE || null;
+                        if (!finalCustomerCode) {
+                            console.error("Customer code not found in URL and NEXT_PUBLIC_CLOUDFLARE_STREAM_CUSTOMER_CODE is not set.");
+                            console.error("Please either use format: customer-CODE.cloudflarestream.com/VIDEO_ID/... or set NEXT_PUBLIC_CLOUDFLARE_STREAM_CUSTOMER_CODE");
                             console.error("Original URL:", options.src);
                             return false;
                         }
@@ -452,7 +468,7 @@ export const VideoExtension = Node.create<VideoOptions>({
                             attrs: {
                                 src: options.src,
                                 videoId: videoId,
-                                customerCode: customerCode,
+                                customerCode: finalCustomerCode,
                                 align: options.align || "center",
                                 primaryColor: options.primaryColor,
                                 width: options.width,

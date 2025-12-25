@@ -99,6 +99,9 @@ export function VideoJsPlayer({ postId, videoUrl, videoId: providedVideoId, prim
     const [isMounted, setIsMounted] = useState(false);
     const markersInitializedRef = useRef(false);
 
+    // Unique ID for this player instance to scope CSS
+    const playerId = `videojs-player-${resolvedVideoId || extractedVideoId || Math.random().toString(36).substr(2, 9)}`;
+
     useEffect(() => {
         if (!resolvedVideoId) return;
         let ignore = false;
@@ -377,22 +380,13 @@ export function VideoJsPlayer({ postId, videoUrl, videoId: providedVideoId, prim
 
     return (
         <div
+            id={playerId}
             ref={containerRef}
             className={`mt-12 rounded-xl border border-gray-200 overflow-hidden bg-black ${className ?? ""}`}
             style={{
                 "--vjs-primary-color": extractedPrimaryColor,
             } as React.CSSProperties}
         >
-            <div className="px-4 pt-4">
-                <div className="text-xs uppercase font-semibold tracking-wide text-gray-200 mb-2">
-                    Video.js Preview Player
-                </div>
-                <p className="text-xs text-gray-400 mb-4">
-                    This uses Video.js + videojs-markers for built-in seekbar timestamps. Compare with the custom player
-                    above using{" "}
-                    <code className="bg-gray-900 px-1 py-0.5 rounded text-[10px] text-gray-100">?player=videojs</code>.
-                </p>
-            </div>
             <div data-vjs-player>
                 <video
                     ref={(el) => {
@@ -407,24 +401,24 @@ export function VideoJsPlayer({ postId, videoUrl, videoId: providedVideoId, prim
                 />
             </div>
             <style jsx global>{`
-                .video-js .vjs-play-progress,
-                .video-js .vjs-load-progress {
+                #${playerId} .video-js .vjs-play-progress,
+                #${playerId} .video-js .vjs-load-progress {
                     background-color: ${extractedPrimaryColor} !important;
                 }
-                .video-js .vjs-play-control:hover,
-                .video-js .vjs-play-control:focus {
+                #${playerId} .video-js .vjs-play-control:hover,
+                #${playerId} .video-js .vjs-play-control:focus {
                     color: ${extractedPrimaryColor} !important;
                 }
-                .video-js .vjs-big-play-button {
+                #${playerId} .video-js .vjs-big-play-button {
                     border-color: ${extractedPrimaryColor} !important;
                 }
-                .video-js .vjs-big-play-button:hover {
+                #${playerId} .video-js .vjs-big-play-button:hover {
                     background-color: ${extractedPrimaryColor} !important;
                 }
                 
                 /* Manual marker styles */
-                .video-js .vjs-progress-control .vjs-progress-holder .vjs-marker,
-                .video-js .vjs-progress-control .vjs-progress-holder .manual-marker {
+                #${playerId} .video-js .vjs-progress-control .vjs-progress-holder .vjs-marker,
+                #${playerId} .video-js .vjs-progress-control .vjs-progress-holder .manual-marker {
                     width: 14px !important;
                     height: 14px !important;
                     background-color: ${extractedPrimaryColor} !important;
@@ -441,15 +435,15 @@ export function VideoJsPlayer({ postId, videoUrl, videoId: providedVideoId, prim
                     opacity: 1 !important;
                 }
                 
-                .video-js .vjs-progress-control .vjs-progress-holder .vjs-marker:hover,
-                .video-js .vjs-progress-control .vjs-progress-holder .manual-marker:hover {
+                #${playerId} .video-js .vjs-progress-control .vjs-progress-holder .vjs-marker:hover,
+                #${playerId} .video-js .vjs-progress-control .vjs-progress-holder .manual-marker:hover {
                     transform: translateY(-50%) scale(1.5) !important;
                     transition: transform 0.2s ease !important;
                     box-shadow: 0 0 12px rgba(0, 0, 0, 1) !important;
                 }
                 
-                .vjs-marker-tip,
-                .manual-marker-tip {
+                #${playerId} .vjs-marker-tip,
+                #${playerId} .manual-marker-tip {
                     background-color: rgba(0, 0, 0, 0.95) !important;
                     color: white !important;
                     padding: 6px 12px !important;
@@ -469,7 +463,7 @@ export function VideoJsPlayer({ postId, videoUrl, videoId: providedVideoId, prim
                     transition: opacity 0.2s ease !important;
                 }
                 
-                .manual-marker:hover .manual-marker-tip {
+                #${playerId} .manual-marker:hover .manual-marker-tip {
                     opacity: 1 !important;
                 }
             `}</style>

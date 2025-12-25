@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { X } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 interface VideoModalProps {
     isOpen: boolean;
@@ -16,6 +17,8 @@ function isValidCloudflareStreamUrl(url: string): boolean {
         /customer-[a-zA-Z0-9]+\.cloudflarestream\.com\/[a-zA-Z0-9]+/, // iframe or manifest URLs
         /customer-[a-zA-Z0-9]+\.cloudflarestream\.com\/[a-zA-Z0-9]+\/manifest\/video\.m3u8/, // manifest URL
         /watch\.cloudflarestream\.com\/[a-zA-Z0-9]+/,
+        /iframe\.videodelivery\.net\/[a-zA-Z0-9]+/,
+        /videodelivery\.net\/[a-zA-Z0-9]+(?:\/manifest\/video\.m3u8)?/,
         /^[a-zA-Z0-9]{16,}$/, // Direct video ID
     ];
 
@@ -26,12 +29,27 @@ export function VideoModal({ isOpen, onClose, onInsert }: VideoModalProps) {
     const [url, setUrl] = useState("");
     const [align, setAlign] = useState<"left" | "center" | "right">("center");
     const [primaryColor, setPrimaryColor] = useState("#F48120"); // Default green color
+    const [uploading, setUploading] = useState(false);
+    const [uploadError, setUploadError] = useState<string | null>(null);
+    const [uploadStatus, setUploadStatus] = useState<"idle" | "success" | "error">("idle");
+    const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+    const [videoReady, setVideoReady] = useState<boolean | null>(null);
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
+    const { session } = useAuth();
 
     useEffect(() => {
         if (!isOpen) {
             setUrl("");
             setAlign("center");
             setPrimaryColor("#F48120");
+            setUploading(false);
+            setUploadError(null);
+            setUploadStatus("idle");
+            setUploadedFileName(null);
+            setVideoReady(null);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = "";
+            }
         }
     }, [isOpen]);
 
@@ -41,6 +59,82 @@ export function VideoModal({ isOpen, onClose, onInsert }: VideoModalProps) {
             onClose();
         }
     };
+    const handleSelectFile = () => {
+        setUploadError(null);
+        fileInputRef.current?.click();
+    };
+
+    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        if (!file.type.startsWith("video/")) {
+            setUploadError("Only video files are supported.");
+            event.target.value = "";
+            return;
+        }
+
+        const maxSize = 500 * 1024 * 1024; // 500MB
+        if (file.size > maxSize) {
+            setUploadError("Video must be smaller than 500MB.");
+            event.target.value = "";
+            return;
+        }
+
+        await uploadVideo(file);
+        event.target.value = "";
+    };
+
+    const uploadVideo = async (file: File) => {
+        if (!session?.access_token) {
+            setUploadError("You must be logged in to upload videos.");
+            return;
+        }
+
+        setUploading(true);
+        setUploadError(null);
+        setUploadStatus("idle");
+        setUploadedFileName(file.name);
+
+        try {
+            const formData = new FormData();
+            formData.append("file", file);
+
+            const response = await fetch("/api/videos/upload", {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${session.access_token}`,
+                },
+                body: formData,
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data?.success) {
+                throw new Error(data?.error || "Upload failed");
+            }
+
+            // Use playbackUrl (manifest format) - VideoExtension will extract video ID and customer code from it
+            // Format: https://customer-{code}.cloudflarestream.com/{videoId}/manifest/video.m3u8
+            const playbackUrl = data.playbackUrl || data.embedUrl;
+            if (playbackUrl) {
+                setUrl(playbackUrl);
+                setVideoReady(data.readyToStream ?? false);
+                setUploadStatus("success");
+            } else {
+                throw new Error("Upload succeeded but no playback URL returned");
+            }
+        } catch (error) {
+            console.error("Video upload error:", error);
+            setUploadStatus("error");
+            setUploadError(
+                error instanceof Error ? error.message : "Failed to upload video. Please try again."
+            );
+        } finally {
+            setUploading(false);
+        }
+    };
+
 
     const isUrlValid = url.trim() && isValidCloudflareStreamUrl(url);
 
@@ -92,6 +186,54 @@ export function VideoModal({ isOpen, onClose, onInsert }: VideoModalProps) {
                                 Please enter a valid Cloudflare Stream URL or video ID
                             </p>
                         )}
+                        <div className="mt-4 p-4 border border-dashed border-gray-300 rounded-lg bg-gray-50">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-gray-800">Upload from computer</p>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        We will upload your video to Cloudflare Stream and fill the URL field above automatically.
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={handleSelectFile}
+                                    className="px-3 py-1.5 text-sm font-medium bg-white border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
+                                    disabled={uploading}
+                                >
+                                    {uploading ? "Uploading..." : "Choose Video"}
+                                </button>
+                            </div>
+                            <input
+                                type="file"
+                                accept="video/*"
+                                ref={fileInputRef}
+                                className="hidden"
+                                onChange={handleFileChange}
+                            />
+                            {uploadedFileName && (
+                                <p className="mt-3 text-sm text-gray-600">
+                                    <span className="font-medium">Selected:</span> {uploadedFileName}
+                                </p>
+                            )}
+                            {uploadStatus === "success" && (
+                                <>
+                                    <p className="mt-2 text-sm text-green-600">
+                                        ✅ Upload complete! The player URL has been filled in above.
+                                    </p>
+                                    {videoReady === false && (
+                                        <p className="mt-2 text-sm text-yellow-600">
+                                            ⏳ Video is still processing. It may take a few moments before it's ready to play. You can insert it now, but it may show "Video not found" until processing completes.
+                                        </p>
+                                    )}
+                                </>
+                            )}
+                            {uploadError && (
+                                <p className="mt-2 text-sm text-red-600">⚠️ {uploadError}</p>
+                            )}
+                            {uploading && (
+                                <p className="mt-2 text-sm text-gray-500">Uploading video to Cloudflare...</p>
+                            )}
+                        </div>
                     </div>
 
                     <div>

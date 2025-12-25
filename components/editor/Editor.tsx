@@ -67,6 +67,26 @@ const fontWeights = [
   { name: "Bold", value: "700" },
 ];
 
+// Helper to build Cloudflare embed URL
+function buildCloudflareEmbedUrl(
+  videoId: string,
+  customerCode: string | null = null,
+  primaryColor?: string | null
+): string {
+  const code = customerCode || process.env.NEXT_PUBLIC_CLOUDFLARE_STREAM_CUSTOMER_CODE;
+  if (!code) {
+    console.error("Customer code is required for Cloudflare Stream embed URL");
+    return "";
+  }
+  const baseUrl = `https://customer-${code}.cloudflarestream.com/${videoId}/iframe`;
+  const params = new URLSearchParams();
+  if (primaryColor) {
+    params.append("primaryColor", primaryColor);
+  }
+  const queryString = params.toString();
+  return queryString ? `${baseUrl}?${queryString}` : baseUrl;
+}
+
 interface EditorProps {
   postId?: string;
   initialTemplateData?: PostTemplateData;
@@ -1592,8 +1612,8 @@ export function Editor({
                   <button
                     onClick={() => handleVideoAlignChange("left")}
                     className={`flex-1 px-3 py-2 rounded-lg border text-sm transition-colors ${selectedVideo.align === "left"
-                        ? "bg-black text-white border-black"
-                        : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                      ? "bg-black text-white border-black"
+                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
                       }`}
                   >
                     Left
@@ -1601,8 +1621,8 @@ export function Editor({
                   <button
                     onClick={() => handleVideoAlignChange("center")}
                     className={`flex-1 px-3 py-2 rounded-lg border text-sm transition-colors ${selectedVideo.align === "center"
-                        ? "bg-black text-white border-black"
-                        : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                      ? "bg-black text-white border-black"
+                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
                       }`}
                   >
                     Center
@@ -1610,8 +1630,8 @@ export function Editor({
                   <button
                     onClick={() => handleVideoAlignChange("right")}
                     className={`flex-1 px-3 py-2 rounded-lg border text-sm transition-colors ${selectedVideo.align === "right"
-                        ? "bg-black text-white border-black"
-                        : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                      ? "bg-black text-white border-black"
+                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
                       }`}
                   >
                     Right
@@ -1914,7 +1934,14 @@ export function Editor({
           setShowVideoTimestampModal(false);
           setSelectedVideoId("");
         }}
-        videoId={selectedVideoId}
+        videoId={selectedVideo?.videoId || selectedVideoId}
+        videoUrl={selectedVideo ? buildCloudflareEmbedUrl(
+          selectedVideo.videoId,
+          selectedVideo.customerCode,
+          selectedVideo.primaryColor
+        ) : undefined}
+        customerCode={selectedVideo?.customerCode}
+        primaryColor={selectedVideo?.primaryColor}
         postId={postId}
       />
 

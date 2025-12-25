@@ -1,12 +1,11 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams } from "next/navigation";
 import { Calendar } from "lucide-react";
 import { ReactionBar } from "@/components/viewer/ReactionBar";
 import { CTAForm } from "@/components/viewer/CTAForm";
 import { QuizRenderer } from "@/components/viewer/QuizRenderer";
-import { VideoTimestamps } from "@/components/viewer/VideoTimestamps";
 import { VideoJsPlayer, extractCloudflareVideoIdFromUrl } from "@/components/viewer/VideoJsPlayer";
 import { postsApi, PostStyles } from "@/services/posts";
 import { normalizeTemplateData, splitTemplateFromHtml, type PostTemplateData } from "@/services/postTemplate";
@@ -53,7 +52,6 @@ const defaultStyles: PostStyles = {
 
 export default function PublicPostPage() {
     const params = useParams();
-    const searchParams = useSearchParams();
     const id = params.id as string;
     const [post, setPost] = useState<Post | null>(null);
     const [template, setTemplate] = useState<PostTemplateData | null>(null);
@@ -79,22 +77,28 @@ export default function PublicPostPage() {
         }
     }, [post]);
 
-    const extractedVideo = useMemo(() => {
+    // Extract all videos from the content
+    const extractedVideos = useMemo(() => {
         if (typeof window === "undefined" || !bodyHtml) {
-            return { src: null, id: null, primaryColor: null };
+            return [];
         }
         const parser = new DOMParser();
         const doc = parser.parseFromString(bodyHtml, "text/html");
-        const iframe = doc.querySelector<HTMLIFrameElement>(
+        const iframes = doc.querySelectorAll<HTMLIFrameElement>(
             'iframe[src*="cloudflarestream.com"], iframe[src*="videodelivery.net"]'
         );
-        const src = iframe?.getAttribute("src") || null;
-        const normalizedSrc = src ? (src.startsWith("http") ? src : `https://${src.replace(/^\/\//, "")}`) : null;
-        const { videoId } = normalizedSrc ? extractCloudflareVideoIdFromUrl(normalizedSrc) : { videoId: null };
 
-        // Extract primaryColor from URL
-        let primaryColor: string | null = null;
-        if (normalizedSrc) {
+        const videos: Array<{ src: string; id: string | null; primaryColor: string | null; index: number }> = [];
+
+        iframes.forEach((iframe, index) => {
+            const src = iframe.getAttribute("src");
+            if (!src) return;
+
+            const normalizedSrc = src.startsWith("http") ? src : `https://${src.replace(/^\/\//, "")}`;
+            const { videoId } = extractCloudflareVideoIdFromUrl(normalizedSrc);
+
+            // Extract primaryColor from URL
+            let primaryColor: string | null = null;
             try {
                 const urlObj = new URL(normalizedSrc);
                 const pc = urlObj.searchParams.get("primaryColor");
@@ -114,9 +118,13 @@ export default function PublicPostPage() {
                     primaryColor = `#${match[1]}`;
                 }
             }
-        }
 
-        return { src: normalizedSrc, id: videoId, primaryColor };
+            if (videoId) {
+                videos.push({ src: normalizedSrc, id: videoId, primaryColor, index });
+            }
+        });
+
+        return videos;
     }, [bodyHtml]);
 
     const loadPost = async () => {
@@ -205,7 +213,6 @@ export default function PublicPostPage() {
     const bodyFont = fontOptions.find(f => f.name === styles.bodyFont)?.value || styles.bodyFont;
 
     const safeTemplate = normalizeTemplateData(template, post.created_at);
-    const enableVideoJs = searchParams?.get("player") === "videojs";
 
     return (
         <div
@@ -296,6 +303,11 @@ export default function PublicPostPage() {
                                     .preview-content code {
                                         background-color: ${styles.backgroundColor === "#FFFFFF" ? "#F3F4F6" : "rgba(0,0,0,0.1)"};
                                     }
+                                    /* Hide original video iframes - replaced by Video.js players */
+                                    .preview-content iframe[src*="cloudflarestream.com"],
+                                    .preview-content iframe[src*="videodelivery.net"] {
+                                        display: none !important;
+                                    }
                                 `
                             }} />
                             <div
@@ -306,22 +318,16 @@ export default function PublicPostPage() {
                                     fontWeight: styles.bodyWeight,
                                 }}
                             />
-                            {bodyHtml && <VideoTimestamps postId={post.id} key={bodyHtml} />}
-                            {enableVideoJs && extractedVideo.src && extractedVideo.id ? (
+                            {/* Replace video iframes with Video.js players */}
+                            {extractedVideos.map((video) => (
                                 <VideoJsPlayer
-                                    key={`videojs-${post.id}-${extractedVideo.id}`}
+                                    key={`videojs-${post.id}-${video.id}-${video.index}`}
                                     postId={post.id}
-                                    videoUrl={extractedVideo.src}
-                                    videoId={extractedVideo.id}
-                                    primaryColor={extractedVideo.primaryColor}
+                                    videoUrl={video.src}
+                                    videoId={video.id}
+                                    primaryColor={video.primaryColor}
                                 />
-                            ) : enableVideoJs ? (
-                                <div className="mt-12 p-4 bg-yellow-50 border border-yellow-200 rounded">
-                                    <p className="text-sm text-yellow-800">
-                                        Video.js enabled but no video found. Debug: src={extractedVideo.src ? "exists" : "null"}, id={extractedVideo.id ? "exists" : "null"}
-                                    </p>
-                                </div>
-                            ) : null}
+                            ))}
                             <QuizRenderer />
                         </>
                     ) : (

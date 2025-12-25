@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { X, Plus, Edit2, Trash2, Clock } from "lucide-react";
 import { videoTimestampsApi, type VideoTimestamp, type CreateTimestampData } from "@/services/videoTimestamps";
 
@@ -8,6 +8,9 @@ interface VideoTimestampModalProps {
     isOpen: boolean;
     onClose: () => void;
     videoId: string;
+    videoUrl?: string;
+    customerCode?: string | null;
+    primaryColor?: string | null;
     postId?: string;
     onTimestampsChange?: () => void;
 }
@@ -35,10 +38,32 @@ function parseTime(timeStr: string): number {
     return 0;
 }
 
+function buildCloudflareEmbedUrl(
+    videoId: string,
+    customerCode: string | null = null,
+    primaryColor?: string | null
+): string {
+    const code = customerCode || process.env.NEXT_PUBLIC_CLOUDFLARE_STREAM_CUSTOMER_CODE;
+    if (!code) {
+        console.error("Customer code is required for Cloudflare Stream embed URL");
+        return "";
+    }
+    const baseUrl = `https://customer-${code}.cloudflarestream.com/${videoId}/iframe`;
+    const params = new URLSearchParams();
+    if (primaryColor) {
+        params.append("primaryColor", primaryColor);
+    }
+    const queryString = params.toString();
+    return queryString ? `${baseUrl}?${queryString}` : baseUrl;
+}
+
 export function VideoTimestampModal({
     isOpen,
     onClose,
     videoId,
+    videoUrl,
+    customerCode,
+    primaryColor,
     postId,
     onTimestampsChange,
 }: VideoTimestampModalProps) {
@@ -49,11 +74,145 @@ export function VideoTimestampModal({
     const [editLabel, setEditLabel] = useState("");
     const [newTime, setNewTime] = useState("");
     const [newLabel, setNewLabel] = useState("");
+    const [currentVideoTime, setCurrentVideoTime] = useState<number | null>(null);
+    const iframeRef = useRef<HTMLIFrameElement | null>(null);
+    const playerRef = useRef<any>(null);
+    const timeUpdateIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
         if (isOpen && videoId) {
             loadTimestamps();
         }
+    }, [isOpen, videoId]);
+
+    // Get current video time from Cloudflare Stream player using SDK
+    useEffect(() => {
+        if (!isOpen || !iframeRef.current) {
+            if (timeUpdateIntervalRef.current) {
+                clearInterval(timeUpdateIntervalRef.current);
+                timeUpdateIntervalRef.current = null;
+            }
+            playerRef.current = null;
+            setCurrentVideoTime(null);
+            return;
+        }
+
+        const iframe = iframeRef.current;
+        let mounted = true;
+
+        const initPlayer = async () => {
+            try {
+                // Load Cloudflare Stream SDK if not already loaded
+                if (!(window as any).Stream) {
+                    await new Promise<void>((resolve, reject) => {
+                        const script = document.createElement("script");
+                        script.src = "https://embed.cloudflarestream.com/embed/sdk.latest.js";
+                        script.async = true;
+                        script.onload = () => resolve();
+                        script.onerror = () => reject(new Error("Failed to load Stream SDK"));
+                        document.body.appendChild(script);
+                    });
+                }
+
+                const Stream = (window as any).Stream;
+                if (!Stream || !mounted) return;
+
+                // Wait for iframe to load
+                await new Promise<void>((resolve) => {
+                    if (iframe.contentWindow) {
+                        resolve();
+                    } else {
+                        iframe.addEventListener("load", () => resolve(), { once: true });
+                        // Fallback timeout
+                        setTimeout(() => resolve(), 2000);
+                    }
+                });
+
+                if (!mounted) return;
+
+                // Initialize player
+                const player = Stream(iframe);
+                if (!player) {
+                    console.warn("Could not initialize Stream player");
+                    return;
+                }
+
+                playerRef.current = player;
+
+                // Update current time periodically
+                const updateTime = () => {
+                    if (!mounted || !playerRef.current) return;
+                    try {
+                        // Try different ways to get current time
+                        let time: number | null = null;
+
+                        // Method 1: Direct property access
+                        if (typeof playerRef.current.currentTime === "number") {
+                            time = playerRef.current.currentTime;
+                        }
+                        // Method 2: Function call
+                        else if (typeof playerRef.current.currentTime === "function") {
+                            time = playerRef.current.currentTime();
+                        }
+                        // Method 3: Get property
+                        else if (playerRef.current.getCurrentTime && typeof playerRef.current.getCurrentTime === "function") {
+                            time = playerRef.current.getCurrentTime();
+                        }
+                        // Method 4: Access via getNumberProp helper (used in VideoTimestamps)
+                        else {
+                            try {
+                                const getNumberProp = (obj: any, prop: string): number | null => {
+                                    if (typeof obj?.[prop] === "number") return obj[prop];
+                                    if (typeof obj?.[prop] === "function") {
+                                        try {
+                                            const val = obj[prop]();
+                                            return typeof val === "number" ? val : null;
+                                        } catch { }
+                                    }
+                                    return null;
+                                };
+                                time = getNumberProp(playerRef.current, "currentTime");
+                            } catch { }
+                        }
+
+                        if (time !== null && isFinite(time) && time >= 0) {
+                            setCurrentVideoTime(Math.floor(time));
+                        }
+                    } catch (e) {
+                        console.warn("Error getting current time:", e);
+                    }
+                };
+
+                // Update time every 500ms
+                timeUpdateIntervalRef.current = setInterval(updateTime, 500);
+                updateTime(); // Initial call
+
+                // Also listen for timeupdate events if available
+                if (playerRef.current.addEventListener) {
+                    playerRef.current.addEventListener("timeupdate", updateTime);
+                }
+            } catch (e) {
+                console.error("Error initializing Stream player:", e);
+            }
+        };
+
+        // Small delay to ensure iframe is ready
+        const timeoutId = setTimeout(initPlayer, 500);
+
+        return () => {
+            mounted = false;
+            clearTimeout(timeoutId);
+            if (timeUpdateIntervalRef.current) {
+                clearInterval(timeUpdateIntervalRef.current);
+                timeUpdateIntervalRef.current = null;
+            }
+            if (playerRef.current && playerRef.current.removeEventListener) {
+                try {
+                    playerRef.current.removeEventListener("timeupdate", () => { });
+                } catch { }
+            }
+            playerRef.current = null;
+        };
     }, [isOpen, videoId]);
 
     const loadTimestamps = async () => {
@@ -67,6 +226,19 @@ export function VideoTimestampModal({
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleAddFromCurrentTime = () => {
+        if (currentVideoTime === null || currentVideoTime < 0) {
+            alert("Unable to get current video time. Please play the video and try again, or enter the time manually.");
+            return;
+        }
+        setNewTime(formatTime(currentVideoTime));
+        // Focus on label input
+        setTimeout(() => {
+            const labelInput = document.querySelector<HTMLInputElement>('input[placeholder="Functional Movement Screen Importance"]');
+            labelInput?.focus();
+        }, 100);
     };
 
     const handleAdd = async () => {
@@ -170,21 +342,64 @@ export function VideoTimestampModal({
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-6">
+                    {/* Video Preview */}
+                    {videoId && (
+                        <div className="mb-6 rounded-lg border border-gray-200 overflow-hidden bg-black">
+                            <div className="relative w-full" style={{ aspectRatio: "16/9" }}>
+                                {videoUrl ? (
+                                    <iframe
+                                        ref={iframeRef}
+                                        src={videoUrl}
+                                        className="w-full h-full"
+                                        allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+                                        allowFullScreen
+                                        style={{ border: "none" }}
+                                    />
+                                ) : customerCode ? (
+                                    <iframe
+                                        ref={iframeRef}
+                                        src={buildCloudflareEmbedUrl(videoId, customerCode, primaryColor)}
+                                        className="w-full h-full"
+                                        allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+                                        allowFullScreen
+                                        style={{ border: "none" }}
+                                    />
+                                ) : null}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Add New Timestamp */}
                     <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
                         <h4 className="text-sm font-medium text-gray-700 mb-3">Add New Timestamp</h4>
                         <div className="space-y-3">
-                            <div>
-                                <label className="block text-xs font-medium text-gray-600 mb-1">
-                                    Time (MM:SS or HH:MM:SS)
-                                </label>
-                                <input
-                                    type="text"
-                                    value={newTime}
-                                    onChange={(e) => setNewTime(e.target.value)}
-                                    placeholder="1:36"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black text-sm"
-                                />
+                            <div className="flex gap-2">
+                                <div className="flex-1">
+                                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                                        Time (MM:SS or HH:MM:SS)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={newTime}
+                                        onChange={(e) => setNewTime(e.target.value)}
+                                        placeholder="1:36"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black text-sm"
+                                    />
+                                </div>
+                                <div className="flex items-end">
+                                    <button
+                                        onClick={handleAddFromCurrentTime}
+                                        disabled={currentVideoTime === null || currentVideoTime < 0}
+                                        className="px-4 py-2 bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap"
+                                        title={currentVideoTime !== null ? `Use current time: ${formatTime(currentVideoTime)}` : "Play the video to enable this button"}
+                                    >
+                                        <Clock size={16} />
+                                        Add from Current Time
+                                        {currentVideoTime !== null && (
+                                            <span className="ml-1 text-xs opacity-75">({formatTime(currentVideoTime)})</span>
+                                        )}
+                                    </button>
+                                </div>
                             </div>
                             <div>
                                 <label className="block text-xs font-medium text-gray-600 mb-1">
