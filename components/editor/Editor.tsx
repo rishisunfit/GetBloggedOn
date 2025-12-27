@@ -100,6 +100,8 @@ interface EditorProps {
   initialCtaEnabled?: boolean;
   initialComponentOrder?: string[];
   initialStyles?: PostStyles;
+  initialFolderId?: string | null;
+  initialPostSlug?: string | null;
   onBack: () => void;
   onPreview: () => void;
   onSave: (template: PostTemplateData, content: string, styles?: PostStyles, silent?: boolean) => void;
@@ -110,6 +112,8 @@ interface EditorProps {
   onUpdateRatingEnabled?: (enabled: boolean) => void;
   onUpdateCtaEnabled?: (enabled: boolean) => void;
   onUpdateComponentOrder?: (order: string[]) => void;
+  onUpdateFolderId?: (folderId: string | null) => void;
+  onUpdatePostSlug?: (postSlug: string | null) => void;
 }
 
 export function Editor({
@@ -120,6 +124,8 @@ export function Editor({
   initialRatingEnabled = true,
   initialCtaEnabled = true,
   initialStyles,
+  initialFolderId = null,
+  initialPostSlug = null,
   onBack,
   onPreview,
   onSave,
@@ -130,6 +136,8 @@ export function Editor({
   onUpdateRatingEnabled,
   onUpdateCtaEnabled,
   onUpdateComponentOrder,
+  onUpdateFolderId,
+  onUpdatePostSlug,
   initialComponentOrder = ["quiz", "rating", "cta"],
 }: EditorProps) {
   const [templateData, setTemplateData] = useState<PostTemplateData>(() => normalizeTemplateData(initialTemplateData));
@@ -137,6 +145,8 @@ export function Editor({
   const [ratingEnabled, setRatingEnabled] = useState<boolean>(initialRatingEnabled);
   const [ctaEnabled, setCtaEnabled] = useState<boolean>(initialCtaEnabled ?? true);
   const [componentOrder, setComponentOrder] = useState<string[]>(initialComponentOrder);
+  const [folderId, setFolderId] = useState<string | null>(initialFolderId);
+  const [postSlug, setPostSlug] = useState<string | null>(initialPostSlug);
   const [showSettings, setShowSettings] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>('desktop');
@@ -1473,11 +1483,15 @@ export function Editor({
             ratingEnabled={ratingEnabled}
             ctaEnabled={ctaEnabled}
             componentOrder={componentOrder}
-            onSave={(newQuizId, newRatingEnabled, newCtaEnabled, newComponentOrder) => {
+            folderId={folderId}
+            postSlug={postSlug}
+            onSave={(newQuizId, newRatingEnabled, newCtaEnabled, newComponentOrder, newFolderId, newPostSlug) => {
               setQuizId(newQuizId);
               setRatingEnabled(newRatingEnabled);
               setCtaEnabled(newCtaEnabled);
               setComponentOrder(newComponentOrder);
+              setFolderId(newFolderId);
+              setPostSlug(newPostSlug);
               if (onUpdateQuizId) {
                 onUpdateQuizId(newQuizId);
               }
@@ -1489,6 +1503,12 @@ export function Editor({
               }
               if (onUpdateComponentOrder) {
                 onUpdateComponentOrder(newComponentOrder);
+              }
+              if (onUpdateFolderId) {
+                onUpdateFolderId(newFolderId);
+              }
+              if (onUpdatePostSlug) {
+                onUpdatePostSlug(newPostSlug);
               }
             }}
           />

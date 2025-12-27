@@ -7,6 +7,7 @@ import { Dashboard } from "@/components/Dashboard";
 import { DashboardShimmer } from "@/components/DashboardShimmer";
 import { postsApi } from "@/services/posts";
 import { quizzesApi } from "@/services/quizzes";
+import { foldersApi, type Folder } from "@/services/folders";
 import { useAuth } from "@/hooks/useAuth";
 import { useDialog } from "@/hooks/useDialog";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -33,6 +34,9 @@ const convertPost = (post: Post) => ({
   status: post.status as "draft" | "published",
   user_id: post.user_id,
   is_draft: post.is_draft,
+  folder_id: (post as any).folder_id || null,
+  folder_slug: (post as any).folder_slug || null,
+  post_slug: (post as any).post_slug || null,
 });
 
 // Helper to convert quiz to UI format
@@ -48,6 +52,7 @@ const convertQuiz = (quiz: Quiz) => ({
 export default function HomePage() {
   const [posts, setPosts] = useState<ReturnType<typeof convertPost>[]>([]);
   const [quizzes, setQuizzes] = useState<ReturnType<typeof convertQuiz>[]>([]);
+  const [folders, setFolders] = useState<Folder[]>([]);
   const [loading, setLoading] = useState(true);
   const { signOut, profile } = useAuth();
   const router = useRouter();
@@ -60,12 +65,14 @@ export default function HomePage() {
 
   const loadData = async () => {
     try {
-      const [postsData, quizzesData] = await Promise.all([
+      const [postsData, quizzesData, foldersData] = await Promise.all([
         postsApi.getAll(),
         quizzesApi.getAll(),
+        foldersApi.getAll(),
       ]);
       setPosts(postsData.map(convertPost));
       setQuizzes(quizzesData.map(convertQuiz));
+      setFolders(foldersData);
     } catch (error) {
       console.error("Error loading data:", error);
     } finally {
@@ -197,6 +204,16 @@ export default function HomePage() {
         onPreviewQuiz={handlePreviewQuiz}
         posts={posts}
         quizzes={quizzes}
+        folders={folders}
+        onFoldersChange={async () => {
+          // Reload both posts and folders to get updated counts
+          const [postsData, foldersData] = await Promise.all([
+            postsApi.getAll(),
+            foldersApi.getAll(),
+          ]);
+          setPosts(postsData.map(convertPost));
+          setFolders(foldersData);
+        }}
         isCreating={false}
       />
     </ProtectedRoute>

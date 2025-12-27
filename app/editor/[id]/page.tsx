@@ -26,6 +26,8 @@ export default function EditorPage() {
   const [ratingEnabled, setRatingEnabled] = useState<boolean>(true);
   const [ctaEnabled, setCtaEnabled] = useState<boolean>(true);
   const [componentOrder, setComponentOrder] = useState<string[]>(["quiz", "rating", "cta"]);
+  const [folderId, setFolderId] = useState<string | null>(null);
+  const [postSlug, setPostSlug] = useState<string | null>(null);
 
   const loadPost = useCallback(async () => {
     if (!id) return;
@@ -60,6 +62,8 @@ export default function EditorPage() {
       setRatingEnabled((data as any).rating_enabled !== false);
       setCtaEnabled((data as any).cta_enabled !== false);
       setComponentOrder((data as any).component_order || ["quiz", "rating", "cta"]);
+      setFolderId((data as any).folder_id || null);
+      setPostSlug((data as any).post_slug || null);
     } catch (error) {
       console.error("Error loading post:", error);
       await showDialog({
@@ -141,6 +145,52 @@ export default function EditorPage() {
       await loadPost();
     } catch (error) {
       console.error("Error updating component order:", error);
+    }
+  };
+
+  const handleUpdateFolderId = async (newFolderId: string | null) => {
+    if (!id) return;
+    try {
+      await postsApi.update(id, {
+        folder_id: newFolderId,
+      });
+      setFolderId(newFolderId);
+      await loadPost();
+    } catch (error) {
+      console.error("Error updating folder:", error);
+      await showDialog({
+        type: "alert",
+        message: error instanceof Error ? error.message : "Failed to update folder",
+        title: "Error",
+      });
+    }
+  };
+
+  const handleUpdatePostSlug = async (newPostSlug: string | null) => {
+    if (!id) return;
+    try {
+      await postsApi.update(id, {
+        post_slug: newPostSlug,
+      });
+      setPostSlug(newPostSlug);
+      await loadPost();
+    } catch (error) {
+      console.error("Error updating post slug:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to update post slug";
+      // Check for unique constraint violation
+      if (errorMessage.includes("unique") || errorMessage.includes("duplicate")) {
+        await showDialog({
+          type: "alert",
+          message: "A post with this slug already exists in this folder. Please choose a different slug.",
+          title: "Slug Conflict",
+        });
+      } else {
+        await showDialog({
+          type: "alert",
+          message: errorMessage,
+          title: "Error",
+        });
+      }
     }
   };
 
@@ -313,6 +363,8 @@ export default function EditorPage() {
         initialCtaEnabled={ctaEnabled}
         initialComponentOrder={componentOrder}
         initialStyles={post?.styles}
+        initialFolderId={folderId}
+        initialPostSlug={postSlug}
         onBack={handleBack}
         onPreview={handlePreview}
         onSave={handleSave}
@@ -323,6 +375,8 @@ export default function EditorPage() {
         onUpdateRatingEnabled={handleUpdateRatingEnabled}
         onUpdateCtaEnabled={handleUpdateCtaEnabled}
         onUpdateComponentOrder={handleUpdateComponentOrder}
+        onUpdateFolderId={handleUpdateFolderId}
+        onUpdatePostSlug={handleUpdatePostSlug}
       />
     </ProtectedRoute>
   );

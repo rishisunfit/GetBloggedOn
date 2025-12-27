@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, FileText, Calendar, Edit, Trash2, ClipboardList, Eye, ExternalLink, MessageSquare, Mail, Phone, Reply, Users, ChevronDown, ChevronUp, Search, BarChart3 } from "lucide-react";
+import { Plus, FileText, Calendar, Edit, Trash2, ClipboardList, Eye, ExternalLink, MessageSquare, Mail, Phone, Reply, Users, ChevronDown, ChevronUp, Search, BarChart3, Folder as FolderIcon, FolderOpen, X, Check } from "lucide-react";
 import { formSubmissionsApi, type FormSubmission } from "@/services/formSubmissions";
 import { quizSubmissionsApi, type QuizSubmission } from "@/services/quizSubmissions";
 import { useAuth } from "@/hooks/useAuth";
@@ -7,6 +7,8 @@ import { ReplyModal } from "./ReplyModal";
 import { supabase } from "@/lib/supabase";
 import { useDialog } from "@/hooks/useDialog";
 import { quizzesApi } from "@/services/quizzes";
+import { foldersApi, generateSlug, type Folder } from "@/services/folders";
+import { postsApi } from "@/services/posts";
 import type { Quiz as FullQuiz, QuizQuestion } from "@/types/quiz";
 
 type Post = {
@@ -16,6 +18,9 @@ type Post = {
   createdAt: Date;
   updatedAt: Date;
   status: "draft" | "published";
+  folder_id?: string | null;
+  folder_slug?: string | null;
+  post_slug?: string | null;
 };
 
 type Quiz = {
@@ -27,7 +32,7 @@ type Quiz = {
   status: "draft" | "published";
 };
 
-type ContentTab = "posts" | "quizzes" | "responses" | "quiz-responses";
+type ContentTab = "posts" | "quizzes" | "responses" | "quiz-responses" | "folders";
 
 interface DashboardProps {
   onCreatePost: () => void;
@@ -41,6 +46,8 @@ interface DashboardProps {
   onPreviewQuiz?: (quizId: string) => void;
   posts: Post[];
   quizzes?: Quiz[];
+  folders?: Folder[];
+  onFoldersChange?: () => void;
   isCreating?: boolean;
 }
 
@@ -56,6 +63,8 @@ export function Dashboard({
   onPreviewQuiz = () => { },
   posts,
   quizzes = [],
+  folders = [],
+  onFoldersChange,
   isCreating = false,
 }: DashboardProps) {
   const [activeTab, setActiveTab] = useState<ContentTab>("posts");
@@ -73,6 +82,22 @@ export function Dashboard({
   const [searchQuizzes, setSearchQuizzes] = useState("");
   const [searchResponses, setSearchResponses] = useState("");
   const [searchQuizResponses, setSearchQuizResponses] = useState("");
+
+  // Folder filter for posts tab
+  const [selectedFolderFilter, setSelectedFolderFilter] = useState<string | null>(null);
+
+  // Folder management state
+  const [editingFolder, setEditingFolder] = useState<Folder | null>(null);
+  const [newFolderName, setNewFolderName] = useState("");
+  const [newFolderSlug, setNewFolderSlug] = useState("");
+  const [showCreateFolderForm, setShowCreateFolderForm] = useState(false);
+
+  // Post selection modal state
+  const [showAddPostsModal, setShowAddPostsModal] = useState(false);
+  const [selectedFolderForPosts, setSelectedFolderForPosts] = useState<string | null>(null);
+  const [selectedPostIds, setSelectedPostIds] = useState<Set<string>>(new Set());
+  const [addingPosts, setAddingPosts] = useState(false);
+  const [searchPostsInModal, setSearchPostsInModal] = useState("");
 
   const { user } = useAuth();
   const { showDialog } = useDialog();
@@ -225,9 +250,17 @@ export function Dashboard({
   };
 
   // Filter functions
-  const filteredPosts = posts.filter((post) =>
-    post.title.toLowerCase().includes(searchPosts.toLowerCase())
-  );
+  const filteredPosts = posts.filter((post) => {
+    const matchesSearch = post.title.toLowerCase().includes(searchPosts.toLowerCase());
+    if (!selectedFolderFilter) return matchesSearch;
+
+    const postFolderId = post.folder_id;
+
+    if (selectedFolderFilter === "unfiled") {
+      return matchesSearch && !postFolderId;
+    }
+    return matchesSearch && postFolderId === selectedFolderFilter;
+  });
 
   const filteredQuizzes = quizzes.filter((quiz) =>
     quiz.title.toLowerCase().includes(searchQuizzes.toLowerCase())
@@ -333,6 +366,236 @@ export function Dashboard({
     });
   };
 
+  // Folder management functions
+  const handleCreateFolder = async () => {
+    if (!newFolderName.trim()) return;
+
+    try {
+      const slug = newFolderSlug.trim() || generateSlug(newFolderName);
+      await foldersApi.create({ name: newFolderName.trim(), slug });
+      setNewFolderName("");
+      setNewFolderSlug("");
+      setShowCreateFolderForm(false);
+      if (onFoldersChange) onFoldersChange();
+    } catch (error) {
+      console.error("Error creating folder:", error);
+      await showDialog({
+        type: "alert",
+        message: error instanceof Error ? error.message : "Failed to create folder",
+        title: "Error",
+      });
+    }
+  };
+
+  const handleUpdateFolder = async (folder: Folder, name: string, slug: string) => {
+    try {
+      await foldersApi.update(folder.id, { name: name.trim(), slug: slug.trim() });
+      setEditingFolder(null);
+      if (onFoldersChange) onFoldersChange();
+    } catch (error) {
+      console.error("Error updating folder:", error);
+      await showDialog({
+        type: "alert",
+        message: error instanceof Error ? error.message : "Failed to update folder",
+        title: "Error",
+      });
+    }
+  };
+
+  const handleDeleteFolder = async (folderId: string) => {
+    const folder = folders.find((f) => f.id === folderId);
+    const folderName = folder?.name || "this folder";
+    const postsInFolder = posts.filter((p) => p.folder_id === folderId);
+    const postCount = postsInFolder.length;
+
+    const confirmed = await showDialog({
+      type: "confirm",
+      message: `Are you sure you want to delete "${folderName}"? This will permanently delete the folder and mark all ${postCount} post${postCount !== 1 ? 's' : ''} in this folder as unfiled. This action cannot be undone.`,
+      title: "Delete Folder",
+      confirmText: "Delete Folder",
+      cancelText: "Cancel",
+    });
+
+    if (confirmed) {
+      try {
+        // First, update all posts in this folder to be unfiled (folder_id = null)
+        // The database trigger should handle this, but we'll do it explicitly for clarity
+        await Promise.all(
+          postsInFolder.map((post) =>
+            postsApi.update(post.id, { folder_id: null })
+          )
+        );
+
+        // Then delete the folder
+        await foldersApi.delete(folderId);
+
+        if (selectedFolderFilter === folderId) {
+          setSelectedFolderFilter(null);
+        }
+        if (onFoldersChange) onFoldersChange();
+
+        await showDialog({
+          type: "alert",
+          message: `Folder "${folderName}" has been deleted. ${postCount} post${postCount !== 1 ? 's have' : ' has'} been marked as unfiled.`,
+          title: "Folder Deleted",
+        });
+      } catch (error) {
+        console.error("Error deleting folder:", error);
+        await showDialog({
+          type: "alert",
+          message: error instanceof Error ? error.message : "Failed to delete folder",
+          title: "Error",
+        });
+      }
+    }
+  };
+
+  // Get post count for a folder
+  const getFolderPostCount = (folderId: string | null): number => {
+    if (!folderId) {
+      return posts.filter((p) => !p.folder_id).length;
+    }
+    return posts.filter((p) => p.folder_id === folderId).length;
+  };
+
+  // Handle opening add posts modal
+  const handleOpenAddPosts = (folderId: string) => {
+    setSelectedFolderForPosts(folderId);
+    // Pre-select posts that are already in this folder
+    const postsInFolder = posts
+      .filter((post) => post.folder_id === folderId)
+      .map((post) => post.id);
+    setSelectedPostIds(new Set(postsInFolder));
+    setSearchPostsInModal("");
+    setShowAddPostsModal(true);
+  };
+
+  // Handle adding/removing posts to/from folder
+  const handleAddPostsToFolder = async () => {
+    if (!selectedFolderForPosts) return;
+
+    try {
+      setAddingPosts(true);
+
+      // Get posts that were originally in the folder
+      const originalPostsInFolder = posts
+        .filter((post) => post.folder_id === selectedFolderForPosts)
+        .map((post) => post.id);
+
+      // Posts to add (selected but not originally in folder)
+      const postsToAdd = Array.from(selectedPostIds).filter(
+        (postId) => !originalPostsInFolder.includes(postId)
+      );
+
+      // Posts to remove (originally in folder but now unselected)
+      const postsToRemove = originalPostsInFolder.filter(
+        (postId) => !selectedPostIds.has(postId)
+      );
+
+      // Update posts: add to folder
+      await Promise.all(
+        postsToAdd.map((postId) =>
+          postsApi.update(postId, { folder_id: selectedFolderForPosts })
+        )
+      );
+
+      // Update posts: remove from folder (set folder_id to null)
+      await Promise.all(
+        postsToRemove.map((postId) =>
+          postsApi.update(postId, { folder_id: null })
+        )
+      );
+
+      // Reload data
+      if (onFoldersChange) onFoldersChange();
+      setShowAddPostsModal(false);
+      setSelectedPostIds(new Set());
+      setSelectedFolderForPosts(null);
+      setSearchPostsInModal("");
+
+      const addedCount = postsToAdd.length;
+      const removedCount = postsToRemove.length;
+      let message = "";
+      if (addedCount > 0 && removedCount > 0) {
+        message = `Successfully added ${addedCount} post${addedCount > 1 ? 's' : ''} and removed ${removedCount} post${removedCount > 1 ? 's' : ''} from folder.`;
+      } else if (addedCount > 0) {
+        message = `Successfully added ${addedCount} post${addedCount > 1 ? 's' : ''} to folder.`;
+      } else if (removedCount > 0) {
+        message = `Successfully removed ${removedCount} post${removedCount > 1 ? 's' : ''} from folder.`;
+      } else {
+        message = "Folder updated.";
+      }
+
+      await showDialog({
+        type: "alert",
+        message,
+        title: "Success",
+      });
+    } catch (error) {
+      console.error("Error updating posts in folder:", error);
+      await showDialog({
+        type: "alert",
+        message: error instanceof Error ? error.message : "Failed to update posts in folder",
+        title: "Error",
+      });
+    } finally {
+      setAddingPosts(false);
+    }
+  };
+
+  // Toggle post selection
+  const togglePostSelection = (postId: string) => {
+    setSelectedPostIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(postId)) {
+        next.delete(postId);
+      } else {
+        next.add(postId);
+      }
+      return next;
+    });
+  };
+
+  // Get posts for the modal: posts in folder first (sorted by date), then posts not in folder (sorted by date), filtered by search
+  const getAvailablePosts = () => {
+    if (!selectedFolderForPosts) return [];
+
+    // Get posts in the folder
+    let postsInFolder = posts.filter((post) => post.folder_id === selectedFolderForPosts);
+
+    // Get posts not in the folder
+    let postsNotInFolder = posts.filter((post) => post.folder_id !== selectedFolderForPosts);
+
+    // Sort both by most recently created (newest first)
+    postsInFolder = postsInFolder.sort((a, b) => {
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+
+    postsNotInFolder = postsNotInFolder.sort((a, b) => {
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+
+    // Combine: posts in folder first, then posts not in folder
+    let allPosts = [...postsInFolder, ...postsNotInFolder];
+
+    // Filter by search query
+    if (searchPostsInModal.trim()) {
+      const query = searchPostsInModal.toLowerCase();
+      allPosts = allPosts.filter((post) =>
+        post.title.toLowerCase().includes(query)
+      );
+    }
+
+    return allPosts;
+  };
+
+  // Check if a post is in the folder (for visual distinction)
+  const isPostInFolder = (postId: string) => {
+    if (!selectedFolderForPosts) return false;
+    const post = posts.find((p) => p.id === postId);
+    return post?.folder_id === selectedFolderForPosts;
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-6xl mx-auto px-4 py-8">
@@ -424,6 +687,20 @@ export function Dashboard({
               {quizResponses.length}
             </span>
           </button>
+          <button
+            onClick={() => setActiveTab("folders")}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium transition-all ${activeTab === "folders"
+              ? "bg-orange-600 text-white shadow-sm"
+              : "text-gray-600 hover:bg-gray-100"
+              }`}
+          >
+            <FolderIcon size={18} />
+            Folders
+            <span className={`text-xs px-2 py-0.5 rounded-full ${activeTab === "folders" ? "bg-white/20" : "bg-gray-200"
+              }`}>
+              {folders.length}
+            </span>
+          </button>
         </div>
 
         {/* Stats - Posts */}
@@ -501,9 +778,9 @@ export function Dashboard({
         {/* Posts List */}
         {activeTab === "posts" && (
           <>
-            {/* Search Bar for Posts */}
-            <div className="mb-6">
-              <div className="relative">
+            {/* Search Bar and Folder Filter for Posts */}
+            <div className="mb-6 flex gap-4">
+              <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                 <input
                   type="text"
@@ -512,6 +789,22 @@ export function Dashboard({
                   onChange={(e) => setSearchPosts(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
                 />
+              </div>
+              <div className="relative">
+                <select
+                  value={selectedFolderFilter || ""}
+                  onChange={(e) => setSelectedFolderFilter(e.target.value || null)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent appearance-none bg-white pr-10"
+                >
+                  <option value="">All Posts</option>
+                  <option value="unfiled">Unfiled</option>
+                  {folders.map((folder) => (
+                    <option key={folder.id} value={folder.id}>
+                      {folder.name}
+                    </option>
+                  ))}
+                </select>
+                <FolderIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={18} />
               </div>
             </div>
             <div className="space-y-4">
@@ -530,9 +823,23 @@ export function Dashboard({
                       <div className="flex-1 min-w-0">
                         {/* Header: Title and Status */}
                         <div className="flex items-start justify-between gap-3 mb-3">
-                          <h2 className="text-xl font-bold text-gray-900 flex-1">
-                            {post.title}
-                          </h2>
+                          <div className="flex-1 min-w-0">
+                            <h2 className="text-xl font-bold text-gray-900">
+                              {post.title}
+                            </h2>
+                            {/* Folder Tag */}
+                            {post.folder_id && (() => {
+                              const folder = folders.find((f) => f.id === post.folder_id);
+                              return folder ? (
+                                <div className="flex items-center gap-2 mt-1">
+                                  <FolderIcon size={14} className="text-orange-600" />
+                                  <span className="text-xs text-orange-600 font-medium">
+                                    {folder.name}
+                                  </span>
+                                </div>
+                              ) : null;
+                            })()}
+                          </div>
                           <span
                             className={`px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap flex-shrink-0 ${post.status === "published"
                               ? "bg-green-100 text-green-800"
@@ -562,15 +869,38 @@ export function Dashboard({
 
                       {/* Action Buttons */}
                       <div className="flex gap-2 flex-shrink-0">
-                        {/* {onPreviewPost && (
-                          <button
-                            onClick={() => onPreviewPost(post.id)}
-                            className="p-2 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                            title="Preview"
-                          >
-                            <Eye size={20} />
-                          </button>
-                        )} */}
+                        {/* Preview Button - use canonical URL for published posts with folder/slug, otherwise /posts/[id] */}
+                        {(() => {
+                          // Published posts with canonical URL use canonical path
+                          if (post.status === "published" && post.folder_slug && post.post_slug) {
+                            return (
+                              <a
+                                href={`/${post.folder_slug}/${post.post_slug}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-2 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                title="Preview (Canonical URL)"
+                              >
+                                <Eye size={20} />
+                              </a>
+                            );
+                          }
+                          // Draft posts or unfiled posts use /posts/[id]
+                          if (onPreviewPost) {
+                            return (
+                              <a
+                                href={`/posts/${post.id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-2 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                title="Preview"
+                              >
+                                <Eye size={20} />
+                              </a>
+                            );
+                          }
+                          return null;
+                        })()}
                         {onViewAnalytics && (
                           <button
                             onClick={() => onViewAnalytics(post.id)}
@@ -1019,6 +1349,223 @@ export function Dashboard({
           </>
         )}
 
+        {/* Folders Tab */}
+        {activeTab === "folders" && (
+          <>
+            <div className="mb-6 flex justify-between items-center">
+              <h2 className="text-2xl font-bold text-gray-900">Folders</h2>
+              <button
+                onClick={() => {
+                  setEditingFolder(null);
+                  setNewFolderName("");
+                  setNewFolderSlug("");
+                  setShowCreateFolderForm(true);
+                }}
+                className="flex items-center gap-2 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors"
+              >
+                <Plus size={18} />
+                New Folder
+              </button>
+            </div>
+
+            {/* Create/Edit Folder Form */}
+            {(editingFolder || showCreateFolderForm) && (
+              <div className="mb-6 p-6 bg-white rounded-lg shadow-sm border border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  {editingFolder ? "Edit Folder" : "Create New Folder"}
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Folder Name
+                    </label>
+                    <input
+                      type="text"
+                      value={editingFolder ? editingFolder.name : newFolderName}
+                      onChange={(e) => {
+                        if (editingFolder) {
+                          setEditingFolder({ ...editingFolder, name: e.target.value });
+                        } else {
+                          setNewFolderName(e.target.value);
+                          if (!newFolderSlug) {
+                            setNewFolderSlug(generateSlug(e.target.value));
+                          }
+                        }
+                      }}
+                      placeholder="e.g., Knees"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Folder Slug
+                    </label>
+                    <input
+                      type="text"
+                      value={editingFolder ? editingFolder.slug : newFolderSlug}
+                      onChange={(e) => {
+                        if (editingFolder) {
+                          setEditingFolder({ ...editingFolder, slug: e.target.value.toLowerCase().trim() });
+                        } else {
+                          setNewFolderSlug(e.target.value.toLowerCase().trim());
+                        }
+                      }}
+                      placeholder="e.g., knees"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent font-mono text-sm"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={async () => {
+                        if (editingFolder) {
+                          await handleUpdateFolder(editingFolder, editingFolder.name, editingFolder.slug);
+                        } else {
+                          await handleCreateFolder();
+                        }
+                      }}
+                      className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+                    >
+                      {editingFolder ? "Update" : "Create"}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setEditingFolder(null);
+                        setNewFolderName("");
+                        setNewFolderSlug("");
+                        setShowCreateFolderForm(false);
+                      }}
+                      className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Folders List */}
+            <div className="space-y-4">
+              {/* User folders */}
+              {folders.length === 0 ? (
+                <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
+                  <FolderIcon size={64} className="mx-auto text-gray-300 mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                    No folders yet
+                  </h3>
+                  <p className="text-gray-600 mb-6">
+                    Create a folder to organize your posts
+                  </p>
+                  <button
+                    onClick={() => {
+                      setEditingFolder(null);
+                      setNewFolderName("");
+                      setNewFolderSlug("");
+                      setShowCreateFolderForm(true);
+                    }}
+                    className="inline-flex items-center gap-2 bg-orange-600 text-white px-6 py-3 rounded-lg hover:bg-orange-700 transition-colors"
+                  >
+                    <Plus size={20} />
+                    Create Your First Folder
+                  </button>
+                </div>
+              ) : (
+                folders.map((folder) => (
+                  <div
+                    key={folder.id}
+                    className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 cursor-pointer hover:shadow-md transition-shadow"
+                    onClick={() => {
+                      if (editingFolder?.id !== folder.id) {
+                        handleOpenAddPosts(folder.id);
+                      }
+                    }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 flex-1">
+                        <FolderIcon size={24} className="text-orange-600" />
+                        <div className="flex-1">
+                          {editingFolder?.id === folder.id ? (
+                            <div className="space-y-2">
+                              <input
+                                type="text"
+                                value={editingFolder.name}
+                                onChange={(e) => setEditingFolder({ ...editingFolder, name: e.target.value })}
+                                className="w-full px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm font-semibold"
+                              />
+                              <input
+                                type="text"
+                                value={editingFolder.slug}
+                                onChange={(e) => setEditingFolder({ ...editingFolder, slug: e.target.value.toLowerCase().trim() })}
+                                className="w-full px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 font-mono text-xs"
+                              />
+                            </div>
+                          ) : (
+                            <div>
+                              <h3 className="text-lg font-semibold text-gray-900">{folder.name}</h3>
+                              <p className="text-sm text-gray-600">
+                                <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">{folder.slug}</code> • {getFolderPostCount(folder.id)} posts
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {editingFolder?.id === folder.id ? (
+                          <>
+                            <button
+                              onClick={() => handleUpdateFolder(editingFolder, editingFolder.name, editingFolder.slug)}
+                              className="px-3 py-1.5 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={() => setEditingFolder(null)}
+                              className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm"
+                            >
+                              Cancel
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenAddPosts(folder.id);
+                              }}
+                              className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium"
+                            >
+                              Add Posts
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingFolder(folder);
+                              }}
+                              className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              title="Edit"
+                            >
+                              <Edit size={18} />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteFolder(folder.id);
+                              }}
+                              className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Delete"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </>
+        )}
+
         {/* Reply Modal */}
         <ReplyModal
           isOpen={replyModalOpen}
@@ -1030,6 +1577,148 @@ export function Dashboard({
           phone={selectedResponse?.phone || null}
           onSubmit={handleSendReply}
         />
+
+        {/* Add Posts to Folder Modal */}
+        {showAddPostsModal && selectedFolderForPosts && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 backdrop-blur-sm"
+            onClick={() => {
+              setShowAddPostsModal(false);
+              setSelectedPostIds(new Set());
+              setSelectedFolderForPosts(null);
+            }}
+          >
+            <div
+              className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[80vh] flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">Manage Posts in Folder</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {folders.find((f) => f.id === selectedFolderForPosts)?.name}
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowAddPostsModal(false);
+                    setSelectedPostIds(new Set());
+                    setSelectedFolderForPosts(null);
+                    setSearchPostsInModal("");
+                  }}
+                  className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6">
+                {/* Search Bar */}
+                <div className="mb-4">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                    <input
+                      type="text"
+                      placeholder="Search posts by title..."
+                      value={searchPostsInModal}
+                      onChange={(e) => setSearchPostsInModal(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+
+                {getAvailablePosts().length === 0 ? (
+                  <div className="text-center py-12">
+                    <FileText size={48} className="mx-auto text-gray-300 mb-4" />
+                    <p className="text-gray-600">
+                      {searchPostsInModal.trim()
+                        ? `No posts found matching "${searchPostsInModal}"`
+                        : "No posts available to add to this folder."}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {getAvailablePosts().map((post) => {
+                      const isSelected = selectedPostIds.has(post.id);
+                      const inFolder = isPostInFolder(post.id);
+                      return (
+                        <div
+                          key={post.id}
+                          onClick={() => togglePostSelection(post.id)}
+                          className={`flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer transition-colors ${inFolder
+                            ? isSelected
+                              ? "border-orange-500 bg-orange-50"
+                              : "border-blue-300 bg-blue-50"
+                            : isSelected
+                              ? "border-orange-500 bg-orange-50"
+                              : "border-gray-200 hover:border-orange-300 hover:bg-orange-50/50"
+                            }`}
+                        >
+                          <div className={`flex-shrink-0 w-5 h-5 border-2 rounded flex items-center justify-center ${isSelected
+                            ? "border-orange-500 bg-orange-500"
+                            : "border-gray-300"
+                            }`}>
+                            {isSelected && <Check size={14} className="text-white" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-semibold text-gray-900 truncate">{post.title}</h4>
+                              {inFolder && (
+                                <span className="px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-800 whitespace-nowrap">
+                                  In Folder
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
+                              <span>{formatDate(post.createdAt)}</span>
+                              <span>•</span>
+                              <span
+                                className={`px-2 py-0.5 rounded-full text-xs ${post.status === "published"
+                                  ? "bg-green-100 text-green-800"
+                                  : "bg-yellow-100 text-yellow-800"
+                                  }`}
+                              >
+                                {post.status}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between p-6 border-t border-gray-200">
+                <div className="text-sm text-gray-600">
+                  {selectedPostIds.size > 0
+                    ? `${selectedPostIds.size} post${selectedPostIds.size > 1 ? "s" : ""} selected`
+                    : "No posts selected"}
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      setShowAddPostsModal(false);
+                      setSelectedPostIds(new Set());
+                      setSelectedFolderForPosts(null);
+                      setSearchPostsInModal("");
+                    }}
+                    className="px-4 py-2 text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleAddPostsToFolder}
+                    disabled={addingPosts}
+                    className="px-4 py-2 bg-orange-600 text-white hover:bg-orange-700 rounded-lg transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {addingPosts ? "Updating..." : "Update Folder"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

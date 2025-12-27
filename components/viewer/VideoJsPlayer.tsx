@@ -100,6 +100,10 @@ export function VideoJsPlayer({ postId, videoUrl, videoId: providedVideoId, prim
     const [timestamps, setTimestamps] = useState<VideoTimestamp[]>([]);
     const [isMounted, setIsMounted] = useState(false);
     const markersInitializedRef = useRef(false);
+    const [hasStarted, setHasStarted] = useState(false);
+    const hasStartedRef = useRef(false);
+    const [videoDuration, setVideoDuration] = useState<string>("0:00");
+    const overlayRef = useRef<HTMLDivElement | null>(null);
 
     // Unique ID for this player instance to scope CSS
     const playerId = `videojs-player-${resolvedVideoId || extractedVideoId || Math.random().toString(36).substr(2, 9)}`;
@@ -142,9 +146,10 @@ export function VideoJsPlayer({ postId, videoUrl, videoId: providedVideoId, prim
         // and can clip the control bar (especially after fullscreen exit). So we disable `fluid` and let the parent
         // container define sizing.
         const player = videojs(video, {
-            autoplay: false,
+            autoplay: true, // Autoplay muted in background
+            muted: true, // Start muted
             controls: true,
-            preload: "metadata",
+            preload: "auto",
             fluid: false,
             html5: {
                 vhs: {
@@ -158,6 +163,37 @@ export function VideoJsPlayer({ postId, videoUrl, videoId: providedVideoId, prim
 
         playerRef.current = player;
         console.log("Player initialized");
+
+        // Format duration helper
+        const formatDuration = (seconds: number): string => {
+            if (!seconds || !isFinite(seconds)) return "0:00";
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, "0")}`;
+        };
+
+        // Update duration when available
+        const updateDuration = () => {
+            const duration = player.duration();
+            if (duration && isFinite(duration) && duration > 0) {
+                setVideoDuration(formatDuration(duration));
+            }
+        };
+
+        player.on("loadedmetadata", updateDuration);
+        player.on("durationchange", updateDuration);
+        player.ready(() => {
+            setTimeout(updateDuration, 100);
+            // Ensure video starts playing muted in background
+            if (!hasStartedRef.current && player.paused()) {
+                const playPromise = player.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch((err) => {
+                        console.log("Autoplay prevented, will play on user interaction:", err);
+                    });
+                }
+            }
+        });
 
         if (containerRef.current) {
             containerRef.current.style.setProperty("--vjs-primary-color", extractedPrimaryColor);
@@ -197,6 +233,25 @@ export function VideoJsPlayer({ postId, videoUrl, videoId: providedVideoId, prim
             });
         }
 
+        // Handle play button click to start video
+        const handlePlayClick = () => {
+            if (!hasStartedRef.current) {
+                player.currentTime(0); // Start from beginning
+                player.muted(false); // Unmute
+                hasStartedRef.current = true;
+                setHasStarted(true);
+                const playPromise = player.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch((err) => {
+                        console.error("Error playing video:", err);
+                    });
+                }
+            }
+        };
+
+        // Store handler for cleanup
+        (player as any)._customPlayHandler = handlePlayClick;
+
         if (isHls && Hls.isSupported()) {
             const hls = new Hls({
                 enableWorker: true,
@@ -209,6 +264,15 @@ export function VideoJsPlayer({ postId, videoUrl, videoId: providedVideoId, prim
 
             hls.on(Hls.Events.MANIFEST_PARSED, () => {
                 console.log("HLS manifest loaded successfully");
+                // Try to play muted in background
+                if (!hasStartedRef.current && player.paused()) {
+                    const playPromise = player.play();
+                    if (playPromise !== undefined) {
+                        playPromise.catch((err) => {
+                            console.log("Autoplay prevented:", err);
+                        });
+                    }
+                }
             });
 
             hls.on(Hls.Events.ERROR, (event, data) => {
@@ -234,6 +298,17 @@ export function VideoJsPlayer({ postId, videoUrl, videoId: providedVideoId, prim
         } else if (!isHls) {
             // Direct video (e.g. MP4)
             player.src({ src: finalUrl, type: videoUrl.includes(".mp4") ? "video/mp4" : "video/webm" });
+            // Try to play muted in background after source is set
+            player.ready(() => {
+                if (!hasStartedRef.current && player.paused()) {
+                    const playPromise = player.play();
+                    if (playPromise !== undefined) {
+                        playPromise.catch((err) => {
+                            console.log("Autoplay prevented:", err);
+                        });
+                    }
+                }
+            });
         } else {
             console.error("HLS is not supported in this browser");
         }
@@ -252,6 +327,8 @@ export function VideoJsPlayer({ postId, videoUrl, videoId: providedVideoId, prim
         });
 
         return () => {
+            player.off("loadedmetadata", updateDuration);
+            player.off("durationchange", updateDuration);
             if (hlsRef.current) {
                 hlsRef.current.destroy();
                 hlsRef.current = null;
@@ -398,6 +475,17 @@ export function VideoJsPlayer({ postId, videoUrl, videoId: providedVideoId, prim
             const findPlaceholder = () => {
                 const placeholder = document.getElementById(placeholderId);
                 if (placeholder) {
+                    // Ensure placeholder has the correct sizing + rounded corners.
+                    // Some pages also define `.video-js-placeholder` styles; inline styles here win and keep behavior consistent.
+                    placeholder.style.display = "block";
+                    placeholder.style.width = "80%";
+                    placeholder.style.maxWidth = "760px";
+                    (placeholder.style as any).aspectRatio = "16 / 9";
+                    placeholder.style.backgroundColor = "#000";
+                    placeholder.style.borderRadius = "0.75rem"; // matches Tailwind `rounded-xl` and overlay
+                    placeholder.style.overflow = "hidden";
+                    placeholder.style.position = "relative";
+                    placeholder.style.margin = "1.5rem auto";
                     setPlaceholderElement(placeholder);
                 } else {
                     // Retry after a short delay if not found
@@ -414,14 +502,40 @@ export function VideoJsPlayer({ postId, videoUrl, videoId: providedVideoId, prim
 
     // If placeholderId is provided, render into placeholder using portal
     const containerClassName = placeholderId
-        ? `rounded-xl border border-gray-200 overflow-hidden bg-black ${className ?? ""}`
-        : `mt-12 rounded-xl border border-gray-200 overflow-hidden bg-black ${className ?? ""}`;
+        ? `rounded-xl border border-gray-200 overflow-hidden ${className ?? ""}`
+        : `mt-12 rounded-xl border border-gray-200 overflow-hidden ${className ?? ""}`;
+
+    // Convert primary color to rgba for overlay
+    const hexToRgba = (hex: string, alpha: number): string => {
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    };
+
+    const overlayColor = hexToRgba(extractedPrimaryColor, 0.7);
+
+    const handleOverlayPlayClick = () => {
+        if (playerRef.current && !hasStartedRef.current) {
+            playerRef.current.currentTime(0);
+            playerRef.current.muted(false);
+            hasStartedRef.current = true;
+            setHasStarted(true);
+            const playPromise = playerRef.current.play();
+            if (playPromise !== undefined) {
+                playPromise.catch((err) => {
+                    console.error("Error playing video:", err);
+                });
+            }
+        }
+    };
 
     const playerContent = (
         <div
             id={playerId}
             ref={containerRef}
             className={containerClassName}
+            data-video-started={hasStarted}
             style={{
                 "--vjs-primary-color": extractedPrimaryColor,
                 maxWidth: "100%",
@@ -436,43 +550,127 @@ export function VideoJsPlayer({ postId, videoUrl, videoId: providedVideoId, prim
                     : ({} as React.CSSProperties)),
             } as React.CSSProperties}
         >
-            <div data-vjs-player style={{ width: "100%", height: "100%", position: "relative" }}>
+            <div data-vjs-player style={{ width: "100%", height: "100%", position: "relative", borderRadius: "0.75rem", overflow: "hidden" }}>
                 <video
                     ref={(el) => {
                         videoRef.current = el;
                         if (el && el.isConnected) {
                             setIsMounted(true);
+                            // Ensure video is muted for autoplay
+                            if (el && !hasStarted) {
+                                el.muted = true;
+                            }
                         }
                     }}
                     className="video-js vjs-big-play-centered vjs-default-skin"
                     playsInline
+                    muted={!hasStarted}
                     data-setup="{}"
                 />
+                {/* Overlay with play button and duration */}
+                {!hasStarted && (
+                    <div
+                        ref={overlayRef}
+                        onClick={handleOverlayPlayClick}
+                        style={{
+                            position: "absolute",
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            backgroundColor: overlayColor,
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            cursor: "pointer",
+                            zIndex: 1000,
+                            borderRadius: "inherit",
+                        }}
+                    >
+                        {/* Play Button */}
+                        <div
+                            style={{
+                                width: "80px",
+                                height: "80px",
+                                borderRadius: "50%",
+                                backgroundColor: extractedPrimaryColor,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                marginBottom: "16px",
+                                boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
+                            }}
+                        >
+                            <svg
+                                width="32"
+                                height="32"
+                                viewBox="0 0 24 24"
+                                fill="white"
+                                style={{ marginLeft: "4px" }}
+                            >
+                                <path d="M8 5v14l11-7z" />
+                            </svg>
+                        </div>
+                        {/* Duration */}
+                        <div
+                            style={{
+                                color: "white",
+                                fontSize: "16px",
+                                fontWeight: 500,
+                                textShadow: "0 2px 4px rgba(0, 0, 0, 0.3)",
+                            }}
+                        >
+                            Video Duration: {videoDuration}
+                        </div>
+                    </div>
+                )}
             </div>
             <style jsx global>{`
                 #${playerId} {
                     width: 100% !important;
                     margin: 0 auto !important;
+                    border-radius: 0.75rem !important;
+                    overflow: hidden !important;
+                    background-color: transparent !important;
                 }
                 #${playerId} .video-js {
                     width: 100% !important;
                     height: 100% !important;
                     margin: 0 auto !important;
                     position: relative !important;
+                    border-radius: 0.75rem !important;
+                    overflow: hidden !important;
+                    background-color: transparent !important;
                 }
                 #${playerId} .video-js,
                 #${playerId} .video-js .vjs-tech,
                 #${playerId} .video-js .vjs-poster {
                     width: 100% !important;
                     height: 100% !important;
+                    border-radius: 0.75rem !important;
                 }
                 #${playerId} .video-js .vjs-tech {
                     object-fit: contain !important;
+                    border-radius: 0.75rem !important;
                 }
                 #${playerId} .video-js .vjs-poster {
                     background-size: contain !important;
+                    border-radius: 0.75rem !important;
                 }
-                #${playerId} .video-js .vjs-control-bar {
+                #${playerId} .video-js video {
+                    border-radius: 0.75rem !important;
+                    background-color: transparent !important;
+                }
+                /* Hide control bar when video hasn't started */
+                #${playerId}[data-video-started="false"] .video-js .vjs-control-bar {
+                    display: none !important;
+                    opacity: 0 !important;
+                    visibility: hidden !important;
+                }
+                
+                /* Show control bar when video has started */
+                #${playerId}[data-video-started="true"] .video-js .vjs-control-bar {
                     z-index: 10 !important;
                     display: flex !important;
                     opacity: 1 !important;
@@ -491,18 +689,32 @@ export function VideoJsPlayer({ postId, videoUrl, videoId: providedVideoId, prim
                     display: flex !important;
                 }
                 
-                /* Ensure controls are visible even when user is "inactive" or transitioning */
-                #${playerId} .video-js.vjs-user-inactive .vjs-control-bar,
-                #${playerId} .video-js.vjs-fullscreen .vjs-control-bar {
+                /* Ensure controls are visible even when user is "inactive" or transitioning (only after video started) */
+                #${playerId}[data-video-started="true"] .video-js.vjs-user-inactive .vjs-control-bar,
+                #${playerId}[data-video-started="true"] .video-js.vjs-fullscreen .vjs-control-bar {
                     display: flex !important;
                     opacity: 1 !important;
                     visibility: visible !important;
                 }
+                #${playerId} [data-vjs-player] {
+                    border-radius: 0.75rem !important;
+                    overflow: hidden !important;
+                    background-color: transparent !important;
+                }
                 #${playerId} .video-js video {
                     object-fit: contain !important;
                     top: 0 !important;
+                    left: 0 !important;
                     height: 100% !important;
                     width: 100% !important;
+                    border-radius: 0.75rem !important;
+                    background-color: transparent !important;
+                }
+                /* Ensure all Video.js internal elements respect border radius */
+                #${playerId} .video-js .vjs-tech,
+                #${playerId} .video-js .vjs-poster,
+                #${playerId} .video-js .vjs-text-track-display {
+                    border-radius: 0.75rem !important;
                 }
                 #${playerId} .video-js .vjs-play-progress,
                 #${playerId} .video-js .vjs-load-progress {
@@ -517,6 +729,11 @@ export function VideoJsPlayer({ postId, videoUrl, videoId: providedVideoId, prim
                 }
                 #${playerId} .video-js .vjs-big-play-button:hover {
                     background-color: ${extractedPrimaryColor} !important;
+                }
+                
+                /* Hide default big play button when overlay is shown */
+                #${playerId} .video-js .vjs-big-play-button {
+                    display: none !important;
                 }
                 
                 /* Manual marker styles */

@@ -16,6 +16,9 @@ export interface Post {
   component_order?: string[];
   styles?: PostStyles;
   template_data?: PostTemplateData | null;
+  folder_id?: string | null;
+  folder_slug?: string | null;
+  post_slug?: string | null;
 }
 
 export interface PostStyles {
@@ -38,6 +41,8 @@ export interface CreatePostData {
   quiz_id?: string | null;
   styles?: PostStyles;
   template_data?: PostTemplateData | null;
+  folder_id?: string | null;
+  post_slug?: string | null;
 }
 
 export interface UpdatePostData {
@@ -51,6 +56,8 @@ export interface UpdatePostData {
   component_order?: string[];
   styles?: PostStyles;
   template_data?: PostTemplateData | null;
+  folder_id?: string | null;
+  post_slug?: string | null;
 }
 
 export const postsApi = {
@@ -107,6 +114,8 @@ export const postsApi = {
         quiz_id: postData.quiz_id || null,
         styles: postData.styles || null,
         template_data: postData.template_data ?? null,
+        folder_id: postData.folder_id || null,
+        post_slug: postData.post_slug || null,
       })
       .select()
       .single();
@@ -137,6 +146,8 @@ export const postsApi = {
     if (postData.component_order !== undefined) updateData.component_order = postData.component_order;
     if (postData.styles !== undefined) updateData.styles = postData.styles;
     if (postData.template_data !== undefined) updateData.template_data = postData.template_data;
+    if (postData.folder_id !== undefined) updateData.folder_id = postData.folder_id;
+    if (postData.post_slug !== undefined) updateData.post_slug = postData.post_slug;
     updateData.updated_at = new Date().toISOString();
 
     const { data, error } = await supabase
@@ -170,8 +181,8 @@ export const postsApi = {
   },
 
   /**
-   * Public method to get a published post by ID (no authentication required)
-   * Only returns posts with status='published' and is_draft=false
+   * Public method to get a post by ID (no authentication required)
+   * Returns posts regardless of status (published or draft)
    * Uses the anon key client which respects RLS policies
    */
   async getPublicById(id: string): Promise<Post> {
@@ -196,6 +207,52 @@ export const postsApi = {
       .from("posts")
       .select("*")
       .eq("id", id)
+      .single();
+
+    if (error) {
+      console.error("Supabase error:", error);
+      // Provide more helpful error messages
+      if (error.code === "PGRST116") {
+        throw new Error("Post not found");
+      }
+      if (error.message?.includes("permission denied") || error.message?.includes("row-level security")) {
+        throw new Error("Access denied. Please check RLS policies allow public read access to posts.");
+      }
+      throw error;
+    }
+
+    if (!data) {
+      throw new Error("Post not found");
+    }
+    return data;
+  },
+
+  /**
+   * Public method to get a published post by canonical URL (folder_slug + post_slug)
+   * Only returns posts with status='published' and is_draft=false
+   * Uses the anon key client which respects RLS policies
+   */
+  async getPublicByCanonical(folderSlug: string, postSlug: string): Promise<Post> {
+    const { createClient } = await import("@supabase/supabase-js");
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      throw new Error("Supabase configuration missing");
+    }
+
+    const publicClient = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    });
+
+    const { data, error } = await publicClient
+      .from("posts")
+      .select("*")
+      .eq("folder_slug", folderSlug)
+      .eq("post_slug", postSlug)
       .eq("status", "published")
       .eq("is_draft", false)
       .single();

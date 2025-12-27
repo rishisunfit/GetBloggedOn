@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
-import { X, Loader2, ClipboardList, Check, Search, ChevronUp, ChevronDown, GripVertical } from "lucide-react";
+import { X, Loader2, ClipboardList, Check, Search, ChevronUp, ChevronDown, GripVertical, Plus, Link as LinkIcon } from "lucide-react";
 import { quizzesApi } from "@/services/quizzes";
 import type { Quiz } from "@/types/quiz";
-
-type ComponentType = "quiz" | "rating" | "cta";
+import { foldersApi, generateSlug, type Folder } from "@/services/folders";
 
 interface PostSettingsModalProps {
     isOpen: boolean;
@@ -12,7 +11,9 @@ interface PostSettingsModalProps {
     ratingEnabled: boolean;
     ctaEnabled: boolean;
     componentOrder?: string[];
-    onSave: (quizId: string | null, ratingEnabled: boolean, ctaEnabled: boolean, componentOrder: string[]) => void;
+    folderId?: string | null;
+    postSlug?: string | null;
+    onSave: (quizId: string | null, ratingEnabled: boolean, ctaEnabled: boolean, componentOrder: string[], folderId: string | null, postSlug: string | null) => void;
 }
 
 export function PostSettingsModal({
@@ -22,6 +23,8 @@ export function PostSettingsModal({
     ratingEnabled,
     ctaEnabled,
     componentOrder = ["quiz", "rating", "cta"],
+    folderId,
+    postSlug,
     onSave,
 }: PostSettingsModalProps) {
     const [quizzes, setQuizzes] = useState<Quiz[]>([]);
@@ -35,16 +38,34 @@ export function PostSettingsModal({
     const [componentOrderState, setComponentOrderState] = useState<string[]>(componentOrder || ["quiz", "rating", "cta"]);
     const [searchQuery, setSearchQuery] = useState("");
 
+    // Folder and slug state
+    const [folders, setFolders] = useState<Folder[]>([]);
+    const [loadingFolders, setLoadingFolders] = useState(true);
+    const [selectedFolderId, setSelectedFolderId] = useState<string | null>(folderId || null);
+    const [postSlugState, setPostSlugState] = useState<string>(postSlug || "");
+    const [slugError, setSlugError] = useState<string | null>(null);
+    const [showCreateFolder, setShowCreateFolder] = useState(false);
+    const [newFolderName, setNewFolderName] = useState("");
+    const [newFolderSlug, setNewFolderSlug] = useState("");
+    const [creatingFolder, setCreatingFolder] = useState(false);
+
     useEffect(() => {
         if (isOpen) {
             loadQuizzes();
+            loadFolders();
             setSelectedQuizId(quizId);
             setQuizEnabled(!!quizId);
             setRatingEnabledState(ratingEnabled);
             setCtaEnabledState(ctaEnabled);
             setComponentOrderState(componentOrder);
+            setSelectedFolderId(folderId || null);
+            setPostSlugState(postSlug || "");
+            setSlugError(null);
+            setShowCreateFolder(false);
+            setNewFolderName("");
+            setNewFolderSlug("");
         }
-    }, [isOpen, quizId, ratingEnabled, ctaEnabled, componentOrder]);
+    }, [isOpen, quizId, ratingEnabled, ctaEnabled, componentOrder, folderId, postSlug]);
 
     const loadQuizzes = async () => {
         try {
@@ -79,10 +100,83 @@ export function PostSettingsModal({
         }
     }, [searchQuery, allQuizzes]);
 
+    const loadFolders = async () => {
+        try {
+            setLoadingFolders(true);
+            const data = await foldersApi.getAll();
+            setFolders(data);
+        } catch (err) {
+            console.error("Error loading folders:", err);
+        } finally {
+            setLoadingFolders(false);
+        }
+    };
+
+    const handleCreateFolder = async () => {
+        if (!newFolderName.trim()) return;
+
+        try {
+            setCreatingFolder(true);
+            const slug = newFolderSlug.trim() || generateSlug(newFolderName);
+            const folder = await foldersApi.create({ name: newFolderName.trim(), slug });
+            setFolders([...folders, folder]);
+            setSelectedFolderId(folder.id);
+            setNewFolderName("");
+            setNewFolderSlug("");
+            setShowCreateFolder(false);
+        } catch (err) {
+            console.error("Error creating folder:", err);
+            setSlugError(err instanceof Error ? err.message : "Failed to create folder");
+        } finally {
+            setCreatingFolder(false);
+        }
+    };
+
+    const validateSlug = (slug: string): boolean => {
+        if (!slug.trim()) {
+            setSlugError(null);
+            return true; // Empty is OK if no folder selected
+        }
+        const slugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+        if (!slugRegex.test(slug)) {
+            setSlugError("Slug can only contain lowercase letters, numbers, and hyphens");
+            return false;
+        }
+        setSlugError(null);
+        return true;
+    };
+
+    const handleSlugChange = (value: string) => {
+        const slug = value.toLowerCase().trim();
+        setPostSlugState(slug);
+        validateSlug(slug);
+    };
+
     const handleSave = () => {
-        onSave(quizEnabled ? selectedQuizId : null, ratingEnabledState, ctaEnabledState, componentOrderState);
+        // Validate slug if folder is selected
+        if (selectedFolderId && !postSlugState.trim()) {
+            setSlugError("Post slug is required when a folder is selected");
+            return;
+        }
+        if (postSlugState.trim() && !validateSlug(postSlugState)) {
+            return;
+        }
+
+        onSave(
+            quizEnabled ? selectedQuizId : null,
+            ratingEnabledState,
+            ctaEnabledState,
+            componentOrderState,
+            selectedFolderId,
+            postSlugState.trim() || null
+        );
         onClose();
     };
+
+    const selectedFolder = folders.find(f => f.id === selectedFolderId);
+    const canonicalUrl = selectedFolder && postSlugState.trim()
+        ? `/${selectedFolder.slug}/${postSlugState.trim()}`
+        : null;
 
     const moveComponent = (index: number, direction: "up" | "down") => {
         const newOrder = [...componentOrderState];
@@ -311,6 +405,149 @@ export function PostSettingsModal({
                         </div>
                     </div>
 
+                    {/* URL & Folder Section */}
+                    <div className="mb-6">
+                        <h4 className="text-lg font-semibold text-gray-900 mb-2">
+                            URL & Folder
+                        </h4>
+                        <p className="text-sm text-gray-600 mb-4">
+                            Organize your post into a folder and set a custom URL slug. The canonical URL will be: <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">/{'{'}folder-slug{'}'}/{'{'}post-slug{'}'}</code>
+                        </p>
+
+                        {/* Folder Selection */}
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Folder
+                            </label>
+                            {loadingFolders ? (
+                                <div className="flex items-center justify-center py-4">
+                                    <Loader2 size={20} className="animate-spin text-gray-400" />
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    <select
+                                        value={selectedFolderId || ""}
+                                        onChange={(e) => {
+                                            setSelectedFolderId(e.target.value || null);
+                                            if (!e.target.value) {
+                                                setPostSlugState("");
+                                                setSlugError(null);
+                                            }
+                                        }}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                                    >
+                                        <option value="">Unfiled</option>
+                                        {folders.map((folder) => (
+                                            <option key={folder.id} value={folder.id}>
+                                                {folder.name}
+                                            </option>
+                                        ))}
+                                    </select>
+
+                                    {!showCreateFolder ? (
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowCreateFolder(true)}
+                                            className="flex items-center gap-2 text-sm text-violet-600 hover:text-violet-700"
+                                        >
+                                            <Plus size={16} />
+                                            Create new folder
+                                        </button>
+                                    ) : (
+                                        <div className="p-4 border border-gray-200 rounded-lg bg-gray-50 space-y-3">
+                                            <div>
+                                                <label className="block text-xs font-medium text-gray-700 mb-1">
+                                                    Folder Name
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={newFolderName}
+                                                    onChange={(e) => {
+                                                        setNewFolderName(e.target.value);
+                                                        if (!newFolderSlug) {
+                                                            setNewFolderSlug(generateSlug(e.target.value));
+                                                        }
+                                                    }}
+                                                    placeholder="e.g., Knees"
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent text-sm"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-medium text-gray-700 mb-1">
+                                                    Folder Slug
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={newFolderSlug}
+                                                    onChange={(e) => setNewFolderSlug(e.target.value.toLowerCase().trim())}
+                                                    placeholder="e.g., knees"
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent text-sm font-mono"
+                                                />
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={handleCreateFolder}
+                                                    disabled={creatingFolder || !newFolderName.trim()}
+                                                    className="flex-1 px-3 py-1.5 bg-violet-600 text-white rounded-lg hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                                                >
+                                                    {creatingFolder ? "Creating..." : "Create"}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setShowCreateFolder(false);
+                                                        setNewFolderName("");
+                                                        setNewFolderSlug("");
+                                                    }}
+                                                    className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm font-medium"
+                                                >
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Post Slug Input */}
+                        {selectedFolderId && (
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Post Slug <span className="text-red-500">*</span>
+                                </label>
+                                <div className="space-y-2">
+                                    <div className="relative">
+                                        <LinkIcon
+                                            size={18}
+                                            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                                        />
+                                        <input
+                                            type="text"
+                                            value={postSlugState}
+                                            onChange={(e) => handleSlugChange(e.target.value)}
+                                            placeholder="e.g., knee-strengthening"
+                                            className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent font-mono text-sm ${slugError ? "border-red-300" : "border-gray-300"
+                                                }`}
+                                        />
+                                    </div>
+                                    {slugError && (
+                                        <p className="text-xs text-red-600">{slugError}</p>
+                                    )}
+                                    {canonicalUrl && !slugError && (
+                                        <div className="flex items-center gap-2 text-xs text-gray-600">
+                                            <span>Canonical URL:</span>
+                                            <code className="bg-gray-100 px-2 py-1 rounded text-violet-700 font-mono">
+                                                {canonicalUrl}
+                                            </code>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
                     {/* Component Order Section */}
                     <div className="mb-6">
                         <h4 className="text-lg font-semibold text-gray-900 mb-2">
@@ -377,7 +614,7 @@ export function PostSettingsModal({
                     </button>
                     <button
                         onClick={handleSave}
-                        disabled={quizEnabled && !selectedQuizId}
+                        disabled={(quizEnabled && !selectedQuizId) || (selectedFolderId && !postSlugState.trim()) || !!slugError}
                         className="px-4 py-2 bg-violet-600 text-white hover:bg-violet-700 rounded-lg transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         Save Settings
