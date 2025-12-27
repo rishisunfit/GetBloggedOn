@@ -53,14 +53,13 @@ export function QuizEmbed({ quizId, align = "center" }: QuizEmbedProps) {
     if (loading) {
         return (
             <div
-                className="quiz-wrapper my-8"
+                className="my-8 flex justify-center"
                 data-type="quiz"
                 data-quiz-id={quizId}
                 data-align={align}
-                style={{ textAlign: align }}
             >
-                <div className="quiz-inner inline-block max-w-2xl w-full">
-                    <div className="bg-gray-100 rounded-lg p-8 text-center">
+                <div className="w-full max-w-2xl">
+                    <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-8 text-center w-full">
                         <div className="flex items-center justify-center gap-2">
                             <Loader2 size={20} className="animate-spin text-gray-400" />
                             <span className="text-gray-600">Loading quiz...</span>
@@ -74,14 +73,13 @@ export function QuizEmbed({ quizId, align = "center" }: QuizEmbedProps) {
     if (error || !quiz) {
         return (
             <div
-                className="quiz-wrapper my-8"
+                className="my-8 flex justify-center"
                 data-type="quiz"
                 data-quiz-id={quizId}
                 data-align={align}
-                style={{ textAlign: align }}
             >
-                <div className="quiz-inner inline-block max-w-2xl w-full">
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+                <div className="w-full max-w-2xl">
+                    <div className="bg-white border border-red-200 rounded-lg shadow-sm p-6 text-center w-full">
                         <p className="text-red-600 text-sm">
                             {error || "Quiz not found"}
                         </p>
@@ -91,16 +89,17 @@ export function QuizEmbed({ quizId, align = "center" }: QuizEmbedProps) {
         );
     }
 
+    const alignClass = align === 'left' ? 'items-start' : align === 'right' ? 'items-end' : 'items-center';
+
     return (
         <div
-            className="quiz-wrapper my-8"
+            className="my-8 flex justify-center"
             data-type="quiz"
             data-quiz-id={quizId}
             data-align={align}
-            style={{ textAlign: align }}
         >
-            <div className="quiz-inner inline-block max-w-2xl w-full">
-                <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+            <div className={`w-full max-w-2xl flex ${alignClass}`}>
+                <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden w-full">
                     <QuizPlayer quiz={quiz} />
                 </div>
             </div>

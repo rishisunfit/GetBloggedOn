@@ -16,7 +16,7 @@ interface QuizRendererProps {
  */
 export function QuizRenderer({ quizId, skipInlineScan = false }: QuizRendererProps = {}) {
     // If quizId is provided, render it directly (don't scan for inline quizzes)
-    if (quizId) {
+    if (quizId && typeof quizId === 'string' && quizId.trim() !== "") {
         return <QuizEmbed quizId={quizId} align="center" />;
     }
 

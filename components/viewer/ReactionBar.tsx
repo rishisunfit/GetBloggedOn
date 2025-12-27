@@ -140,27 +140,35 @@ export function ReactionBar({ postId }: ReactionBarProps) {
 
   if (loading) {
     return (
-      <div className="border-t border-gray-200 pt-8 mt-12">
-        <div className="bg-gray-50 rounded-2xl p-8">
-          <p className="text-gray-600 mb-6 text-center">How was this essay?</p>
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 justify-center">
-            {[5, 3, 1].map((stars) => (
-              <div
-                key={stars}
-                className="flex flex-col items-center gap-2 px-3 sm:px-6 py-3 sm:py-4 bg-white rounded-lg w-full sm:w-auto sm:flex-1 animate-pulse"
-              >
-                <div className="flex gap-1">
-                  {Array.from({ length: stars }).map((_, i) => (
-                    <StarIcon
-                      key={i}
-                      filled={false}
-                      className="w-6 h-6 text-gray-300"
-                    />
-                  ))}
-                </div>
-                <span className="text-lg font-semibold text-gray-300">-</span>
+      <div className="my-8 flex justify-center">
+        <div className="w-full max-w-2xl">
+          <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden w-full">
+            <div className="min-h-[300px] flex flex-col items-center justify-center text-center px-6 py-12">
+              <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-8 rotate-12 bg-gray-100">
+                <StarIcon className="w-8 h-8 text-gray-400" filled={false} />
               </div>
-            ))}
+              <p className="text-sm font-medium tracking-wide uppercase mb-4 text-gray-400">RATE THIS ESSAY</p>
+              <h2 className="text-3xl font-bold mb-6 text-gray-900">How was this essay?</h2>
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 justify-center w-full max-w-md">
+                {[5, 3, 1].map((stars) => (
+                  <div
+                    key={stars}
+                    className="flex flex-col items-center gap-2 px-6 py-4 bg-gray-50 rounded-lg w-full sm:w-auto sm:flex-1 animate-pulse"
+                  >
+                    <div className="flex gap-1">
+                      {Array.from({ length: stars }).map((_, i) => (
+                        <StarIcon
+                          key={i}
+                          filled={false}
+                          className="w-6 h-6 text-gray-300"
+                        />
+                      ))}
+                    </div>
+                    <span className="text-lg font-semibold text-gray-300">-</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -168,37 +176,59 @@ export function ReactionBar({ postId }: ReactionBarProps) {
   }
 
   return (
-    <div className="border-t border-gray-200 pt-8 mt-12">
-      <div className="bg-gray-50 rounded-2xl p-8">
-        <p className="text-gray-600 mb-6 text-center">How was this essay?</p>
-        <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 justify-center">
-          {ratings.map((rating) => (
-            <button
-              key={rating.stars}
-              onClick={() => handleRating(rating.stars)}
-              disabled={!postId}
-              className={`flex flex-col items-center gap-2 px-3 sm:px-6 py-3 sm:py-4 rounded-lg transition-colors w-full sm:w-auto sm:flex-1 ${userRating === rating.stars
-                ? 'bg-blue-100 border-2 border-blue-500'
-                : 'bg-white hover:bg-gray-50 border-2 border-transparent'
-                } ${!postId ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-            >
-              <div className="flex gap-1">
-                {Array.from({ length: rating.stars }).map((_, i) => (
-                  <StarIcon
-                    key={i}
-                    filled={userRating === rating.stars}
-                    className={`w-6 h-6 ${userRating === rating.stars
-                      ? 'text-blue-600'
-                      : 'text-gray-600'
-                      }`}
-                  />
-                ))}
-              </div>
-              <span className="text-lg font-semibold text-gray-700">
-                {rating.count}
-              </span>
-            </button>
-          ))}
+    <div className="my-8 flex justify-center">
+      <div className="w-full max-w-2xl">
+        <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden w-full">
+          <div className="min-h-[300px] flex flex-col items-center justify-center text-center px-6 py-12">
+            {/* Decorative element */}
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-8 rotate-12 bg-blue-50">
+              <StarIcon className="w-8 h-8 text-blue-500" filled={true} />
+            </div>
+
+            {/* Subtitle */}
+            <p className="text-sm font-medium tracking-wide uppercase mb-4 text-blue-600">
+              RATE THIS ESSAY
+            </p>
+
+            {/* Title */}
+            <h2 className="text-3xl md:text-4xl font-bold mb-10 text-gray-900">
+              How was this essay?
+            </h2>
+
+            {/* Rating buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center w-full max-w-md">
+              {ratings.map((rating) => (
+                <button
+                  key={rating.stars}
+                  onClick={() => handleRating(rating.stars)}
+                  disabled={!postId}
+                  className={`flex flex-col items-center gap-2 px-6 py-4 rounded-lg transition-all w-full sm:w-auto sm:flex-1 ${userRating === rating.stars
+                    ? 'bg-blue-50 border-2 border-blue-500 shadow-md'
+                    : 'bg-gray-50 hover:bg-gray-100 border-2 border-transparent hover:border-gray-200'
+                    } ${!postId ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                >
+                  <div className="flex gap-1">
+                    {Array.from({ length: rating.stars }).map((_, i) => (
+                      <StarIcon
+                        key={i}
+                        filled={userRating === rating.stars}
+                        className={`w-6 h-6 ${userRating === rating.stars
+                          ? 'text-blue-600'
+                          : 'text-gray-400'
+                          }`}
+                      />
+                    ))}
+                  </div>
+                  <span className={`text-lg font-semibold ${userRating === rating.stars
+                    ? 'text-blue-600'
+                    : 'text-gray-700'
+                    }`}>
+                    {rating.count}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>

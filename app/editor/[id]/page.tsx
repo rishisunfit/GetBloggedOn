@@ -25,6 +25,7 @@ export default function EditorPage() {
   const [quizId, setQuizId] = useState<string | null>(null);
   const [ratingEnabled, setRatingEnabled] = useState<boolean>(true);
   const [ctaEnabled, setCtaEnabled] = useState<boolean>(true);
+  const [componentOrder, setComponentOrder] = useState<string[]>(["quiz", "rating", "cta"]);
 
   const loadPost = useCallback(async () => {
     if (!id) return;
@@ -58,6 +59,7 @@ export default function EditorPage() {
       setQuizId(data.quiz_id);
       setRatingEnabled((data as any).rating_enabled !== false);
       setCtaEnabled((data as any).cta_enabled !== false);
+      setComponentOrder((data as any).component_order || ["quiz", "rating", "cta"]);
     } catch (error) {
       console.error("Error loading post:", error);
       await showDialog({
@@ -129,6 +131,19 @@ export default function EditorPage() {
     }
   };
 
+  const handleUpdateComponentOrder = async (order: string[]) => {
+    if (!id) return;
+    try {
+      await postsApi.update(id, {
+        component_order: order,
+      });
+      setComponentOrder(order);
+      await loadPost();
+    } catch (error) {
+      console.error("Error updating component order:", error);
+    }
+  };
+
   const handleSaveDraft = async (template: PostTemplateData, content: string, styles?: PostStyles, silent = false) => {
     if (!id) return;
 
@@ -142,6 +157,7 @@ export default function EditorPage() {
         quiz_id: quizId,
         rating_enabled: ratingEnabled,
         cta_enabled: ctaEnabled,
+        component_order: componentOrder,
         template_data: template,
       };
 
@@ -192,6 +208,7 @@ export default function EditorPage() {
         quiz_id: quizId,
         rating_enabled: ratingEnabled,
         cta_enabled: ctaEnabled,
+        component_order: componentOrder,
         template_data: template,
       };
 
@@ -229,6 +246,48 @@ export default function EditorPage() {
     }
   };
 
+  const handleAutoSave = async (template: PostTemplateData, content: string, styles?: PostStyles, silent = true) => {
+    // Auto-save that preserves the current post status
+    if (!id || !post) return;
+
+    try {
+      const title = template?.title || "Untitled Post";
+      const updateData: any = {
+        title,
+        content,
+        // Preserve current status instead of forcing draft
+        status: post.status || "draft",
+        is_draft: (post.status === "draft" || post.is_draft === true) ? true : false,
+        quiz_id: quizId,
+        rating_enabled: ratingEnabled,
+        cta_enabled: ctaEnabled,
+        component_order: componentOrder,
+        template_data: template,
+      };
+
+      // Only include styles if provided and not empty
+      if (styles) {
+        updateData.styles = styles;
+      }
+
+      await postsApi.update(id, updateData);
+
+      // Reload post data to get latest
+      await loadPost();
+    } catch (error) {
+      console.error("Error auto-saving:", error);
+      // Don't show error dialog for silent auto-saves
+      if (!silent) {
+        let errorMessage = error instanceof Error ? error.message : String(error);
+        await showDialog({
+          type: "alert",
+          message: `Failed to save: ${errorMessage}`,
+          title: "Error",
+        });
+      }
+    }
+  };
+
   const handleSave = async (template: PostTemplateData, content: string, styles?: PostStyles, silent = false) => {
     // Fallback to save as draft for backward compatibility
     await handleSaveDraft(template, content, styles, silent);
@@ -252,15 +311,18 @@ export default function EditorPage() {
         initialQuizId={post?.quiz_id || null}
         initialRatingEnabled={ratingEnabled}
         initialCtaEnabled={ctaEnabled}
+        initialComponentOrder={componentOrder}
         initialStyles={post?.styles}
         onBack={handleBack}
         onPreview={handlePreview}
         onSave={handleSave}
         onSaveDraft={handleSaveDraft}
         onPublish={handlePublish}
+        onAutoSave={handleAutoSave}
         onUpdateQuizId={handleUpdateQuizId}
         onUpdateRatingEnabled={handleUpdateRatingEnabled}
         onUpdateCtaEnabled={handleUpdateCtaEnabled}
+        onUpdateComponentOrder={handleUpdateComponentOrder}
       />
     </ProtectedRoute>
   );

@@ -97,15 +97,18 @@ interface EditorProps {
   initialQuizId?: string | null;
   initialRatingEnabled?: boolean;
   initialCtaEnabled?: boolean;
+  initialComponentOrder?: string[];
   initialStyles?: PostStyles;
   onBack: () => void;
   onPreview: () => void;
   onSave: (template: PostTemplateData, content: string, styles?: PostStyles, silent?: boolean) => void;
   onSaveDraft?: (template: PostTemplateData, content: string, styles?: PostStyles, silent?: boolean) => void;
   onPublish?: (template: PostTemplateData, content: string, styles?: PostStyles, silent?: boolean) => void;
+  onAutoSave?: (template: PostTemplateData, content: string, styles?: PostStyles, silent?: boolean) => void;
   onUpdateQuizId?: (quizId: string | null) => void;
   onUpdateRatingEnabled?: (enabled: boolean) => void;
   onUpdateCtaEnabled?: (enabled: boolean) => void;
+  onUpdateComponentOrder?: (order: string[]) => void;
 }
 
 export function Editor({
@@ -121,14 +124,18 @@ export function Editor({
   onSave,
   onSaveDraft,
   onPublish,
+  onAutoSave,
   onUpdateQuizId,
   onUpdateRatingEnabled,
   onUpdateCtaEnabled,
+  onUpdateComponentOrder,
+  initialComponentOrder = ["quiz", "rating", "cta"],
 }: EditorProps) {
   const [templateData, setTemplateData] = useState<PostTemplateData>(() => normalizeTemplateData(initialTemplateData));
   const [quizId, setQuizId] = useState<string | null>(initialQuizId);
   const [ratingEnabled, setRatingEnabled] = useState<boolean>(initialRatingEnabled);
   const [ctaEnabled, setCtaEnabled] = useState<boolean>(initialCtaEnabled ?? true);
+  const [componentOrder, setComponentOrder] = useState<string[]>(initialComponentOrder);
   const [showSettings, setShowSettings] = useState(false);
   const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>('desktop');
   const [showPreview, setShowPreview] = useState(false);
@@ -521,9 +528,12 @@ export function Editor({
   };
 
   const handlePreview = () => {
-    // Auto-save content before preview (silently)
+    // Auto-save content before preview (silently) - preserve current status
     const content = editor?.getHTML() || "";
-    if (onSaveDraft) {
+    if (onAutoSave) {
+      onAutoSave(templateData, content, styles as PostStyles, true);
+    } else if (onSaveDraft) {
+      // Fallback to saveDraft if onAutoSave not provided
       onSaveDraft(templateData, content, styles as PostStyles, true);
     } else {
       onSave(templateData, content, styles as PostStyles, true);
@@ -1446,10 +1456,12 @@ export function Editor({
             quizId={quizId}
             ratingEnabled={ratingEnabled}
             ctaEnabled={ctaEnabled}
-            onSave={(newQuizId, newRatingEnabled, newCtaEnabled) => {
+            componentOrder={componentOrder}
+            onSave={(newQuizId, newRatingEnabled, newCtaEnabled, newComponentOrder) => {
               setQuizId(newQuizId);
               setRatingEnabled(newRatingEnabled);
               setCtaEnabled(newCtaEnabled);
+              setComponentOrder(newComponentOrder);
               if (onUpdateQuizId) {
                 onUpdateQuizId(newQuizId);
               }
@@ -1458,6 +1470,9 @@ export function Editor({
               }
               if (onUpdateCtaEnabled) {
                 onUpdateCtaEnabled(newCtaEnabled);
+              }
+              if (onUpdateComponentOrder) {
+                onUpdateComponentOrder(newComponentOrder);
               }
             }}
           />
@@ -1687,12 +1702,21 @@ export function Editor({
                       fontFamily: fontOptions.find(f => f.name === styles.bodyFont)?.value,
                     }}
                   />
-                  {/* Quiz CTA (if enabled) */}
-                  {quizId && <QuizRenderer key={`quiz-${quizId}`} quizId={quizId} />}
-                  {/* Rating CTA (if enabled) */}
-                  {ratingEnabled && postId && <ReactionBar key={`rating-${postId}`} postId={postId} />}
-                  {/* CTA Form (if enabled) */}
-                  {ctaEnabled && postId && <CTAForm key={`cta-${postId}`} postId={postId} quizId={quizId} />}
+                  {/* Divider before components */}
+                  <div className="border-t border-gray-200 mt-12"></div>
+                  {/* Render components in the specified order */}
+                  {componentOrder.map((componentType) => {
+                    if (componentType === "quiz" && quizId) {
+                      return <QuizRenderer key={`quiz-${quizId}`} quizId={quizId} skipInlineScan={true} />;
+                    }
+                    if (componentType === "rating" && ratingEnabled && postId) {
+                      return <ReactionBar key={`rating-${postId}`} postId={postId} />;
+                    }
+                    if (componentType === "cta" && ctaEnabled && postId) {
+                      return <CTAForm key={`cta-${postId}`} postId={postId} quizId={quizId} />;
+                    }
+                    return null;
+                  })}
                 </>
               ) : (
                 <>
@@ -1700,24 +1724,33 @@ export function Editor({
                     editor={editor}
                     className="editorial-editor"
                   />
-                  {/* Quiz CTA (if enabled) - Non-editable preview */}
-                  {quizId && (
-                    <div className="mt-8 pointer-events-none opacity-75" key={`quiz-preview-${quizId}`}>
-                      <QuizRenderer quizId={quizId} />
-                    </div>
-                  )}
-                  {/* Rating CTA (if enabled) - Non-editable preview */}
-                  {ratingEnabled && postId && (
-                    <div className="mt-8 pointer-events-none opacity-75" key={`rating-preview-${postId}`}>
-                      <ReactionBar postId={postId} />
-                    </div>
-                  )}
-                  {/* CTA Form (if enabled) - Non-editable preview */}
-                  {ctaEnabled && postId && (
-                    <div className="mt-8 pointer-events-none opacity-75" key={`cta-preview-${postId}`}>
-                      <CTAForm postId={postId} quizId={quizId} />
-                    </div>
-                  )}
+                  {/* Divider before components */}
+                  <div className="border-t border-gray-200 mt-12"></div>
+                  {/* Render components in the specified order - Non-editable preview */}
+                  {componentOrder.map((componentType) => {
+                    if (componentType === "quiz" && quizId) {
+                      return (
+                        <div className="mt-8 pointer-events-none opacity-75" key={`quiz-preview-${quizId}`}>
+                          <QuizRenderer quizId={quizId} skipInlineScan={true} />
+                        </div>
+                      );
+                    }
+                    if (componentType === "rating" && ratingEnabled && postId) {
+                      return (
+                        <div className="mt-8 pointer-events-none opacity-75" key={`rating-preview-${postId}`}>
+                          <ReactionBar postId={postId} />
+                        </div>
+                      );
+                    }
+                    if (componentType === "cta" && ctaEnabled && postId) {
+                      return (
+                        <div className="mt-8 pointer-events-none opacity-75" key={`cta-preview-${postId}`}>
+                          <CTAForm postId={postId} quizId={quizId} />
+                        </div>
+                      );
+                    }
+                    return null;
+                  })}
                 </>
               )}
             </div>

@@ -13,6 +13,7 @@ export interface Post {
   quiz_id: string | null;
   rating_enabled?: boolean;
   cta_enabled?: boolean;
+  component_order?: string[];
   styles?: PostStyles;
   template_data?: PostTemplateData | null;
 }
@@ -47,6 +48,7 @@ export interface UpdatePostData {
   quiz_id?: string | null;
   rating_enabled?: boolean;
   cta_enabled?: boolean;
+  component_order?: string[];
   styles?: PostStyles;
   template_data?: PostTemplateData | null;
 }
@@ -132,6 +134,7 @@ export const postsApi = {
     if (postData.quiz_id !== undefined) updateData.quiz_id = postData.quiz_id;
     if (postData.rating_enabled !== undefined) updateData.rating_enabled = postData.rating_enabled;
     if (postData.cta_enabled !== undefined) updateData.cta_enabled = postData.cta_enabled;
+    if (postData.component_order !== undefined) updateData.component_order = postData.component_order;
     if (postData.styles !== undefined) updateData.styles = postData.styles;
     if (postData.template_data !== undefined) updateData.template_data = postData.template_data;
     updateData.updated_at = new Date().toISOString();

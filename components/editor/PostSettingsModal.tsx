@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
-import { X, Loader2, ClipboardList, Check, Search } from "lucide-react";
+import { X, Loader2, ClipboardList, Check, Search, ChevronUp, ChevronDown, GripVertical } from "lucide-react";
 import { quizzesApi } from "@/services/quizzes";
 import type { Quiz } from "@/types/quiz";
+
+type ComponentType = "quiz" | "rating" | "cta";
 
 interface PostSettingsModalProps {
     isOpen: boolean;
@@ -9,7 +11,8 @@ interface PostSettingsModalProps {
     quizId: string | null;
     ratingEnabled: boolean;
     ctaEnabled: boolean;
-    onSave: (quizId: string | null, ratingEnabled: boolean, ctaEnabled: boolean) => void;
+    componentOrder?: string[];
+    onSave: (quizId: string | null, ratingEnabled: boolean, ctaEnabled: boolean, componentOrder: string[]) => void;
 }
 
 export function PostSettingsModal({
@@ -18,6 +21,7 @@ export function PostSettingsModal({
     quizId,
     ratingEnabled,
     ctaEnabled,
+    componentOrder = ["quiz", "rating", "cta"],
     onSave,
 }: PostSettingsModalProps) {
     const [quizzes, setQuizzes] = useState<Quiz[]>([]);
@@ -28,6 +32,7 @@ export function PostSettingsModal({
     const [quizEnabled, setQuizEnabled] = useState(!!quizId);
     const [ratingEnabledState, setRatingEnabledState] = useState(ratingEnabled);
     const [ctaEnabledState, setCtaEnabledState] = useState(ctaEnabled);
+    const [componentOrderState, setComponentOrderState] = useState<string[]>(componentOrder || ["quiz", "rating", "cta"]);
     const [searchQuery, setSearchQuery] = useState("");
 
     useEffect(() => {
@@ -37,8 +42,9 @@ export function PostSettingsModal({
             setQuizEnabled(!!quizId);
             setRatingEnabledState(ratingEnabled);
             setCtaEnabledState(ctaEnabled);
+            setComponentOrderState(componentOrder);
         }
-    }, [isOpen, quizId, ratingEnabled, ctaEnabled]);
+    }, [isOpen, quizId, ratingEnabled, ctaEnabled, componentOrder]);
 
     const loadQuizzes = async () => {
         try {
@@ -74,8 +80,34 @@ export function PostSettingsModal({
     }, [searchQuery, allQuizzes]);
 
     const handleSave = () => {
-        onSave(quizEnabled ? selectedQuizId : null, ratingEnabledState, ctaEnabledState);
+        onSave(quizEnabled ? selectedQuizId : null, ratingEnabledState, ctaEnabledState, componentOrderState);
         onClose();
+    };
+
+    const moveComponent = (index: number, direction: "up" | "down") => {
+        const newOrder = [...componentOrderState];
+        const targetIndex = direction === "up" ? index - 1 : index + 1;
+        if (targetIndex < 0 || targetIndex >= newOrder.length) return;
+        [newOrder[index], newOrder[targetIndex]] = [newOrder[targetIndex], newOrder[index]];
+        setComponentOrderState(newOrder);
+    };
+
+    const getComponentLabel = (type: string): string => {
+        switch (type) {
+            case "quiz": return "Quiz";
+            case "rating": return "Rating/Reaction Bar";
+            case "cta": return "Have a Question Form";
+            default: return type;
+        }
+    };
+
+    const isComponentEnabled = (type: string): boolean => {
+        switch (type) {
+            case "quiz": return quizEnabled;
+            case "rating": return ratingEnabledState;
+            case "cta": return ctaEnabledState;
+            default: return false;
+        }
     };
 
     if (!isOpen) return null;
@@ -276,6 +308,62 @@ export function PostSettingsModal({
                                 />
                                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-violet-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div>
                             </label>
+                        </div>
+                    </div>
+
+                    {/* Component Order Section */}
+                    <div className="mb-6">
+                        <h4 className="text-lg font-semibold text-gray-900 mb-2">
+                            Component Order
+                        </h4>
+                        <p className="text-sm text-gray-600 mb-4">
+                            Reorder the components that appear at the bottom of your post. Only enabled components will be displayed.
+                        </p>
+                        <div className="space-y-2">
+                            {componentOrderState.map((component, index) => {
+                                const enabled = isComponentEnabled(component);
+                                return (
+                                    <div
+                                        key={component}
+                                        className={`flex items-center gap-3 p-3 rounded-lg border-2 ${enabled
+                                            ? "bg-white border-violet-200"
+                                            : "bg-gray-50 border-gray-200 opacity-60"
+                                            }`}
+                                    >
+                                        <GripVertical className="text-gray-400" size={20} />
+                                        <div className="flex-1">
+                                            <div className="font-medium text-gray-900">
+                                                {getComponentLabel(component)}
+                                            </div>
+                                            {!enabled && (
+                                                <div className="text-xs text-gray-500 mt-0.5">
+                                                    (Disabled)
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="flex flex-col gap-1">
+                                            <button
+                                                type="button"
+                                                onClick={() => moveComponent(index, "up")}
+                                                disabled={index === 0}
+                                                className="p-1 rounded hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed"
+                                                title="Move up"
+                                            >
+                                                <ChevronUp size={16} className="text-gray-600" />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => moveComponent(index, "down")}
+                                                disabled={index === componentOrderState.length - 1}
+                                                className="p-1 rounded hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed"
+                                                title="Move down"
+                                            >
+                                                <ChevronDown size={16} className="text-gray-600" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
                 </div>

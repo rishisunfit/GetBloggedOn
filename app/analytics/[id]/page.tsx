@@ -501,14 +501,22 @@ export default function PostAnalyticsPage() {
                                                 ))}
                                             </div>
 
-                                            {/* Quiz CTA (if enabled) */}
-                                            {post.quiz_id && <QuizRenderer quizId={post.quiz_id} />}
+                                            {/* Divider before components */}
+                                            <div className="border-t border-gray-200 mt-12"></div>
 
-                                            {/* Reaction Bar (if enabled) */}
-                                            {post.rating_enabled !== false && <ReactionBar postId={post.id} />}
-
-                                            {/* CTA Form (if enabled) */}
-                                            {post.cta_enabled !== false && <CTAForm postId={post.id} quizId={post.quiz_id} />}
+                                            {/* Render components in the specified order */}
+                                            {((post as any).component_order || ["quiz", "rating", "cta"]).map((componentType: string) => {
+                                                if (componentType === "quiz" && post.quiz_id) {
+                                                    return <QuizRenderer key={`quiz-${post.quiz_id}`} quizId={post.quiz_id} skipInlineScan={true} />;
+                                                }
+                                                if (componentType === "rating" && post.rating_enabled !== false) {
+                                                    return <ReactionBar key={`rating-${post.id}`} postId={post.id} />;
+                                                }
+                                                if (componentType === "cta" && post.cta_enabled !== false) {
+                                                    return <CTAForm key={`cta-${post.id}`} postId={post.id} quizId={post.quiz_id} />;
+                                                }
+                                                return null;
+                                            })}
 
                                             {/* Footer */}
                                             <footer
