@@ -10,6 +10,24 @@ export interface PostTemplateData {
     subtitle?: string;
     authorName?: string;
     date?: string;
+    alignment?: 'left' | 'center' | 'right';
+    // Typography options
+    seriesFont?: string;
+    seriesWeight?: string;
+    seriesSize?: string;
+    seriesColor?: string;
+    titleFont?: string;
+    titleWeight?: string;
+    titleSize?: string;
+    titleColor?: string;
+    subtitleFont?: string;
+    subtitleWeight?: string;
+    subtitleSize?: string;
+    subtitleColor?: string;
+    bylineFont?: string;
+    bylineWeight?: string;
+    bylineSize?: string;
+    bylineColor?: string;
 }
 
 export function getDefaultTemplateData(createdDate?: string): PostTemplateData {
@@ -32,6 +50,7 @@ export function getDefaultTemplateData(createdDate?: string): PostTemplateData {
         subtitle: "A subtitle for your article",
         authorName: "Author Name",
         date: dateStr,
+        alignment: "left",
     };
 }
 

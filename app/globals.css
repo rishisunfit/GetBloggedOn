@@ -2,6 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Force mobile layout for ReactionBar inside mobile preview */
+/* Override Tailwind's sm: breakpoint when inside mobile preview */
+.mobile-preview .bg-gray-50.rounded-2xl > div[class*="flex"] {
+  flex-direction: column !important;
+}
+
+.mobile-preview .bg-gray-50.rounded-2xl button[class*="w-full"] {
+  width: 100% !important;
+  flex: none !important;
+}
+
 @keyframes shimmer {
   0% {
     background-position: -200% 0;

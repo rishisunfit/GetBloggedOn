@@ -7,13 +7,17 @@ interface PostSettingsModalProps {
     isOpen: boolean;
     onClose: () => void;
     quizId: string | null;
-    onSave: (quizId: string | null) => void;
+    ratingEnabled: boolean;
+    ctaEnabled: boolean;
+    onSave: (quizId: string | null, ratingEnabled: boolean, ctaEnabled: boolean) => void;
 }
 
 export function PostSettingsModal({
     isOpen,
     onClose,
     quizId,
+    ratingEnabled,
+    ctaEnabled,
     onSave,
 }: PostSettingsModalProps) {
     const [quizzes, setQuizzes] = useState<Quiz[]>([]);
@@ -22,6 +26,8 @@ export function PostSettingsModal({
     const [error, setError] = useState<string | null>(null);
     const [selectedQuizId, setSelectedQuizId] = useState<string | null>(quizId);
     const [quizEnabled, setQuizEnabled] = useState(!!quizId);
+    const [ratingEnabledState, setRatingEnabledState] = useState(ratingEnabled);
+    const [ctaEnabledState, setCtaEnabledState] = useState(ctaEnabled);
     const [searchQuery, setSearchQuery] = useState("");
 
     useEffect(() => {
@@ -29,8 +35,10 @@ export function PostSettingsModal({
             loadQuizzes();
             setSelectedQuizId(quizId);
             setQuizEnabled(!!quizId);
+            setRatingEnabledState(ratingEnabled);
+            setCtaEnabledState(ctaEnabled);
         }
-    }, [isOpen, quizId]);
+    }, [isOpen, quizId, ratingEnabled, ctaEnabled]);
 
     const loadQuizzes = async () => {
         try {
@@ -66,7 +74,7 @@ export function PostSettingsModal({
     }, [searchQuery, allQuizzes]);
 
     const handleSave = () => {
-        onSave(quizEnabled ? selectedQuizId : null);
+        onSave(quizEnabled ? selectedQuizId : null, ratingEnabledState, ctaEnabledState);
         onClose();
     };
 
@@ -219,6 +227,56 @@ export function PostSettingsModal({
                                 )}
                             </div>
                         )}
+                    </div>
+
+                    {/* Rating Section */}
+                    <div className="mb-6">
+                        <div className="flex items-center justify-between mb-4">
+                            <div>
+                                <h4 className="text-lg font-semibold text-gray-900 mb-1">
+                                    Rating/Reaction Bar
+                                </h4>
+                                <p className="text-sm text-gray-600">
+                                    Enable a rating bar that appears at the bottom of your post, allowing readers to rate your content.
+                                </p>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={ratingEnabledState}
+                                    onChange={(e) => {
+                                        setRatingEnabledState(e.target.checked);
+                                    }}
+                                    className="sr-only peer"
+                                />
+                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-violet-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div>
+                            </label>
+                        </div>
+                    </div>
+
+                    {/* CTA Section */}
+                    <div className="mb-6">
+                        <div className="flex items-center justify-between mb-4">
+                            <div>
+                                <h4 className="text-lg font-semibold text-gray-900 mb-1">
+                                    Have a Question Form
+                                </h4>
+                                <p className="text-sm text-gray-600">
+                                    Enable a contact form that appears at the bottom of your post, allowing readers to send you questions.
+                                </p>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={ctaEnabledState}
+                                    onChange={(e) => {
+                                        setCtaEnabledState(e.target.checked);
+                                    }}
+                                    className="sr-only peer"
+                                />
+                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-violet-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div>
+                            </label>
+                        </div>
                     </div>
                 </div>
 

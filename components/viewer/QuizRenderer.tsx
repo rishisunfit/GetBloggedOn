@@ -4,11 +4,28 @@ import { useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { QuizEmbed } from "./QuizEmbed";
 
+interface QuizRendererProps {
+    quizId?: string | null;
+    skipInlineScan?: boolean;
+}
+
 /**
  * Renders quiz embeds in preview mode
- * This component scans for quiz divs and replaces them with React components
+ * If quizId is provided, renders that quiz directly
+ * Otherwise, scans for quiz divs in content and replaces them with React components
  */
-export function QuizRenderer() {
+export function QuizRenderer({ quizId, skipInlineScan = false }: QuizRendererProps = {}) {
+    // If quizId is provided, render it directly (don't scan for inline quizzes)
+    if (quizId) {
+        return <QuizEmbed quizId={quizId} align="center" />;
+    }
+
+    // If skipInlineScan is true, don't scan
+    if (skipInlineScan) {
+        return null;
+    }
+
+    // Otherwise, scan for inline quizzes in content
     useEffect(() => {
         const renderQuizzes = () => {
             // Find all quiz wrapper divs
@@ -22,11 +39,11 @@ export function QuizRenderer() {
                     return;
                 }
 
-                const quizId = wrapper.getAttribute("data-quiz-id");
+                const inlineQuizId = wrapper.getAttribute("data-quiz-id");
                 const align = (wrapper.getAttribute("data-align") ||
                     "center") as "left" | "center" | "right";
 
-                if (!quizId) {
+                if (!inlineQuizId) {
                     return;
                 }
 
@@ -41,7 +58,7 @@ export function QuizRenderer() {
 
                 // Render the QuizEmbed component
                 const root = createRoot(container);
-                root.render(<QuizEmbed quizId={quizId} align={align} />);
+                root.render(<QuizEmbed quizId={inlineQuizId} align={align} />);
             });
         };
 

@@ -11,6 +11,8 @@ export interface Post {
   user_id: string;
   is_draft: boolean;
   quiz_id: string | null;
+  rating_enabled?: boolean;
+  cta_enabled?: boolean;
   styles?: PostStyles;
   template_data?: PostTemplateData | null;
 }
@@ -43,6 +45,8 @@ export interface UpdatePostData {
   status?: "draft" | "published";
   is_draft?: boolean;
   quiz_id?: string | null;
+  rating_enabled?: boolean;
+  cta_enabled?: boolean;
   styles?: PostStyles;
   template_data?: PostTemplateData | null;
 }
@@ -126,6 +130,8 @@ export const postsApi = {
       updateData.is_draft = postData.status === "draft";
     }
     if (postData.quiz_id !== undefined) updateData.quiz_id = postData.quiz_id;
+    if (postData.rating_enabled !== undefined) updateData.rating_enabled = postData.rating_enabled;
+    if (postData.cta_enabled !== undefined) updateData.cta_enabled = postData.cta_enabled;
     if (postData.styles !== undefined) updateData.styles = postData.styles;
     if (postData.template_data !== undefined) updateData.template_data = postData.template_data;
     updateData.updated_at = new Date().toISOString();

@@ -110,7 +110,7 @@ export const TemplateBylineExtension = Node.create<TemplateBylineOptions>({
         return [
             "p",
             mergeAttributes(HTMLAttributes, {
-                class: "byline text-xs font-bold tracking-wide uppercase mb-12 border-b pb-4",
+                class: "byline text-xs font-bold tracking-wide uppercase mb-12 border-b pb-4 text-left",
                 "data-template-type": "byline",
                 "data-template-required": "true",
                 "data-author-name": authorName || "Author Name",
@@ -129,13 +129,10 @@ export const TemplateBylineExtension = Node.create<TemplateBylineOptions>({
             const { authorName, date } = node.attrs;
 
             const wrapper = document.createElement("p");
-            wrapper.className = "byline text-xs font-bold tracking-wide uppercase mb-12 border-b pb-4";
+            wrapper.className = "byline text-xs font-bold tracking-wide uppercase mb-12 border-b pb-4 text-left";
             wrapper.setAttribute("data-template-type", "byline");
             wrapper.setAttribute("data-template-required", "true");
             wrapper.contentEditable = "false";
-
-            // Fixed "By " prefix
-            const byPrefix = document.createTextNode("By ");
 
             // Function to resize input based on content
             const resizeInput = (input: HTMLInputElement) => {
@@ -147,18 +144,18 @@ export const TemplateBylineExtension = Node.create<TemplateBylineOptions>({
                 temp.style.font = window.getComputedStyle(input).font;
                 temp.textContent = input.value || input.placeholder || "M";
                 document.body.appendChild(temp);
-                const width = Math.max(temp.offsetWidth + 20, 100); // Add padding, min 100px
+                const width = Math.max(temp.offsetWidth + 20, 140); // Add padding, min 140px
                 input.style.width = `${width}px`;
                 document.body.removeChild(temp);
             };
 
-            // Author name input
+            // Author name input (combined with "By" text)
             const authorInput = document.createElement("input");
             authorInput.type = "text";
-            authorInput.value = authorName || "Author Name";
+            authorInput.value = authorName ? `By ${authorName}` : "By Author Name";
             authorInput.className = "template-byline-author bg-transparent inline-block focus:outline-none focus:ring-1 focus:ring-blue-500 rounded px-1";
             authorInput.style.width = "auto";
-            authorInput.style.minWidth = "100px";
+            authorInput.style.minWidth = "140px";
             authorInput.setAttribute("data-editable", "authorName");
 
             // Initial resize
@@ -183,14 +180,16 @@ export const TemplateBylineExtension = Node.create<TemplateBylineOptions>({
             // Initial resize
             resizeInput(dateInput);
 
-            wrapper.appendChild(byPrefix);
             wrapper.appendChild(authorInput);
             wrapper.appendChild(separator);
             wrapper.appendChild(dateInput);
 
             // Handle updates
             const updateNode = () => {
-                const newAuthorName = authorInput.value.trim() || "Author Name";
+                // Extract author name from "By Author Name" format
+                const authorText = authorInput.value.trim() || "By Author Name";
+                const authorMatch = authorText.match(/^By\s+(.+)$/i);
+                const newAuthorName = authorMatch ? authorMatch[1].trim() : authorText.replace(/^By\s*/i, "").trim() || "Author Name";
                 const newDate = dateInput.value.trim() || new Date().toLocaleDateString("en-US", {
                     year: "numeric",
                     month: "long",
@@ -244,8 +243,10 @@ export const TemplateBylineExtension = Node.create<TemplateBylineOptions>({
                     // Update input values if node attributes changed externally
                     // But don't update if inputs are focused (user is typing)
                     if (document.activeElement !== authorInput && document.activeElement !== dateInput) {
-                        if (updatedNode.attrs.authorName !== authorInput.value) {
-                            authorInput.value = updatedNode.attrs.authorName || "Author Name";
+                        const currentAuthorName = updatedNode.attrs.authorName || "Author Name";
+                        const expectedValue = `By ${currentAuthorName}`;
+                        if (authorInput.value !== expectedValue) {
+                            authorInput.value = expectedValue;
                             resizeInput(authorInput);
                         }
                         if (updatedNode.attrs.date !== date) {

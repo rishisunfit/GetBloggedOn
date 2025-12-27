@@ -23,6 +23,8 @@ export default function EditorPage() {
   const [post, setPost] = useState<PostWithStyles | null>(null);
   const [loading, setLoading] = useState(true);
   const [quizId, setQuizId] = useState<string | null>(null);
+  const [ratingEnabled, setRatingEnabled] = useState<boolean>(true);
+  const [ctaEnabled, setCtaEnabled] = useState<boolean>(true);
 
   const loadPost = useCallback(async () => {
     if (!id) return;
@@ -54,6 +56,8 @@ export default function EditorPage() {
 
       setPost(data);
       setQuizId(data.quiz_id);
+      setRatingEnabled((data as any).rating_enabled !== false);
+      setCtaEnabled((data as any).cta_enabled !== false);
     } catch (error) {
       console.error("Error loading post:", error);
       await showDialog({
@@ -99,6 +103,32 @@ export default function EditorPage() {
     }
   };
 
+  const handleUpdateRatingEnabled = async (enabled: boolean) => {
+    if (!id) return;
+    try {
+      await postsApi.update(id, {
+        rating_enabled: enabled,
+      });
+      setRatingEnabled(enabled);
+      await loadPost();
+    } catch (error) {
+      console.error("Error updating rating:", error);
+    }
+  };
+
+  const handleUpdateCtaEnabled = async (enabled: boolean) => {
+    if (!id) return;
+    try {
+      await postsApi.update(id, {
+        cta_enabled: enabled,
+      });
+      setCtaEnabled(enabled);
+      await loadPost();
+    } catch (error) {
+      console.error("Error updating CTA:", error);
+    }
+  };
+
   const handleSaveDraft = async (template: PostTemplateData, content: string, styles?: PostStyles, silent = false) => {
     if (!id) return;
 
@@ -110,6 +140,8 @@ export default function EditorPage() {
         status: "draft",
         is_draft: true,
         quiz_id: quizId,
+        rating_enabled: ratingEnabled,
+        cta_enabled: ctaEnabled,
         template_data: template,
       };
 
@@ -158,6 +190,8 @@ export default function EditorPage() {
         status: "published",
         is_draft: false,
         quiz_id: quizId,
+        rating_enabled: ratingEnabled,
+        cta_enabled: ctaEnabled,
         template_data: template,
       };
 
@@ -216,6 +250,8 @@ export default function EditorPage() {
         initialTemplateData={(post as any)?.template_data}
         initialContent={post?.content || ""}
         initialQuizId={post?.quiz_id || null}
+        initialRatingEnabled={ratingEnabled}
+        initialCtaEnabled={ctaEnabled}
         initialStyles={post?.styles}
         onBack={handleBack}
         onPreview={handlePreview}
@@ -223,6 +259,8 @@ export default function EditorPage() {
         onSaveDraft={handleSaveDraft}
         onPublish={handlePublish}
         onUpdateQuizId={handleUpdateQuizId}
+        onUpdateRatingEnabled={handleUpdateRatingEnabled}
+        onUpdateCtaEnabled={handleUpdateCtaEnabled}
       />
     </ProtectedRoute>
   );

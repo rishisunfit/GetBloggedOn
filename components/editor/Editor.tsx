@@ -34,6 +34,9 @@ import { CalloutExtension, calloutPresets } from "./CalloutExtension";
 import { BubbleMenu } from "@tiptap/react/menus";
 import { PostSettingsModal } from "./PostSettingsModal";
 import { normalizeTemplateData, type PostTemplateData } from "@/services/postTemplate";
+import { ReactionBar } from "@/components/viewer/ReactionBar";
+import { QuizRenderer } from "@/components/viewer/QuizRenderer";
+import { CTAForm } from "@/components/viewer/CTAForm";
 import { ImagePickerModal } from "./ImagePickerModal";
 import { ImageHistoryModal } from "./ImageHistoryModal";
 import { AIImageGeneratorModal } from "./AIImageGeneratorModal";
@@ -92,6 +95,8 @@ interface EditorProps {
   initialTemplateData?: PostTemplateData;
   initialContent?: string;
   initialQuizId?: string | null;
+  initialRatingEnabled?: boolean;
+  initialCtaEnabled?: boolean;
   initialStyles?: PostStyles;
   onBack: () => void;
   onPreview: () => void;
@@ -99,6 +104,8 @@ interface EditorProps {
   onSaveDraft?: (template: PostTemplateData, content: string, styles?: PostStyles, silent?: boolean) => void;
   onPublish?: (template: PostTemplateData, content: string, styles?: PostStyles, silent?: boolean) => void;
   onUpdateQuizId?: (quizId: string | null) => void;
+  onUpdateRatingEnabled?: (enabled: boolean) => void;
+  onUpdateCtaEnabled?: (enabled: boolean) => void;
 }
 
 export function Editor({
@@ -106,6 +113,8 @@ export function Editor({
   initialTemplateData,
   initialContent = "",
   initialQuizId = null,
+  initialRatingEnabled = true,
+  initialCtaEnabled = true,
   initialStyles,
   onBack,
   onPreview,
@@ -113,9 +122,13 @@ export function Editor({
   onSaveDraft,
   onPublish,
   onUpdateQuizId,
+  onUpdateRatingEnabled,
+  onUpdateCtaEnabled,
 }: EditorProps) {
   const [templateData, setTemplateData] = useState<PostTemplateData>(() => normalizeTemplateData(initialTemplateData));
   const [quizId, setQuizId] = useState<string | null>(initialQuizId);
+  const [ratingEnabled, setRatingEnabled] = useState<boolean>(initialRatingEnabled);
+  const [ctaEnabled, setCtaEnabled] = useState<boolean>(initialCtaEnabled ?? true);
   const [showSettings, setShowSettings] = useState(false);
   const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>('desktop');
   const [showPreview, setShowPreview] = useState(false);
@@ -146,6 +159,8 @@ export function Editor({
   const lastSavedContent = useRef<string>(initialContent);
   const lastSavedTemplate = useRef<PostTemplateData>(normalizeTemplateData(initialTemplateData));
   const lastSavedStyles = useRef<TemplateStyles>(initialStyles || defaultStyles);
+  const titleTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const subtitleTextareaRef = useRef<HTMLTextAreaElement>(null);
   const { user } = useAuth();
 
   const editor = useEditor({
@@ -545,7 +560,7 @@ export function Editor({
 
     return `
 <header class="post-header">
-  ${hasSeries ? `<div class="post-series">${seriesName}${seriesName && volume ? ` <span class="dot">•</span> ` : ""}${volume ? `Volume ${volume}` : ""}</div>` : ""}
+  ${hasSeries ? `<div class="post-series">${seriesName}${seriesName && volume ? ` <span class="dot">•</span> ` : ""}${volume || ""}</div>` : ""}
   ${hasTitle ? `<h1 class="post-title">${title}</h1>` : ""}
   ${hasSubtitle ? `<p class="post-subtitle">${subtitle}</p>` : ""}
   ${hasByline ? `<div class="post-byline">${authorName ? `By ${authorName}` : ""}${authorName && date ? ` <span class="dot">•</span> ` : ""}${date || ""}</div>` : ""}
@@ -711,6 +726,18 @@ export function Editor({
       editor.off("update", handleUpdate);
     };
   }, [editor, templateData, styles]);
+
+  // Auto-resize title and subtitle textareas
+  useEffect(() => {
+    const resizeTextarea = (textarea: HTMLTextAreaElement | null) => {
+      if (textarea) {
+        textarea.style.height = 'auto';
+        textarea.style.height = `${textarea.scrollHeight}px`;
+      }
+    };
+    resizeTextarea(titleTextareaRef.current);
+    resizeTextarea(subtitleTextareaRef.current);
+  }, [templateData.title, templateData.subtitle]);
 
   // Track video selection
   useEffect(() => {
@@ -1417,10 +1444,20 @@ export function Editor({
             isOpen={showSettings}
             onClose={() => setShowSettings(false)}
             quizId={quizId}
-            onSave={(newQuizId) => {
+            ratingEnabled={ratingEnabled}
+            ctaEnabled={ctaEnabled}
+            onSave={(newQuizId, newRatingEnabled, newCtaEnabled) => {
               setQuizId(newQuizId);
+              setRatingEnabled(newRatingEnabled);
+              setCtaEnabled(newCtaEnabled);
               if (onUpdateQuizId) {
                 onUpdateQuizId(newQuizId);
+              }
+              if (onUpdateRatingEnabled) {
+                onUpdateRatingEnabled(newRatingEnabled);
+              }
+              if (onUpdateCtaEnabled) {
+                onUpdateCtaEnabled(newCtaEnabled);
               }
             }}
           />
@@ -1459,20 +1496,55 @@ export function Editor({
               <div className="mb-10">
                 {showPreview ? (
                   <div>
-                    <div className="text-center text-xs font-bold tracking-[0.18em] uppercase mb-4" style={{ opacity: 0.8 }}>
+                    <div
+                      className={`${templateData.alignment === 'center' ? 'text-center' : templateData.alignment === 'right' ? 'text-right' : 'text-left'} tracking-[0.18em] uppercase mb-4`}
+                      style={{
+                        fontFamily: templateData.seriesFont ? fontOptions.find(f => f.name === templateData.seriesFont)?.value || templateData.seriesFont : undefined,
+                        fontWeight: templateData.seriesWeight || '700',
+                        fontSize: templateData.seriesSize || '0.75rem',
+                        color: templateData.seriesColor || undefined,
+                        opacity: templateData.seriesColor ? 1 : 0.8,
+                      }}
+                    >
                       {(templateData.seriesName || "").trim()}
                       {(templateData.seriesName || "").trim() && (templateData.volume || "").trim() ? " • " : ""}
-                      {(templateData.volume || "").trim() ? `Volume ${templateData.volume}` : ""}
+                      {(templateData.volume || "").trim() || ""}
                     </div>
-                    <h1 className="text-center text-5xl font-bold mb-4" style={{ fontFamily: fontOptions.find(f => f.name === styles.headingFont)?.value || styles.headingFont, fontWeight: styles.headingWeight }}>
+                    <h1
+                      className={`${templateData.alignment === 'center' ? 'text-center' : templateData.alignment === 'right' ? 'text-right' : 'text-left'} mb-4`}
+                      style={{
+                        fontFamily: templateData.titleFont ? fontOptions.find(f => f.name === templateData.titleFont)?.value || templateData.titleFont : (fontOptions.find(f => f.name === styles.headingFont)?.value || styles.headingFont),
+                        fontWeight: templateData.titleWeight || styles.headingWeight,
+                        fontSize: templateData.titleSize || '3rem',
+                        color: templateData.titleColor || undefined,
+                      }}
+                    >
                       {(templateData.title || "").trim() || "Untitled Post"}
                     </h1>
                     {(templateData.subtitle || "").trim() ? (
-                      <p className="text-center text-xl italic mb-6" style={{ opacity: 0.9 }}>
+                      <p
+                        className={`${templateData.alignment === 'center' ? 'text-center' : templateData.alignment === 'right' ? 'text-right' : 'text-left'} italic mb-6`}
+                        style={{
+                          fontFamily: templateData.subtitleFont ? fontOptions.find(f => f.name === templateData.subtitleFont)?.value || templateData.subtitleFont : undefined,
+                          fontWeight: templateData.subtitleWeight || undefined,
+                          fontSize: templateData.subtitleSize || '1.25rem',
+                          color: templateData.subtitleColor || undefined,
+                          opacity: templateData.subtitleColor ? 1 : 0.9,
+                        }}
+                      >
                         {templateData.subtitle}
                       </p>
                     ) : null}
-                    <div className="text-center text-xs font-bold tracking-[0.14em] uppercase border-b pb-4" style={{ opacity: 0.8 }}>
+                    <div
+                      className={`${templateData.alignment === 'center' ? 'text-center' : templateData.alignment === 'right' ? 'text-right' : 'text-left'} tracking-[0.14em] uppercase border-b pb-4`}
+                      style={{
+                        fontFamily: templateData.bylineFont ? fontOptions.find(f => f.name === templateData.bylineFont)?.value || templateData.bylineFont : undefined,
+                        fontWeight: templateData.bylineWeight || '700',
+                        fontSize: templateData.bylineSize || '0.75rem',
+                        color: templateData.bylineColor || undefined,
+                        opacity: templateData.bylineColor ? 1 : 0.8,
+                      }}
+                    >
                       {(templateData.authorName || "").trim() ? `By ${templateData.authorName}` : ""}
                       {(templateData.authorName || "").trim() && (templateData.date || "").trim() ? " • " : ""}
                       {(templateData.date || "").trim() || ""}
@@ -1480,62 +1552,125 @@ export function Editor({
                   </div>
                 ) : (
                   <div>
-                    <div className="flex items-center justify-center gap-2 text-xs font-bold tracking-[0.18em] uppercase mb-4">
+                    <div className={`flex items-center ${templateData.alignment === 'center' ? 'justify-center' : templateData.alignment === 'right' ? 'justify-end' : 'justify-start'} gap-2 tracking-[0.18em] uppercase mb-4`}>
                       <input
                         type="text"
                         value={templateData.seriesName || ""}
                         onChange={(e) => setTemplateData(prev => ({ ...prev, seriesName: e.target.value }))}
-                        className="bg-transparent border-b border-transparent focus:border-gray-300 outline-none text-center px-1"
-                        style={{ width: `${Math.max((templateData.seriesName || "").length * 9, 160)}px` }}
+                        className="bg-transparent border-b border-transparent focus:border-gray-300 outline-none px-1"
+                        style={{
+                          width: `${Math.max((templateData.seriesName || "").length * 9, 160)}px`,
+                          fontFamily: templateData.seriesFont ? fontOptions.find(f => f.name === templateData.seriesFont)?.value || templateData.seriesFont : undefined,
+                          fontWeight: templateData.seriesWeight || '700',
+                          fontSize: templateData.seriesSize || '0.75rem',
+                          color: templateData.seriesColor || undefined,
+                          textAlign: templateData.alignment === 'center' ? 'center' : templateData.alignment === 'right' ? 'right' : 'left',
+                        }}
                         placeholder="The Editorial Review"
                       />
                       <span style={{ opacity: 0.7 }}>•</span>
-                      <span style={{ opacity: 0.8 }}>Volume</span>
                       <input
                         type="text"
                         value={templateData.volume || ""}
-                        onChange={(e) => setTemplateData(prev => ({ ...prev, volume: e.target.value }))}
-                        className="bg-transparent border-b border-transparent focus:border-gray-300 outline-none text-center px-1"
-                        style={{ width: `${Math.max((templateData.volume || "").length * 10, 64)}px` }}
-                        placeholder="XXIII"
+                        onChange={(e) => {
+                          setTemplateData(prev => ({ ...prev, volume: e.target.value }));
+                        }}
+                        className="bg-transparent border-b border-transparent focus:border-gray-300 outline-none px-1"
+                        style={{
+                          width: `${Math.max((templateData.volume || "").length * 10, 120)}px`,
+                          fontFamily: templateData.seriesFont ? fontOptions.find(f => f.name === templateData.seriesFont)?.value || templateData.seriesFont : undefined,
+                          fontWeight: templateData.seriesWeight || '700',
+                          fontSize: templateData.seriesSize || '0.75rem',
+                          color: templateData.seriesColor || undefined,
+                          textAlign: templateData.alignment === 'center' ? 'center' : templateData.alignment === 'right' ? 'right' : 'left',
+                        }}
+                        placeholder="Volume XXIII"
                       />
                     </div>
 
-                    <input
-                      type="text"
+                    <textarea
+                      ref={titleTextareaRef}
                       value={templateData.title || ""}
                       onChange={(e) => setTemplateData(prev => ({ ...prev, title: e.target.value }))}
-                      className="w-full text-center text-5xl font-bold bg-transparent outline-none border-none focus:ring-0 mb-4"
+                      className={`w-full bg-transparent outline-none border-none focus:ring-0 mb-4 resize-none overflow-hidden`}
                       placeholder="Untitled Post"
-                      style={{ fontFamily: fontOptions.find(f => f.name === styles.headingFont)?.value || styles.headingFont, fontWeight: styles.headingWeight }}
+                      rows={1}
+                      style={{
+                        fontFamily: templateData.titleFont ? fontOptions.find(f => f.name === templateData.titleFont)?.value || templateData.titleFont : (fontOptions.find(f => f.name === styles.headingFont)?.value || styles.headingFont),
+                        fontWeight: templateData.titleWeight || styles.headingWeight,
+                        fontSize: templateData.titleSize || '3rem',
+                        color: templateData.titleColor || undefined,
+                        textAlign: templateData.alignment === 'center' ? 'center' : templateData.alignment === 'right' ? 'right' : 'left',
+                        lineHeight: '1.2',
+                        minHeight: '1.2em',
+                      }}
+                      onInput={(e) => {
+                        const target = e.target as HTMLTextAreaElement;
+                        target.style.height = 'auto';
+                        target.style.height = `${target.scrollHeight}px`;
+                      }}
                     />
 
-                    <input
-                      type="text"
+                    <textarea
+                      ref={subtitleTextareaRef}
                       value={templateData.subtitle || ""}
                       onChange={(e) => setTemplateData(prev => ({ ...prev, subtitle: e.target.value }))}
-                      className="w-full text-center text-xl italic bg-transparent outline-none border-none focus:ring-0 mb-6"
+                      className={`w-full italic bg-transparent outline-none border-none focus:ring-0 mb-6 resize-none overflow-hidden`}
                       placeholder="A subtitle for your article"
-                      style={{ opacity: 0.95 }}
+                      rows={1}
+                      style={{
+                        fontFamily: templateData.subtitleFont ? fontOptions.find(f => f.name === templateData.subtitleFont)?.value || templateData.subtitleFont : undefined,
+                        fontWeight: templateData.subtitleWeight || undefined,
+                        fontSize: templateData.subtitleSize || '1.25rem',
+                        color: templateData.subtitleColor || undefined,
+                        opacity: templateData.subtitleColor ? 1 : 0.95,
+                        textAlign: templateData.alignment === 'center' ? 'center' : templateData.alignment === 'right' ? 'right' : 'left',
+                        lineHeight: '1.4',
+                        minHeight: '1.4em',
+                      }}
+                      onInput={(e) => {
+                        const target = e.target as HTMLTextAreaElement;
+                        target.style.height = 'auto';
+                        target.style.height = `${target.scrollHeight}px`;
+                      }}
                     />
 
-                    <div className="flex items-center justify-center gap-2 text-xs font-bold tracking-[0.14em] uppercase border-b pb-4">
-                      <span style={{ opacity: 0.85 }}>By</span>
+                    <div className={`flex items-center ${templateData.alignment === 'center' ? 'justify-center' : templateData.alignment === 'right' ? 'justify-end' : 'justify-start'} gap-2 tracking-[0.14em] uppercase border-b pb-4`}>
                       <input
                         type="text"
-                        value={templateData.authorName || ""}
-                        onChange={(e) => setTemplateData(prev => ({ ...prev, authorName: e.target.value }))}
-                        className="bg-transparent border-b border-transparent focus:border-gray-300 outline-none text-center px-1"
-                        style={{ width: `${Math.max((templateData.authorName || "").length * 9, 140)}px` }}
-                        placeholder="Author Name"
+                        value={templateData.authorName ? `By ${templateData.authorName}` : ""}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          // Extract author name from "By Author Name" format or just use the value
+                          const authorMatch = value.match(/^By\s+(.+)$/i);
+                          const newAuthorName = authorMatch ? authorMatch[1].trim() : value.replace(/^By\s*/i, "").trim();
+                          setTemplateData(prev => ({ ...prev, authorName: newAuthorName }));
+                        }}
+                        className="bg-transparent border-b border-transparent focus:border-gray-300 outline-none px-1"
+                        style={{
+                          width: `${Math.max((templateData.authorName ? `By ${templateData.authorName}` : "").length * 8, 140)}px`,
+                          fontFamily: templateData.bylineFont ? fontOptions.find(f => f.name === templateData.bylineFont)?.value || templateData.bylineFont : undefined,
+                          fontWeight: templateData.bylineWeight || '700',
+                          fontSize: templateData.bylineSize || '0.75rem',
+                          color: templateData.bylineColor || undefined,
+                          textAlign: templateData.alignment === 'center' ? 'center' : templateData.alignment === 'right' ? 'right' : 'left',
+                        }}
+                        placeholder="By Author Name"
                       />
                       <span style={{ opacity: 0.7 }}>•</span>
                       <input
                         type="text"
                         value={templateData.date || ""}
                         onChange={(e) => setTemplateData(prev => ({ ...prev, date: e.target.value }))}
-                        className="bg-transparent border-b border-transparent focus:border-gray-300 outline-none text-center px-1"
-                        style={{ width: `${Math.max((templateData.date || "").length * 8, 160)}px` }}
+                        className="bg-transparent border-b border-transparent focus:border-gray-300 outline-none px-1"
+                        style={{
+                          width: `${Math.max((templateData.date || "").length * 8, 160)}px`,
+                          fontFamily: templateData.bylineFont ? fontOptions.find(f => f.name === templateData.bylineFont)?.value || templateData.bylineFont : undefined,
+                          fontWeight: templateData.bylineWeight || '700',
+                          fontSize: templateData.bylineSize || '0.75rem',
+                          color: templateData.bylineColor || undefined,
+                          textAlign: templateData.alignment === 'center' ? 'center' : templateData.alignment === 'right' ? 'right' : 'left',
+                        }}
                         placeholder={new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
                       />
                     </div>
@@ -1544,18 +1679,46 @@ export function Editor({
               </div>
 
               {showPreview ? (
-                <div
-                  className="preview-content prose prose-lg max-w-none"
-                  dangerouslySetInnerHTML={{ __html: editor?.getHTML() || "" }}
-                  style={{
-                    fontFamily: fontOptions.find(f => f.name === styles.bodyFont)?.value,
-                  }}
-                />
+                <>
+                  <div
+                    className="preview-content prose prose-lg max-w-none"
+                    dangerouslySetInnerHTML={{ __html: editor?.getHTML() || "" }}
+                    style={{
+                      fontFamily: fontOptions.find(f => f.name === styles.bodyFont)?.value,
+                    }}
+                  />
+                  {/* Quiz CTA (if enabled) */}
+                  {quizId && <QuizRenderer key={`quiz-${quizId}`} quizId={quizId} />}
+                  {/* Rating CTA (if enabled) */}
+                  {ratingEnabled && postId && <ReactionBar key={`rating-${postId}`} postId={postId} />}
+                  {/* CTA Form (if enabled) */}
+                  {ctaEnabled && postId && <CTAForm key={`cta-${postId}`} postId={postId} quizId={quizId} />}
+                </>
               ) : (
-                <EditorContent
-                  editor={editor}
-                  className="editorial-editor"
-                />
+                <>
+                  <EditorContent
+                    editor={editor}
+                    className="editorial-editor"
+                  />
+                  {/* Quiz CTA (if enabled) - Non-editable preview */}
+                  {quizId && (
+                    <div className="mt-8 pointer-events-none opacity-75" key={`quiz-preview-${quizId}`}>
+                      <QuizRenderer quizId={quizId} />
+                    </div>
+                  )}
+                  {/* Rating CTA (if enabled) - Non-editable preview */}
+                  {ratingEnabled && postId && (
+                    <div className="mt-8 pointer-events-none opacity-75" key={`rating-preview-${postId}`}>
+                      <ReactionBar postId={postId} />
+                    </div>
+                  )}
+                  {/* CTA Form (if enabled) - Non-editable preview */}
+                  {ctaEnabled && postId && (
+                    <div className="mt-8 pointer-events-none opacity-75" key={`cta-preview-${postId}`}>
+                      <CTAForm postId={postId} quizId={quizId} />
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -1760,6 +1923,50 @@ export function Editor({
               )}
             </div>
           </div>
+
+          {/* Template Settings Section */}
+          {!showPreview && (
+            <div className="mb-6 border-t border-gray-100 pt-4">
+              <SectionHeader title="Template Settings" />
+
+              {/* Template Alignment */}
+              <div className="mb-4">
+                <label className="block text-xs font-medium text-gray-500 mb-2">Alignment</label>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setTemplateData(prev => ({ ...prev, alignment: 'left' }))}
+                    className={`flex-1 px-3 py-2 rounded-lg border text-sm transition-colors ${(templateData.alignment || 'left') === 'left'
+                      ? "bg-black text-white border-black"
+                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                      }`}
+                  >
+                    Left
+                  </button>
+                  <button
+                    onClick={() => setTemplateData(prev => ({ ...prev, alignment: 'center' }))}
+                    className={`flex-1 px-3 py-2 rounded-lg border text-sm transition-colors ${templateData.alignment === 'center'
+                      ? "bg-black text-white border-black"
+                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                      }`}
+                  >
+                    Center
+                  </button>
+                  <button
+                    onClick={() => setTemplateData(prev => ({ ...prev, alignment: 'right' }))}
+                    className={`flex-1 px-3 py-2 rounded-lg border text-sm transition-colors ${templateData.alignment === 'right'
+                      ? "bg-black text-white border-black"
+                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                      }`}
+                  >
+                    Right
+                  </button>
+                </div>
+              </div>
+
+              {/* Template Typography Controls */}
+              <TemplateTypographyControls templateData={templateData} setTemplateData={setTemplateData} />
+            </div>
+          )}
 
           {/* Preset Templates */}
           {mode === 'Advanced' && (
@@ -2129,6 +2336,163 @@ const WeightSelect = ({ value, onChange }: { value: string; onChange: (v: string
           </div>
         </>
       )}
+    </div>
+  );
+};
+
+const TemplateTypographyControls = ({ templateData, setTemplateData }: { templateData: PostTemplateData; setTemplateData: React.Dispatch<React.SetStateAction<PostTemplateData>> }) => {
+  const [expandedSection, setExpandedSection] = useState<string | null>(null);
+
+  const updateTypography = (field: string, value: string) => {
+    setTemplateData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const TypographySection = ({
+    title,
+    prefix,
+    fontField,
+    weightField,
+    sizeField,
+    colorField
+  }: {
+    title: string;
+    prefix: string;
+    fontField: keyof PostTemplateData;
+    weightField: keyof PostTemplateData;
+    sizeField: keyof PostTemplateData;
+    colorField: keyof PostTemplateData;
+  }) => {
+    const isExpanded = expandedSection === prefix;
+    const fontValue = (templateData[fontField] as string) || '';
+    const weightValue = (templateData[weightField] as string) || '';
+    const sizeValue = (templateData[sizeField] as string) || '';
+    const colorValue = (templateData[colorField] as string) || '';
+
+    return (
+      <div className="border border-gray-200 rounded-lg mb-2">
+        <button
+          onClick={() => setExpandedSection(isExpanded ? null : prefix)}
+          className="w-full flex items-center justify-between p-2.5 hover:bg-gray-50 transition-colors rounded-lg"
+        >
+          <span className="text-sm font-medium text-gray-700">{title}</span>
+          <ChevronDown size={14} className={`text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+        </button>
+        {isExpanded && (
+          <div className="p-3 pt-2 space-y-3 border-t border-gray-100">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-gray-500">Font</span>
+              <FontSelect
+                value={fontValue || fontOptions[0].name}
+                onChange={(v) => updateTypography(fontField as string, v)}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-gray-500">Weight</span>
+              <WeightSelect
+                value={weightValue || '400'}
+                onChange={(v) => updateTypography(weightField as string, v)}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-gray-500">Size</span>
+              <input
+                type="text"
+                value={sizeValue}
+                onChange={(e) => updateTypography(sizeField as string, e.target.value)}
+                placeholder="e.g., 0.75rem, 12px"
+                className="w-32 border border-gray-200 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-gray-500">Color</span>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={colorValue || '#000000'}
+                  onChange={(e) => updateTypography(colorField as string, e.target.value)}
+                  className="w-10 h-8 border border-gray-200 rounded cursor-pointer"
+                />
+                <input
+                  type="text"
+                  value={colorValue || '#000000'}
+                  onChange={(e) => updateTypography(colorField as string, e.target.value)}
+                  placeholder="#000000"
+                  className="w-24 border border-gray-200 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div className="mt-4">
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Typography</span>
+        <button
+          onClick={() => {
+            // Reset all typography to defaults
+            setTemplateData(prev => ({
+              ...prev,
+              seriesFont: undefined,
+              seriesWeight: undefined,
+              seriesSize: undefined,
+              seriesColor: undefined,
+              titleFont: undefined,
+              titleWeight: undefined,
+              titleSize: undefined,
+              titleColor: undefined,
+              subtitleFont: undefined,
+              subtitleWeight: undefined,
+              subtitleSize: undefined,
+              subtitleColor: undefined,
+              bylineFont: undefined,
+              bylineWeight: undefined,
+              bylineSize: undefined,
+              bylineColor: undefined,
+            }));
+          }}
+          className="text-xs text-gray-400 hover:text-gray-600"
+        >
+          Reset
+        </button>
+      </div>
+      <div className="space-y-2">
+        <TypographySection
+          title="Series & Volume"
+          prefix="series"
+          fontField="seriesFont"
+          weightField="seriesWeight"
+          sizeField="seriesSize"
+          colorField="seriesColor"
+        />
+        <TypographySection
+          title="Title"
+          prefix="title"
+          fontField="titleFont"
+          weightField="titleWeight"
+          sizeField="titleSize"
+          colorField="titleColor"
+        />
+        <TypographySection
+          title="Subtitle"
+          prefix="subtitle"
+          fontField="subtitleFont"
+          weightField="subtitleWeight"
+          sizeField="subtitleSize"
+          colorField="subtitleColor"
+        />
+        <TypographySection
+          title="Byline (Author & Date)"
+          prefix="byline"
+          fontField="bylineFont"
+          weightField="bylineWeight"
+          sizeField="bylineSize"
+          colorField="bylineColor"
+        />
+      </div>
     </div>
   );
 };

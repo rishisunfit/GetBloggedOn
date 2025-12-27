@@ -56,17 +56,17 @@ export function Preview({ title, content, date = new Date(), postId, quizId, onB
           }}
         >
           {content ? (
-            <>
-              <div
-                dangerouslySetInnerHTML={{ __html: content }}
-                className="preview-content"
-              />
-              <QuizRenderer />
-            </>
+            <div
+              dangerouslySetInnerHTML={{ __html: content }}
+              className="preview-content"
+            />
           ) : (
             <p className="text-gray-400 italic">No content yet. Start writing in the editor!</p>
           )}
         </div>
+
+        {/* Quiz CTA (if enabled) */}
+        {quizId && <QuizRenderer quizId={quizId} />}
 
         {/* Reaction Bar */}
         <ReactionBar postId={postId} />

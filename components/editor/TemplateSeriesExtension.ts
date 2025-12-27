@@ -102,7 +102,7 @@ export const TemplateSeriesExtension = Node.create<TemplateSeriesOptions>({
         return [
             "p",
             mergeAttributes(HTMLAttributes, {
-                class: "editorial-header text-xs tracking-widest text-gray-400 uppercase mb-4",
+                class: "editorial-header text-xs tracking-widest text-gray-400 uppercase mb-4 text-left",
                 "data-template-type": "series",
                 "data-template-required": "true",
                 "data-series-name": seriesName || "The Editorial Review",
@@ -117,7 +117,7 @@ export const TemplateSeriesExtension = Node.create<TemplateSeriesOptions>({
             const { seriesName, volume } = node.attrs;
 
             const wrapper = document.createElement("p");
-            wrapper.className = "editorial-header text-xs tracking-widest text-gray-400 uppercase mb-4";
+            wrapper.className = "editorial-header text-xs tracking-widest text-gray-400 uppercase mb-4 text-left";
             wrapper.setAttribute("data-template-type", "series");
             wrapper.setAttribute("data-template-required", "true");
             wrapper.contentEditable = "false";
@@ -158,7 +158,7 @@ export const TemplateSeriesExtension = Node.create<TemplateSeriesOptions>({
             volumeInput.value = `Volume ${volume || "XXIII"}`;
             volumeInput.className = "template-series-volume bg-transparent inline-block focus:outline-none focus:ring-1 focus:ring-blue-500 rounded px-1";
             volumeInput.style.width = "auto";
-            volumeInput.style.minWidth = "90px";
+            volumeInput.style.minWidth = "120px";
             volumeInput.setAttribute("data-editable", "volume");
 
             // Initial resize

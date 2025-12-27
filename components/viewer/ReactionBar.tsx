@@ -143,11 +143,11 @@ export function ReactionBar({ postId }: ReactionBarProps) {
       <div className="border-t border-gray-200 pt-8 mt-12">
         <div className="bg-gray-50 rounded-2xl p-8">
           <p className="text-gray-600 mb-6 text-center">How was this essay?</p>
-          <div className="flex gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 justify-center">
             {[5, 3, 1].map((stars) => (
               <div
                 key={stars}
-                className="flex flex-col items-center gap-2 px-6 py-4 bg-white rounded-lg flex-1 animate-pulse"
+                className="flex flex-col items-center gap-2 px-3 sm:px-6 py-3 sm:py-4 bg-white rounded-lg w-full sm:w-auto sm:flex-1 animate-pulse"
               >
                 <div className="flex gap-1">
                   {Array.from({ length: stars }).map((_, i) => (
@@ -171,13 +171,13 @@ export function ReactionBar({ postId }: ReactionBarProps) {
     <div className="border-t border-gray-200 pt-8 mt-12">
       <div className="bg-gray-50 rounded-2xl p-8">
         <p className="text-gray-600 mb-6 text-center">How was this essay?</p>
-        <div className="flex gap-4 justify-center">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 justify-center">
           {ratings.map((rating) => (
             <button
               key={rating.stars}
               onClick={() => handleRating(rating.stars)}
               disabled={!postId}
-              className={`flex flex-col items-center gap-2 px-6 py-4 rounded-lg transition-colors flex-1 ${userRating === rating.stars
+              className={`flex flex-col items-center gap-2 px-3 sm:px-6 py-3 sm:py-4 rounded-lg transition-colors w-full sm:w-auto sm:flex-1 ${userRating === rating.stars
                 ? 'bg-blue-100 border-2 border-blue-500'
                 : 'bg-white hover:bg-gray-50 border-2 border-transparent'
                 } ${!postId ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
@@ -188,8 +188,8 @@ export function ReactionBar({ postId }: ReactionBarProps) {
                     key={i}
                     filled={userRating === rating.stars}
                     className={`w-6 h-6 ${userRating === rating.stars
-                        ? 'text-blue-600'
-                        : 'text-gray-600'
+                      ? 'text-blue-600'
+                      : 'text-gray-600'
                       }`}
                   />
                 ))}

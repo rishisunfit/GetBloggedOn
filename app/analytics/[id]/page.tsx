@@ -43,7 +43,7 @@ export default function PostAnalyticsPage() {
     const postId = params.id as string;
     const contentContainerRef = useRef<HTMLElement | null>(null);
 
-    const [post, setPost] = useState<{ id: string; title: string; content: string; styles?: PostStyles; template_data?: PostTemplateData | null; created_at: string; quiz_id: string | null } | null>(null);
+    const [post, setPost] = useState<{ id: string; title: string; content: string; styles?: PostStyles; template_data?: PostTemplateData | null; created_at: string; quiz_id: string | null; rating_enabled?: boolean; cta_enabled?: boolean } | null>(null);
     const [bodyHtml, setBodyHtml] = useState<string>("");
     const [template, setTemplate] = useState<PostTemplateData | null>(null);
     const [loading, setLoading] = useState(true);
@@ -368,37 +368,63 @@ export default function PostAnalyticsPage() {
                                         >
                                             {/* Header */}
                                             <header className="mb-8">
-                                                <div className="text-center text-xs font-bold tracking-[0.18em] uppercase mb-4" style={{ opacity: 0.8 }}>
+                                                <div
+                                                    className={`${safeTemplate.alignment === 'center' ? 'text-center' : safeTemplate.alignment === 'right' ? 'text-right' : 'text-left'} tracking-[0.18em] uppercase mb-4`}
+                                                    style={{
+                                                        fontFamily: safeTemplate.seriesFont ? fontOptions.find(f => f.name === safeTemplate.seriesFont)?.value || safeTemplate.seriesFont : undefined,
+                                                        fontWeight: safeTemplate.seriesWeight || '700',
+                                                        fontSize: safeTemplate.seriesSize || '0.75rem',
+                                                        color: safeTemplate.seriesColor || styles.textColor,
+                                                        opacity: safeTemplate.seriesColor ? 1 : 0.8,
+                                                    }}
+                                                >
                                                     {(safeTemplate.seriesName || "").trim()}
                                                     {(safeTemplate.seriesName || "").trim() && (safeTemplate.volume || "").trim() ? " • " : ""}
-                                                    {(safeTemplate.volume || "").trim() ? `Volume ${safeTemplate.volume}` : ""}
+                                                    {(safeTemplate.volume || "").trim() || ""}
                                                 </div>
 
                                                 <h1
-                                                    className="text-5xl font-bold mb-4 text-center"
+                                                    className={`mb-4 ${safeTemplate.alignment === 'center' ? 'text-center' : safeTemplate.alignment === 'right' ? 'text-right' : 'text-left'}`}
                                                     style={{
-                                                        fontFamily: headingFont,
-                                                        fontWeight: styles.headingWeight,
-                                                        color: styles.textColor,
+                                                        fontFamily: safeTemplate.titleFont ? fontOptions.find(f => f.name === safeTemplate.titleFont)?.value || safeTemplate.titleFont : headingFont,
+                                                        fontWeight: safeTemplate.titleWeight || styles.headingWeight,
+                                                        fontSize: safeTemplate.titleSize || '3rem',
+                                                        color: safeTemplate.titleColor || styles.textColor,
                                                     }}
                                                 >
                                                     {(safeTemplate.title || "").trim() || post.title || "Untitled Post"}
                                                 </h1>
 
                                                 {(safeTemplate.subtitle || "").trim() ? (
-                                                    <p className="text-center text-xl italic mb-6" style={{ opacity: 0.9 }}>
+                                                    <p
+                                                        className={`italic mb-6 ${safeTemplate.alignment === 'center' ? 'text-center' : safeTemplate.alignment === 'right' ? 'text-right' : 'text-left'}`}
+                                                        style={{
+                                                            fontFamily: safeTemplate.subtitleFont ? fontOptions.find(f => f.name === safeTemplate.subtitleFont)?.value || safeTemplate.subtitleFont : undefined,
+                                                            fontWeight: safeTemplate.subtitleWeight || undefined,
+                                                            fontSize: safeTemplate.subtitleSize || '1.25rem',
+                                                            color: safeTemplate.subtitleColor || styles.textColor,
+                                                            opacity: safeTemplate.subtitleColor ? 1 : 0.9,
+                                                        }}
+                                                    >
                                                         {safeTemplate.subtitle}
                                                     </p>
                                                 ) : null}
 
-                                                <div className="flex items-center justify-center gap-2 text-sm mb-4" style={{ color: styles.textColor, opacity: 0.7 }}>
-                                                    <Calendar size={16} />
-                                                    {safeTemplate.date || formatDate(new Date(post.created_at))}
-                                                </div>
-
-                                                {(safeTemplate.authorName || "").trim() ? (
-                                                    <div className="text-center text-xs font-bold tracking-[0.14em] uppercase border-b pb-4" style={{ opacity: 0.8, borderColor: styles.textColor }}>
-                                                        By {safeTemplate.authorName}
+                                                {(safeTemplate.authorName || "").trim() || (safeTemplate.date || "").trim() ? (
+                                                    <div
+                                                        className={`${safeTemplate.alignment === 'center' ? 'text-center' : safeTemplate.alignment === 'right' ? 'text-right' : 'text-left'} tracking-[0.14em] uppercase border-b pb-4`}
+                                                        style={{
+                                                            fontFamily: safeTemplate.bylineFont ? fontOptions.find(f => f.name === safeTemplate.bylineFont)?.value || safeTemplate.bylineFont : undefined,
+                                                            fontWeight: safeTemplate.bylineWeight || '700',
+                                                            fontSize: safeTemplate.bylineSize || '0.75rem',
+                                                            color: safeTemplate.bylineColor || styles.textColor,
+                                                            opacity: safeTemplate.bylineColor ? 1 : 0.8,
+                                                            borderColor: styles.textColor,
+                                                        }}
+                                                    >
+                                                        {(safeTemplate.authorName || "").trim() ? `By ${safeTemplate.authorName}` : ""}
+                                                        {(safeTemplate.authorName || "").trim() && (safeTemplate.date || formatDate(new Date(post.created_at))) ? " • " : ""}
+                                                        {safeTemplate.date || formatDate(new Date(post.created_at))}
                                                     </div>
                                                 ) : (
                                                     <div className="border-b pb-4" style={{ opacity: 0.2, borderColor: styles.textColor }} />
@@ -473,14 +499,16 @@ export default function PostAnalyticsPage() {
                                                         placeholderId={video.placeholderId}
                                                     />
                                                 ))}
-                                                <QuizRenderer />
                                             </div>
 
-                                            {/* Reaction Bar */}
-                                            <ReactionBar postId={post.id} />
+                                            {/* Quiz CTA (if enabled) */}
+                                            {post.quiz_id && <QuizRenderer quizId={post.quiz_id} />}
 
-                                            {/* CTA Form */}
-                                            <CTAForm postId={post.id} quizId={post.quiz_id} />
+                                            {/* Reaction Bar (if enabled) */}
+                                            {post.rating_enabled !== false && <ReactionBar postId={post.id} />}
+
+                                            {/* CTA Form (if enabled) */}
+                                            {post.cta_enabled !== false && <CTAForm postId={post.id} quizId={post.quiz_id} />}
 
                                             {/* Footer */}
                                             <footer
