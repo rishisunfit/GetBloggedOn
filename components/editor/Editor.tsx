@@ -33,6 +33,7 @@ import { StyleExtension, FontSizeExtension } from "./StyleExtension";
 import { CalloutExtension, calloutPresets } from "./CalloutExtension";
 import { BubbleMenu } from "@tiptap/react/menus";
 import { PostSettingsModal } from "./PostSettingsModal";
+import { AnalyticsDrawer } from "./AnalyticsDrawer";
 import { normalizeTemplateData, type PostTemplateData } from "@/services/postTemplate";
 import { ReactionBar } from "@/components/viewer/ReactionBar";
 import { QuizRenderer } from "@/components/viewer/QuizRenderer";
@@ -137,6 +138,7 @@ export function Editor({
   const [ctaEnabled, setCtaEnabled] = useState<boolean>(initialCtaEnabled ?? true);
   const [componentOrder, setComponentOrder] = useState<string[]>(initialComponentOrder);
   const [showSettings, setShowSettings] = useState(false);
+  const [showAnalytics, setShowAnalytics] = useState(false);
   const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>('desktop');
   const [showPreview, setShowPreview] = useState(false);
   const [showSaveDropdown, setShowSaveDropdown] = useState(false);
@@ -916,7 +918,12 @@ export function Editor({
         <NavItem icon={<Edit3 size={20} />} active tooltip="Editor" />
         <NavItem icon={<FileText size={20} />} tooltip="Templates" />
         <NavItem icon={<Users size={20} />} tooltip="Users" />
-        <NavItem icon={<BarChart2 size={20} />} tooltip="Analytics" />
+        <NavItem
+          icon={<BarChart2 size={20} />}
+          tooltip="Analytics"
+          onClick={() => postId && setShowAnalytics(true)}
+          active={showAnalytics}
+        />
         <NavItem icon={<CreditCard size={20} />} tooltip="Billing" />
       </div>
 
@@ -1446,6 +1453,15 @@ export function Editor({
               <div className="w-3 h-3 rounded-full bg-green-600" />
             </BubbleButton>
           </BubbleMenu>
+        )}
+
+        {/* Analytics Drawer */}
+        {postId && (
+          <AnalyticsDrawer
+            isOpen={showAnalytics}
+            onClose={() => setShowAnalytics(false)}
+            postId={postId}
+          />
         )}
 
         {/* Post Settings Modal */}
