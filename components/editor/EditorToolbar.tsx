@@ -994,6 +994,9 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
             <ToolbarButton onClick={addVideo} title="Add Video">
               <Video size={18} />
             </ToolbarButton>
+            <ToolbarButton onClick={addQuiz} title="Embed Quiz">
+              <span className="text-xs font-medium">+ADD QUIZ</span>
+            </ToolbarButton>
             <ToolbarButton
               onClick={() => setShowHistory(true)}
               title="Image History"

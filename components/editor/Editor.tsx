@@ -27,7 +27,7 @@ import {
   AlignLeft, AlignCenter, AlignRight, Heading1, Heading2, Heading3,
   Link as LinkIcon, Quote, List, ListOrdered, Strikethrough, Check,
   Plus, Undo, Redo, Pilcrow, Space, AlignCenterHorizontal,
-  Clock, Badge, Minus, MoreHorizontal, Sparkles, MessageSquare, Video
+  Clock, Badge, Minus, MoreHorizontal, Sparkles, MessageSquare, Video, ClipboardList
 } from "lucide-react";
 import { StyleExtension, FontSizeExtension } from "./StyleExtension";
 import { CalloutExtension, calloutPresets } from "./CalloutExtension";
@@ -44,6 +44,7 @@ import { AIImageGeneratorModal } from "./AIImageGeneratorModal";
 import { ImageAttributionModal, type ImageAttributionValues } from "./ImageAttributionModal";
 import { VideoModal } from "./VideoModal";
 import { VideoTimestampModal } from "./VideoTimestampModal";
+import { QuizModal } from "./QuizModal";
 import { NodeSelection } from "prosemirror-state";
 import { uploadImageToStorage, uploadDataURLToStorage } from "@/lib/storage";
 import { useAuth } from "@/hooks/useAuth";
@@ -161,6 +162,7 @@ export function Editor({
   const [showWebImageModal, setShowWebImageModal] = useState(false);
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [showVideoTimestampModal, setShowVideoTimestampModal] = useState(false);
+  const [showQuizModal, setShowQuizModal] = useState(false);
   const [selectedVideoId, setSelectedVideoId] = useState<string>("");
   const [selectedVideo, setSelectedVideo] = useState<{
     videoId: string;
@@ -471,6 +473,14 @@ export function Editor({
       src: url,
       align: align || "center",
       primaryColor: primaryColor,
+    }).run();
+  };
+
+  // Quiz handler
+  const handleInsertQuiz = (quizId: string, align: "left" | "center" | "right" = "center") => {
+    editor?.chain().focus().setQuiz({
+      quizId: quizId,
+      align: align || "center"
     }).run();
   };
 
@@ -1289,6 +1299,14 @@ export function Editor({
               title="Add Video"
             >
               <Video size={16} />
+            </ToolbarButton>
+
+            {/* Quiz */}
+            <ToolbarButton
+              onClick={() => setShowQuizModal(true)}
+              title="Embed Quiz"
+            >
+              <span className="text-xs font-medium">+ADD QUIZ</span>
             </ToolbarButton>
 
             <Divider />
@@ -2219,6 +2237,15 @@ export function Editor({
         customerCode={selectedVideo?.customerCode}
         primaryColor={selectedVideo?.primaryColor}
         postId={postId}
+      />
+
+      {/* Quiz Modal */}
+      <QuizModal
+        isOpen={showQuizModal}
+        onClose={() => setShowQuizModal(false)}
+        onSelect={(quizId) => {
+          handleInsertQuiz(quizId, "center");
+        }}
       />
 
       {/* Unsaved Changes Warning Modal */}
