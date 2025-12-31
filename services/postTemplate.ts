@@ -4,6 +4,7 @@
  */
 
 export interface PostTemplateData {
+    headerEnabled?: boolean; // Whether to show the template header
     seriesName?: string;
     volume?: string;
     title?: string;
@@ -44,6 +45,7 @@ export function getDefaultTemplateData(createdDate?: string): PostTemplateData {
         });
 
     return {
+        headerEnabled: true,
         seriesName: "The Editorial Review",
         volume: "XXIII",
         title: "Untitled Article",
@@ -64,6 +66,8 @@ export function normalizeTemplateData(
         ...(data || {}),
         // Ensure we always have a usable date
         date: data?.date || defaults.date,
+        // Preserve headerEnabled if explicitly set to false
+        headerEnabled: data?.headerEnabled !== undefined ? data.headerEnabled : defaults.headerEnabled,
     };
 }
 

@@ -1,20 +1,29 @@
 import { createClient } from "@supabase/supabase-js";
 import type { User } from "@supabase/supabase-js";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+/**
+ * Gets Supabase environment variables with validation
+ * Throws error only when actually used (at runtime), not during build
+ */
+function getSupabaseConfig() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error(
-    "Missing Supabase environment variables. Please check your .env file."
-  );
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error(
+      "Missing Supabase environment variables. Please check your .env file."
+    );
+  }
+
+  return { supabaseUrl, supabaseAnonKey };
 }
 
 /**
  * Creates a Supabase client for server-side use with a specific JWT token
  */
 export function createServerClient(accessToken: string) {
-  return createClient(supabaseUrl as string, supabaseAnonKey as string, {
+  const { supabaseUrl, supabaseAnonKey } = getSupabaseConfig();
+  return createClient(supabaseUrl, supabaseAnonKey, {
     global: {
       headers: {
         Authorization: `Bearer ${accessToken}`,

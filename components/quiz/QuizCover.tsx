@@ -104,3 +104,5 @@ export function QuizCover({ cover, styles, onStart }: QuizCoverProps) {
   );
 }
 
+
+

@@ -348,6 +348,9 @@ export function Editor({
       case 'line-thick':
         editor.chain().focus().insertContent('<p style="text-align: center; margin: 2rem 0;"><span style="display: inline-block; width: 60px; height: 3px; background: #000;"></span></p>').run();
         break;
+      case 'line-full':
+        editor.chain().focus().setHorizontalRule().run();
+        break;
       case 'callout-yellow':
         editor.chain().focus().setCallout({ backgroundColor: '#FEF9C3', borderColor: '#CA8A04' }).run();
         break;
@@ -1231,6 +1234,12 @@ export function Editor({
             >
               <Minus size={16} />
             </ToolbarButton>
+            <ToolbarButton
+              onClick={() => insertBlock('line-full')}
+              title="Insert Full-Width Divider"
+            >
+              <div className="w-4 border-b border-gray-600" />
+            </ToolbarButton>
 
             <Divider />
 
@@ -1562,6 +1571,7 @@ export function Editor({
               }}
             >
               {/* Template Header (React inputs, not part of TipTap) */}
+              {templateData.headerEnabled !== false && (
               <div className="mb-10">
                 {showPreview ? (
                   <div>
@@ -1746,6 +1756,7 @@ export function Editor({
                   </div>
                 )}
               </div>
+              )}
 
               {showPreview ? (
                 <>
@@ -1756,8 +1767,10 @@ export function Editor({
                       fontFamily: fontOptions.find(f => f.name === styles.bodyFont)?.value,
                     }}
                   />
-                  {/* Divider before components */}
-                  <div className="border-t border-gray-200 mt-12"></div>
+                  {/* Divider before components - only show if there are components */}
+                  {(quizId || (ratingEnabled && postId) || (ctaEnabled && postId)) && (
+                    <div className="border-t border-gray-200 mt-12"></div>
+                  )}
                   {/* Render components in the specified order */}
                   {componentOrder.map((componentType) => {
                     if (componentType === "quiz" && quizId) {
@@ -1778,8 +1791,10 @@ export function Editor({
                     editor={editor}
                     className="editorial-editor"
                   />
-                  {/* Divider before components */}
-                  <div className="border-t border-gray-200 mt-12"></div>
+                  {/* Divider before components - only show if there are components */}
+                  {(quizId || (ratingEnabled && postId) || (ctaEnabled && postId)) && (
+                    <div className="border-t border-gray-200 mt-12"></div>
+                  )}
                   {/* Render components in the specified order - Non-editable preview */}
                   {componentOrder.map((componentType) => {
                     if (componentType === "quiz" && quizId) {
@@ -2016,7 +2031,28 @@ export function Editor({
             <div className="mb-6 border-t border-gray-100 pt-4">
               <SectionHeader title="Template Settings" />
 
-              {/* Template Alignment */}
+              {/* Show Header Toggle */}
+              <div className="mb-4">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm text-gray-700">Show Header</label>
+                  <button
+                    onClick={() => setTemplateData(prev => ({ ...prev, headerEnabled: !prev.headerEnabled }))}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      templateData.headerEnabled !== false ? 'bg-indigo-600' : 'bg-gray-200'
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        templateData.headerEnabled !== false ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+                <p className="text-xs text-gray-400 mt-1">Toggle the editorial header (series, title, byline)</p>
+              </div>
+
+              {/* Template Alignment - only show if header is enabled */}
+              {templateData.headerEnabled !== false && (
               <div className="mb-4">
                 <label className="block text-xs font-medium text-gray-500 mb-2">Alignment</label>
                 <div className="flex gap-2">
@@ -2049,9 +2085,12 @@ export function Editor({
                   </button>
                 </div>
               </div>
+              )}
 
-              {/* Template Typography Controls */}
-              <TemplateTypographyControls templateData={templateData} setTemplateData={setTemplateData} />
+              {/* Template Typography Controls - only show if header is enabled */}
+              {templateData.headerEnabled !== false && (
+                <TemplateTypographyControls templateData={templateData} setTemplateData={setTemplateData} />
+              )}
             </div>
           )}
 
@@ -2145,6 +2184,7 @@ export function Editor({
               <BlockMenuItem icon={<Sparkles size={20} />} label="Stars" onClick={() => insertBlock('line-ornament')} />
               <BlockMenuItem icon={<div className="text-gray-400">～～</div>} label="Wave" onClick={() => insertBlock('line-wave')} />
               <BlockMenuItem icon={<div className="w-6 h-1 bg-gray-800 rounded" />} label="Thick Line" onClick={() => insertBlock('line-thick')} />
+              <BlockMenuItem icon={<div className="w-6 border-b border-gray-400" />} label="Full Line" onClick={() => insertBlock('line-full')} />
             </div>
             {/* Callout Boxes Section */}
             <div className="mt-4 pt-4 border-t border-gray-100">

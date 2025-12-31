@@ -119,3 +119,5 @@ export const defaultContactSettings: QuizContactSettings = {
   description: 'Enter your details to see your results.',
 };
 
+
+
