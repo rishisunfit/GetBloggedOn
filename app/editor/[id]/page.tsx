@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -7,7 +8,11 @@ import { postsApi } from "@/services/posts";
 import { useDialog } from "@/hooks/useDialog";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { EditorShimmer } from "@/components/EditorShimmer";
-import { normalizeTemplateData, splitTemplateFromHtml, type PostTemplateData } from "@/services/postTemplate";
+import {
+  normalizeTemplateData,
+  splitTemplateFromHtml,
+  type PostTemplateData,
+} from "@/services/postTemplate";
 
 import type { Post, PostStyles } from "@/services/posts";
 
@@ -25,7 +30,11 @@ export default function EditorPage() {
   const [quizId, setQuizId] = useState<string | null>(null);
   const [ratingEnabled, setRatingEnabled] = useState<boolean>(true);
   const [ctaEnabled, setCtaEnabled] = useState<boolean>(true);
-  const [componentOrder, setComponentOrder] = useState<string[]>(["quiz", "rating", "cta"]);
+  const [componentOrder, setComponentOrder] = useState<string[]>([
+    "quiz",
+    "rating",
+    "cta",
+  ]);
   const [folderId, setFolderId] = useState<string | null>(null);
   const [postSlug, setPostSlug] = useState<string | null>(null);
 
@@ -35,11 +44,16 @@ export default function EditorPage() {
     try {
       const data = await postsApi.getById(id);
       // Derive template/header data
-      let template: PostTemplateData | null | undefined = (data as any).template_data;
+      let template: PostTemplateData | null | undefined = (data as any)
+        .template_data;
       let bodyContent: any = data.content || "";
 
       // Legacy fallback: older posts may have header embedded in HTML content
-      if (!template && typeof bodyContent === "string" && bodyContent.trim() !== "") {
+      if (
+        !template &&
+        typeof bodyContent === "string" &&
+        bodyContent.trim() !== ""
+      ) {
         const split = splitTemplateFromHtml(bodyContent, data.created_at);
         template = split.template;
         bodyContent = split.body;
@@ -61,7 +75,9 @@ export default function EditorPage() {
       setQuizId(data.quiz_id);
       setRatingEnabled((data as any).rating_enabled !== false);
       setCtaEnabled((data as any).cta_enabled !== false);
-      setComponentOrder((data as any).component_order || ["quiz", "rating", "cta"]);
+      setComponentOrder(
+        (data as any).component_order || ["quiz", "rating", "cta"]
+      );
       setFolderId((data as any).folder_id || null);
       setPostSlug((data as any).post_slug || null);
     } catch (error) {
@@ -94,7 +110,6 @@ export default function EditorPage() {
     // Preview is now handled internally in the Editor component
     // This function can be empty or used for other purposes
   };
-
 
   const handleUpdateQuizId = async (newQuizId: string | null) => {
     if (!id) return;
@@ -160,7 +175,8 @@ export default function EditorPage() {
       console.error("Error updating folder:", error);
       await showDialog({
         type: "alert",
-        message: error instanceof Error ? error.message : "Failed to update folder",
+        message:
+          error instanceof Error ? error.message : "Failed to update folder",
         title: "Error",
       });
     }
@@ -176,12 +192,17 @@ export default function EditorPage() {
       await loadPost();
     } catch (error) {
       console.error("Error updating post slug:", error);
-      const errorMessage = error instanceof Error ? error.message : "Failed to update post slug";
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to update post slug";
       // Check for unique constraint violation
-      if (errorMessage.includes("unique") || errorMessage.includes("duplicate")) {
+      if (
+        errorMessage.includes("unique") ||
+        errorMessage.includes("duplicate")
+      ) {
         await showDialog({
           type: "alert",
-          message: "A post with this slug already exists in this folder. Please choose a different slug.",
+          message:
+            "A post with this slug already exists in this folder. Please choose a different slug.",
           title: "Slug Conflict",
         });
       } else {
@@ -194,7 +215,12 @@ export default function EditorPage() {
     }
   };
 
-  const handleSaveDraft = async (template: PostTemplateData, content: string, styles?: PostStyles, silent = false) => {
+  const handleSaveDraft = async (
+    template: PostTemplateData,
+    content: string,
+    styles?: PostStyles,
+    silent = false
+  ) => {
     if (!id) return;
 
     try {
@@ -233,8 +259,12 @@ export default function EditorPage() {
       let errorMessage = error instanceof Error ? error.message : String(error);
 
       // Check if it's a database column error
-      if (errorMessage.includes('column') && errorMessage.includes('does not exist')) {
-        errorMessage = "Database migration required. Please run the migration to add the 'styles' column to the posts table. See migrations/add_styles_to_posts.sql";
+      if (
+        errorMessage.includes("column") &&
+        errorMessage.includes("does not exist")
+      ) {
+        errorMessage =
+          "Database migration required. Please run the migration to add the 'styles' column to the posts table. See migrations/add_styles_to_posts.sql";
       }
 
       await showDialog({
@@ -245,7 +275,12 @@ export default function EditorPage() {
     }
   };
 
-  const handlePublish = async (template: PostTemplateData, content: string, styles?: PostStyles, silent = false) => {
+  const handlePublish = async (
+    template: PostTemplateData,
+    content: string,
+    styles?: PostStyles,
+    silent = false
+  ) => {
     if (!id) return;
 
     try {
@@ -284,8 +319,12 @@ export default function EditorPage() {
       let errorMessage = error instanceof Error ? error.message : String(error);
 
       // Check if it's a database column error
-      if (errorMessage.includes('column') && errorMessage.includes('does not exist')) {
-        errorMessage = "Database migration required. Please run the migration to add the 'styles' column to the posts table. See migrations/add_styles_to_posts.sql";
+      if (
+        errorMessage.includes("column") &&
+        errorMessage.includes("does not exist")
+      ) {
+        errorMessage =
+          "Database migration required. Please run the migration to add the 'styles' column to the posts table. See migrations/add_styles_to_posts.sql";
       }
 
       await showDialog({
@@ -296,7 +335,12 @@ export default function EditorPage() {
     }
   };
 
-  const handleAutoSave = async (template: PostTemplateData, content: string, styles?: PostStyles, silent = true) => {
+  const handleAutoSave = async (
+    template: PostTemplateData,
+    content: string,
+    styles?: PostStyles,
+    silent = true
+  ) => {
     // Auto-save that preserves the current post status
     if (!id || !post) return;
 
@@ -307,7 +351,8 @@ export default function EditorPage() {
         content,
         // Preserve current status instead of forcing draft
         status: post.status || "draft",
-        is_draft: (post.status === "draft" || post.is_draft === true) ? true : false,
+        is_draft:
+          post.status === "draft" || post.is_draft === true ? true : false,
         quiz_id: quizId,
         rating_enabled: ratingEnabled,
         cta_enabled: ctaEnabled,
@@ -328,7 +373,8 @@ export default function EditorPage() {
       console.error("Error auto-saving:", error);
       // Don't show error dialog for silent auto-saves
       if (!silent) {
-        let errorMessage = error instanceof Error ? error.message : String(error);
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
         await showDialog({
           type: "alert",
           message: `Failed to save: ${errorMessage}`,
@@ -338,7 +384,12 @@ export default function EditorPage() {
     }
   };
 
-  const handleSave = async (template: PostTemplateData, content: string, styles?: PostStyles, silent = false) => {
+  const handleSave = async (
+    template: PostTemplateData,
+    content: string,
+    styles?: PostStyles,
+    silent = false
+  ) => {
     // Fallback to save as draft for backward compatibility
     await handleSaveDraft(template, content, styles, silent);
   };

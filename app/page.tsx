@@ -34,9 +34,12 @@ const convertPost = (post: Post) => ({
   status: post.status as "draft" | "published",
   user_id: post.user_id,
   is_draft: post.is_draft,
-  folder_id: (post as any).folder_id || null,
-  folder_slug: (post as any).folder_slug || null,
-  post_slug: (post as any).post_slug || null,
+  folder_id:
+    (post as unknown as { folder_id: string | null }).folder_id || null,
+  folder_slug:
+    (post as unknown as { folder_slug: string | null }).folder_slug || null,
+  post_slug:
+    (post as unknown as { post_slug: string | null }).post_slug || null,
 });
 
 // Helper to convert quiz to UI format

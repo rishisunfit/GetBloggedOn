@@ -1,25 +1,23 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { postsApi } from "@/services/posts";
 import { templatesApi } from "@/services/templates";
 
 export default function DebugPage() {
-  const [posts, setPosts] = useState<any[]>([]);
-  const [templates, setTemplates] = useState<any[]>([]);
+  const [posts, setPosts] = useState<unknown[]>([]);
+  const [templates, setTemplates] = useState<unknown[]>([]);
   const [localStorageData, setLocalStorageData] = useState<{
     posts: string | null;
     templates: string | null;
   }>({ posts: null, templates: null });
-  const [localStorageKeys, setLocalStorageKeys] = useState<Array<{ key: string; length: number }>>([]);
+  const [localStorageKeys, setLocalStorageKeys] = useState<
+    Array<{ key: string; length: number }>
+  >([]);
   const [isClient, setIsClient] = useState(false);
 
-  useEffect(() => {
-    setIsClient(true);
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       // Load from APIs
       const postsData = await postsApi.getAll();
@@ -44,7 +42,15 @@ export default function DebugPage() {
     } catch (error) {
       console.error("Error loading data:", error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    setTimeout(() => {
+      setIsClient(true);
+      loadData();
+    }, 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const clearAll = () => {
     if (confirm("Are you sure you want to clear all data?")) {
@@ -87,11 +93,8 @@ export default function DebugPage() {
                 Parsed posts ({posts.length}):
               </p>
               <div className="space-y-2">
-                {posts.map((post) => (
-                  <div
-                    key={post.id}
-                    className="bg-gray-50 p-3 rounded text-sm"
-                  >
+                {posts.map((post: any) => (
+                  <div key={post.id} className="bg-gray-50 p-3 rounded text-sm">
                     <div className="font-semibold">{post.title}</div>
                     <div className="text-xs text-gray-500">
                       ID: {post.id} | Created: {post.created_at}
@@ -126,7 +129,7 @@ export default function DebugPage() {
                 Parsed templates ({templates.length}):
               </p>
               <div className="space-y-2">
-                {templates.map((template) => (
+                {templates.map((template: any) => (
                   <div
                     key={template.id}
                     className="bg-gray-50 p-3 rounded text-sm"
@@ -152,7 +155,10 @@ export default function DebugPage() {
             {isClient ? (
               localStorageKeys.length > 0 ? (
                 localStorageKeys.map((item) => (
-                  <div key={item.key} className="flex justify-between items-center">
+                  <div
+                    key={item.key}
+                    className="flex justify-between items-center"
+                  >
                     <span className="font-mono text-sm">{item.key}</span>
                     <span className="text-xs text-gray-500">
                       {item.length} chars
@@ -160,7 +166,9 @@ export default function DebugPage() {
                   </div>
                 ))
               ) : (
-                <p className="text-gray-400 text-sm">No localStorage keys found</p>
+                <p className="text-gray-400 text-sm">
+                  No localStorage keys found
+                </p>
               )
             ) : (
               <p className="text-gray-400 text-sm">Loading...</p>
@@ -171,4 +179,3 @@ export default function DebugPage() {
     </div>
   );
 }
-

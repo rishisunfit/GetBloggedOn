@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useRouter } from "next/navigation";
@@ -5,7 +6,10 @@ import { Editor } from "@/components/editor/Editor";
 import { postsApi, PostStyles } from "@/services/posts";
 import { useDialog } from "@/hooks/useDialog";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { getDefaultTemplateData, type PostTemplateData } from "@/services/postTemplate";
+import {
+  getDefaultTemplateData,
+  type PostTemplateData,
+} from "@/services/postTemplate";
 
 export default function NewEditorPage() {
   const router = useRouter();
@@ -20,7 +24,12 @@ export default function NewEditorPage() {
     // Preview is now handled internally in the Editor component
   };
 
-  const handleSaveDraft = async (template: PostTemplateData, content: string, styles?: PostStyles, silent = false) => {
+  const handleSaveDraft = async (
+    template: PostTemplateData,
+    content: string,
+    styles?: PostStyles,
+    silent = false
+  ) => {
     // For new posts, create them first as draft
     try {
       const title = template?.title || "Untitled Post";
@@ -51,8 +60,12 @@ export default function NewEditorPage() {
       let errorMessage = error instanceof Error ? error.message : String(error);
 
       // Check if it's a database column error
-      if (errorMessage.includes('column') && errorMessage.includes('does not exist')) {
-        errorMessage = "Database migration required. Please run the migration to add the 'styles' column to the posts table. See migrations/add_styles_to_posts.sql";
+      if (
+        errorMessage.includes("column") &&
+        errorMessage.includes("does not exist")
+      ) {
+        errorMessage =
+          "Database migration required. Please run the migration to add the 'styles' column to the posts table. See migrations/add_styles_to_posts.sql";
       }
 
       await showDialog({
@@ -63,7 +76,12 @@ export default function NewEditorPage() {
     }
   };
 
-  const handlePublish = async (template: PostTemplateData, content: string, styles?: PostStyles, silent = false) => {
+  const handlePublish = async (
+    template: PostTemplateData,
+    content: string,
+    styles?: PostStyles,
+    silent = false
+  ) => {
     // For new posts, create them first as published
     try {
       const title = template?.title || "Untitled Post";
@@ -94,8 +112,12 @@ export default function NewEditorPage() {
       let errorMessage = error instanceof Error ? error.message : String(error);
 
       // Check if it's a database column error
-      if (errorMessage.includes('column') && errorMessage.includes('does not exist')) {
-        errorMessage = "Database migration required. Please run the migration to add the 'styles' column to the posts table. See migrations/add_styles_to_posts.sql";
+      if (
+        errorMessage.includes("column") &&
+        errorMessage.includes("does not exist")
+      ) {
+        errorMessage =
+          "Database migration required. Please run the migration to add the 'styles' column to the posts table. See migrations/add_styles_to_posts.sql";
       }
 
       await showDialog({
@@ -106,7 +128,12 @@ export default function NewEditorPage() {
     }
   };
 
-  const handleSave = async (template: PostTemplateData, content: string, styles?: PostStyles, silent = false) => {
+  const handleSave = async (
+    template: PostTemplateData,
+    content: string,
+    styles?: PostStyles,
+    silent = false
+  ) => {
     // Fallback to save as draft for backward compatibility
     await handleSaveDraft(template, content, styles, silent);
   };

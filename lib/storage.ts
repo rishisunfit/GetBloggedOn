@@ -5,11 +5,11 @@ import { supabase } from "./supabase";
  * @param file - The image file to upload
  * @param userId - The user ID (for organizing files)
  * @returns The URL of the uploaded image
- * 
+ *
  * NOTE: For best results, make your Supabase storage bucket "public" in the Supabase dashboard.
  * Go to Storage > images bucket > Settings > Make it public.
  * This allows images to be accessed via public URLs that never expire.
- * 
+ *
  * If the bucket is private, this function will use signed URLs (which expire after 1 year).
  */
 export async function uploadImageToStorage(

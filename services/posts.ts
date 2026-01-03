@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import type { PostTemplateData } from "@/services/postTemplate";
+import type { TablesUpdate, Json } from "@/types/database";
 
 export interface Post {
   id: string;
@@ -131,7 +132,7 @@ export const postsApi = {
     }
 
     // Build update object
-    const updateData: any = {};
+    const updateData: TablesUpdate<"posts"> = {};
     if (postData.title !== undefined) updateData.title = postData.title;
     if (postData.content !== undefined) updateData.content = postData.content;
     if (postData.status !== undefined) updateData.status = postData.status;
@@ -141,13 +142,21 @@ export const postsApi = {
       updateData.is_draft = postData.status === "draft";
     }
     if (postData.quiz_id !== undefined) updateData.quiz_id = postData.quiz_id;
-    if (postData.rating_enabled !== undefined) updateData.rating_enabled = postData.rating_enabled;
-    if (postData.cta_enabled !== undefined) updateData.cta_enabled = postData.cta_enabled;
-    if (postData.component_order !== undefined) updateData.component_order = postData.component_order;
-    if (postData.styles !== undefined) updateData.styles = postData.styles;
-    if (postData.template_data !== undefined) updateData.template_data = postData.template_data;
-    if (postData.folder_id !== undefined) updateData.folder_id = postData.folder_id;
-    if (postData.post_slug !== undefined) updateData.post_slug = postData.post_slug;
+    if (postData.rating_enabled !== undefined)
+      updateData.rating_enabled = postData.rating_enabled;
+    if (postData.cta_enabled !== undefined)
+      updateData.cta_enabled = postData.cta_enabled;
+    if (postData.component_order !== undefined)
+      updateData.component_order = postData.component_order;
+    if (postData.styles !== undefined)
+      updateData.styles = postData.styles as unknown as Json;
+    if (postData.template_data !== undefined)
+      updateData.template_data =
+        postData.template_data as unknown as Json | null;
+    if (postData.folder_id !== undefined)
+      updateData.folder_id = postData.folder_id;
+    if (postData.post_slug !== undefined)
+      updateData.post_slug = postData.post_slug;
     updateData.updated_at = new Date().toISOString();
 
     const { data, error } = await supabase
@@ -215,8 +224,13 @@ export const postsApi = {
       if (error.code === "PGRST116") {
         throw new Error("Post not found");
       }
-      if (error.message?.includes("permission denied") || error.message?.includes("row-level security")) {
-        throw new Error("Access denied. Please check RLS policies allow public read access to posts.");
+      if (
+        error.message?.includes("permission denied") ||
+        error.message?.includes("row-level security")
+      ) {
+        throw new Error(
+          "Access denied. Please check RLS policies allow public read access to posts."
+        );
       }
       throw error;
     }
@@ -232,7 +246,10 @@ export const postsApi = {
    * Only returns posts with status='published' and is_draft=false
    * Uses the anon key client which respects RLS policies
    */
-  async getPublicByCanonical(folderSlug: string, postSlug: string): Promise<Post> {
+  async getPublicByCanonical(
+    folderSlug: string,
+    postSlug: string
+  ): Promise<Post> {
     const { createClient } = await import("@supabase/supabase-js");
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -263,8 +280,13 @@ export const postsApi = {
       if (error.code === "PGRST116") {
         throw new Error("Post not found or not published");
       }
-      if (error.message?.includes("permission denied") || error.message?.includes("row-level security")) {
-        throw new Error("Access denied. Please check RLS policies allow public read access to published posts.");
+      if (
+        error.message?.includes("permission denied") ||
+        error.message?.includes("row-level security")
+      ) {
+        throw new Error(
+          "Access denied. Please check RLS policies allow public read access to published posts."
+        );
       }
       throw error;
     }
@@ -275,4 +297,3 @@ export const postsApi = {
     return data;
   },
 };
-

@@ -8,7 +8,13 @@ export interface QuizOption {
 
 export interface QuizQuestion {
   id: string;
-  type: 'multiple_choice' | 'single_choice' | 'text' | 'email' | 'phone' | 'rating';
+  type:
+    | "multiple_choice"
+    | "single_choice"
+    | "text"
+    | "email"
+    | "phone"
+    | "rating";
   question: string;
   description?: string;
   options?: QuizOption[];
@@ -36,12 +42,12 @@ export interface QuizCTAButton {
   id: string;
   text: string;
   url?: string;
-  style: 'primary' | 'secondary' | 'outline';
+  style: "primary" | "secondary" | "outline";
 }
 
 export interface QuizContactSettings {
   enabled: boolean;
-  position: 'before_conclusion' | 'in_conclusion';
+  position: "before_conclusion" | "in_conclusion";
   fields: {
     email?: { enabled: boolean; required: boolean };
     phone?: { enabled: boolean; required: boolean };
@@ -59,7 +65,7 @@ export interface QuizStyles {
   textColor: string;
   accentColor: string;
   fontFamily: string;
-  borderRadius: 'none' | 'small' | 'medium' | 'large' | 'full';
+  borderRadius: "none" | "small" | "medium" | "large" | "full";
 }
 
 export interface Quiz {
@@ -74,7 +80,7 @@ export interface Quiz {
   createdAt: string;
   updatedAt: string;
   userId: string;
-  status: 'draft' | 'published';
+  status: "draft" | "published";
 }
 
 export interface QuizAnswer {
@@ -97,28 +103,24 @@ export interface QuizSubmission {
 
 // Default styles for new quizzes
 export const defaultQuizStyles: QuizStyles = {
-  primaryColor: '#0f172a',
-  secondaryColor: '#6366f1',
-  backgroundColor: '#fafaf9',
-  cardBackgroundColor: '#ffffff',
-  textColor: '#1e293b',
-  accentColor: '#8b5cf6',
-  fontFamily: 'system-ui',
-  borderRadius: 'large',
+  primaryColor: "#0f172a",
+  secondaryColor: "#6366f1",
+  backgroundColor: "#fafaf9",
+  cardBackgroundColor: "#ffffff",
+  textColor: "#1e293b",
+  accentColor: "#8b5cf6",
+  fontFamily: "system-ui",
+  borderRadius: "large",
 };
 
 export const defaultContactSettings: QuizContactSettings = {
   enabled: true,
-  position: 'before_conclusion',
+  position: "before_conclusion",
   fields: {
     email: { enabled: true, required: true },
     phone: { enabled: false, required: false },
     name: { enabled: true, required: false },
   },
-  title: 'Almost there!',
-  description: 'Enter your details to see your results.',
+  title: "Almost there!",
+  description: "Enter your details to see your results.",
 };
-
-
-
-

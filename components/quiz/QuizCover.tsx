@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { QuizCoverPage, QuizStyles } from '@/types/quiz';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { QuizCoverPage, QuizStyles } from "@/types/quiz";
+import { ArrowRight, Sparkles } from "lucide-react";
 
 interface QuizCoverProps {
   cover: QuizCoverPage;
@@ -12,24 +12,30 @@ interface QuizCoverProps {
 export function QuizCover({ cover, styles, onStart }: QuizCoverProps) {
   const getBorderRadius = () => {
     switch (styles.borderRadius) {
-      case 'none': return '0';
-      case 'small': return '0.5rem';
-      case 'medium': return '1rem';
-      case 'large': return '1.5rem';
-      case 'full': return '2rem';
-      default: return '1rem';
+      case "none":
+        return "0";
+      case "small":
+        return "0.5rem";
+      case "medium":
+        return "1rem";
+      case "large":
+        return "1.5rem";
+      case "full":
+        return "2rem";
+      default:
+        return "1rem";
     }
   };
 
   return (
-    <div 
+    <div
       className="min-h-[80vh] flex flex-col items-center justify-center text-center px-6 py-12"
       style={{ fontFamily: styles.fontFamily }}
     >
       {/* Decorative element */}
-      <div 
+      <div
         className="w-16 h-16 rounded-2xl flex items-center justify-center mb-8 rotate-12"
-        style={{ 
+        style={{
           backgroundColor: `${styles.secondaryColor}15`,
           color: styles.secondaryColor,
         }}
@@ -39,7 +45,7 @@ export function QuizCover({ cover, styles, onStart }: QuizCoverProps) {
 
       {/* Subtitle */}
       {cover.subtitle && (
-        <p 
+        <p
           className="text-sm md:text-base font-medium tracking-wide uppercase mb-4"
           style={{ color: styles.secondaryColor }}
         >
@@ -48,7 +54,7 @@ export function QuizCover({ cover, styles, onStart }: QuizCoverProps) {
       )}
 
       {/* Title */}
-      <h1 
+      <h1
         className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 max-w-3xl leading-tight"
         style={{ color: styles.textColor }}
       >
@@ -57,7 +63,7 @@ export function QuizCover({ cover, styles, onStart }: QuizCoverProps) {
 
       {/* Description */}
       {cover.description && (
-        <p 
+        <p
           className="text-lg md:text-xl max-w-xl mb-10 opacity-70 leading-relaxed"
           style={{ color: styles.textColor }}
         >
@@ -67,15 +73,11 @@ export function QuizCover({ cover, styles, onStart }: QuizCoverProps) {
 
       {/* Image */}
       {cover.imageUrl && (
-        <div 
+        <div
           className="w-full max-w-md mb-10 overflow-hidden shadow-xl"
           style={{ borderRadius: getBorderRadius() }}
         >
-          <img 
-            src={cover.imageUrl} 
-            alt="" 
-            className="w-full h-auto"
-          />
+          <img src={cover.imageUrl} alt="" className="w-full h-auto" />
         </div>
       )}
 
@@ -85,16 +87,19 @@ export function QuizCover({ cover, styles, onStart }: QuizCoverProps) {
         className="group px-8 py-4 text-lg font-semibold transition-all duration-300 flex items-center gap-3 hover:gap-4 shadow-lg hover:shadow-xl"
         style={{
           backgroundColor: styles.primaryColor,
-          color: '#ffffff',
+          color: "#ffffff",
           borderRadius: getBorderRadius(),
         }}
       >
         {cover.buttonText}
-        <ArrowRight size={20} className="transition-transform group-hover:translate-x-1" />
+        <ArrowRight
+          size={20}
+          className="transition-transform group-hover:translate-x-1"
+        />
       </button>
 
       {/* Time estimate */}
-      <p 
+      <p
         className="mt-6 text-sm opacity-50"
         style={{ color: styles.textColor }}
       >
@@ -103,7 +108,3 @@ export function QuizCover({ cover, styles, onStart }: QuizCoverProps) {
     </div>
   );
 }
-
-
-
-

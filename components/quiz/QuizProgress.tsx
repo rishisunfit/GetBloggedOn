@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 interface QuizProgressProps {
   current: number;
@@ -7,7 +7,11 @@ interface QuizProgressProps {
   backgroundColor: string;
 }
 
-export function QuizProgress({ current, total, primaryColor }: QuizProgressProps) {
+export function QuizProgress({
+  current,
+  total,
+  primaryColor,
+}: QuizProgressProps) {
   const progress = (current / total) * 100;
 
   return (
@@ -20,13 +24,13 @@ export function QuizProgress({ current, total, primaryColor }: QuizProgressProps
           {Math.round(progress)}%
         </span>
       </div>
-      <div 
+      <div
         className="h-2 rounded-full overflow-hidden"
         style={{ backgroundColor: `${primaryColor}15` }}
       >
         <div
           className="h-full rounded-full transition-all duration-400 ease-out"
-          style={{ 
+          style={{
             backgroundColor: primaryColor,
             width: `${progress}%`,
           }}

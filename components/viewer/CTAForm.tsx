@@ -7,7 +7,7 @@ interface CTAFormProps {
   quizId?: string | null;
 }
 
-export function CTAForm({ postId, quizId }: CTAFormProps) {
+export function CTAForm({ postId }: CTAFormProps) {
   const [formData, setFormData] = useState({
     email: "",
     phone: "",
@@ -64,7 +64,7 @@ export function CTAForm({ postId, quizId }: CTAFormProps) {
         throw new Error(errorData.error || "Failed to submit question");
       }
 
-      const result = await response.json();
+      await response.json();
 
       setSubmitted(true);
       setTimeout(() => {
@@ -85,7 +85,10 @@ export function CTAForm({ postId, quizId }: CTAFormProps) {
   };
 
   return (
-    <div className="my-8 flex justify-center" data-cta-id={`cta-form-${postId || 'default'}`}>
+    <div
+      className="my-8 flex justify-center"
+      data-cta-id={`cta-form-${postId || "default"}`}
+    >
       <div className="w-full max-w-2xl">
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden w-full">
           <div className="px-6 py-12">
@@ -106,8 +109,12 @@ export function CTAForm({ postId, quizId }: CTAFormProps) {
 
             {/* Description */}
             <p className="text-lg max-w-xl mx-auto mb-10 opacity-70 leading-relaxed text-gray-700 text-center">
-              I'd love to hear from you. Drop me a message and I'll get back to you soon. <br />
-              <span className="text-sm">→ My DMs and email inbox get flooded. This is a great, private way for me to answer your questions :)</span>
+              I'd love to hear from you. Drop me a message and I'll get back to
+              you soon. <br />
+              <span className="text-sm">
+                → My DMs and email inbox get flooded. This is a great, private
+                way for me to answer your questions :)
+              </span>
             </p>
 
             {submitted ? (
@@ -117,7 +124,10 @@ export function CTAForm({ postId, quizId }: CTAFormProps) {
                 </p>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-4 max-w-md mx-auto">
+              <form
+                onSubmit={handleSubmit}
+                className="space-y-4 max-w-md mx-auto"
+              >
                 <div>
                   <label
                     htmlFor="email"
@@ -137,8 +147,9 @@ export function CTAForm({ postId, quizId }: CTAFormProps) {
                     }}
                     placeholder="your.email@example.com"
                     disabled={isLoading}
-                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black disabled:bg-gray-100 disabled:cursor-not-allowed ${errors.email ? "border-red-500" : "border-gray-300"
-                      }`}
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black disabled:bg-gray-100 disabled:cursor-not-allowed ${
+                      errors.email ? "border-red-500" : "border-gray-300"
+                    }`}
                   />
                   {errors.email && (
                     <p className="mt-1 text-sm text-red-600">{errors.email}</p>
@@ -164,8 +175,9 @@ export function CTAForm({ postId, quizId }: CTAFormProps) {
                     }}
                     placeholder="+1 (555) 123-4567"
                     disabled={isLoading}
-                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black disabled:bg-gray-100 disabled:cursor-not-allowed ${errors.phone ? "border-red-500" : "border-gray-300"
-                      }`}
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black disabled:bg-gray-100 disabled:cursor-not-allowed ${
+                      errors.phone ? "border-red-500" : "border-gray-300"
+                    }`}
                   />
                   {errors.phone && (
                     <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
@@ -202,9 +214,9 @@ export function CTAForm({ postId, quizId }: CTAFormProps) {
                   disabled={isLoading}
                   className="group w-full flex items-center justify-center gap-3 px-8 py-4 text-lg font-semibold transition-all duration-300 hover:gap-4 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{
-                    backgroundColor: '#000000',
-                    color: '#ffffff',
-                    borderRadius: '1rem',
+                    backgroundColor: "#000000",
+                    color: "#ffffff",
+                    borderRadius: "1rem",
                   }}
                 >
                   {isLoading ? (
@@ -215,7 +227,10 @@ export function CTAForm({ postId, quizId }: CTAFormProps) {
                   ) : (
                     <>
                       Send Message
-                      <Send size={20} className="transition-transform group-hover:translate-x-1" />
+                      <Send
+                        size={20}
+                        className="transition-transform group-hover:translate-x-1"
+                      />
                     </>
                   )}
                 </button>

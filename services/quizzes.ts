@@ -7,37 +7,42 @@ import {
   defaultQuizStyles,
   defaultContactSettings,
 } from "@/types/quiz";
+import type { Tables, TablesInsert, Json } from "@/types/database";
 
 // Transform database row to Quiz type
-const transformQuizRow = (row: any): Quiz => {
+const transformQuizRow = (row: Tables<"quizzes">): Quiz => {
   return {
     id: row.id,
     title: row.title,
     slug: row.slug || undefined,
-    coverPage: row.cover_page,
-    questions: row.questions,
-    conclusionPage: row.conclusion_page,
-    contactSettings: row.contact_settings,
-    styles: row.styles,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
+    coverPage: row.cover_page as unknown as Quiz["coverPage"],
+    questions: row.questions as unknown as Quiz["questions"],
+    conclusionPage: row.conclusion_page as unknown as Quiz["conclusionPage"],
+    contactSettings: row.contact_settings as unknown as Quiz["contactSettings"],
+    styles: row.styles as unknown as Quiz["styles"],
+    createdAt: row.created_at || "",
+    updatedAt: row.updated_at || "",
     userId: row.user_id,
     status: row.status as "draft" | "published",
   };
 };
 
 // Transform Quiz type to database row
-const transformQuizToRow = (quiz: Partial<Quiz>): any => {
-  const row: any = {};
+const transformQuizToRow = (
+  quiz: Partial<Quiz>
+): Partial<TablesInsert<"quizzes">> => {
+  const row: Partial<TablesInsert<"quizzes">> = {};
   if (quiz.title !== undefined) row.title = quiz.title;
   if (quiz.slug !== undefined) row.slug = quiz.slug || null;
-  if (quiz.coverPage !== undefined) row.cover_page = quiz.coverPage;
-  if (quiz.questions !== undefined) row.questions = quiz.questions;
+  if (quiz.coverPage !== undefined)
+    row.cover_page = quiz.coverPage as unknown as Json;
+  if (quiz.questions !== undefined)
+    row.questions = quiz.questions as unknown as Json;
   if (quiz.conclusionPage !== undefined)
-    row.conclusion_page = quiz.conclusionPage;
+    row.conclusion_page = quiz.conclusionPage as unknown as Json;
   if (quiz.contactSettings !== undefined)
-    row.contact_settings = quiz.contactSettings;
-  if (quiz.styles !== undefined) row.styles = quiz.styles;
+    row.contact_settings = quiz.contactSettings as unknown as Json;
+  if (quiz.styles !== undefined) row.styles = quiz.styles as unknown as Json;
   if (quiz.status !== undefined) row.status = quiz.status;
   if (quiz.userId !== undefined) row.user_id = quiz.userId;
   return row;
@@ -229,9 +234,7 @@ export const createBlankQuiz = (): Omit<
     title: "Thanks for completing the quiz!",
     subtitle: "Here are your results",
     description: "Add your personalized message here...",
-    ctaButtons: [
-      { id: "cta1", text: "Learn More", style: "primary" },
-    ],
+    ctaButtons: [{ id: "cta1", text: "Learn More", style: "primary" }],
   },
   contactSettings: defaultContactSettings,
   styles: defaultQuizStyles,

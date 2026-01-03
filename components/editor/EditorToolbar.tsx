@@ -30,7 +30,6 @@ import {
   Type,
   Clock,
   Video,
-  ClipboardList,
 } from "lucide-react";
 import { Editor } from "@tiptap/react";
 import { useState, useRef, useEffect } from "react";
@@ -45,10 +44,7 @@ import {
   ImageAttributionModal,
   type ImageAttributionValues,
 } from "./ImageAttributionModal";
-import {
-  uploadImageToStorage,
-  uploadDataURLToStorage,
-} from "@/lib/storage";
+import { uploadImageToStorage, uploadDataURLToStorage } from "@/lib/storage";
 import { useAuth } from "@/hooks/useAuth";
 import { mediaApi } from "@/services/media";
 
@@ -74,8 +70,9 @@ const ToolbarButton = ({
   <button
     onClick={onClick}
     disabled={disabled}
-    className={`p-1.5 rounded hover:bg-gray-100 transition-colors ${active ? "bg-gray-100 text-gray-900" : "text-gray-700"
-      } ${disabled ? "opacity-40 cursor-not-allowed" : ""}`}
+    className={`p-1.5 rounded hover:bg-gray-100 transition-colors ${
+      active ? "bg-gray-100 text-gray-900" : "text-gray-700"
+    } ${disabled ? "opacity-40 cursor-not-allowed" : ""}`}
     title={title}
     type="button"
   >
@@ -113,10 +110,14 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
     const handleUpdate = () => {
       forceUpdate({});
       // Update alignment state
-      if (editor.isActive({ textAlign: "center" })) setCurrentAlignment("center");
-      else if (editor.isActive({ textAlign: "right" })) setCurrentAlignment("right");
-      else if (editor.isActive({ textAlign: "justify" })) setCurrentAlignment("justify");
-      else if (editor.isActive({ textAlign: "left" })) setCurrentAlignment("left");
+      if (editor.isActive({ textAlign: "center" }))
+        setCurrentAlignment("center");
+      else if (editor.isActive({ textAlign: "right" }))
+        setCurrentAlignment("right");
+      else if (editor.isActive({ textAlign: "justify" }))
+        setCurrentAlignment("justify");
+      else if (editor.isActive({ textAlign: "left" }))
+        setCurrentAlignment("left");
       else setCurrentAlignment(null);
     };
 
@@ -184,7 +185,7 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
       console.log("Image uploaded, URL:", imageUrl);
 
       // Test if image URL is accessible
-      const img = document.createElement('img');
+      const img = document.createElement("img");
       img.onload = () => {
         console.log("Image is accessible and loaded successfully");
       };
@@ -252,7 +253,11 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
       );
       console.log("Generated image uploaded, URL:", uploadedUrl);
       // Insert image into editor (alignment defaults to center via ImageExtension attrs)
-      editor.chain().focus().setImage({ src: uploadedUrl, alt: "Generated image" }).run();
+      editor
+        .chain()
+        .focus()
+        .setImage({ src: uploadedUrl, alt: "Generated image" })
+        .run();
 
       // Note: AIImageGeneratorModal already saves to media table with full metadata (prompt, etc.)
       // So we don't need to save it again here to avoid duplicates
@@ -274,7 +279,11 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
   const handleSelectFromHistory = async (imageUrl: string) => {
     // Use the image directly (it's already in Supabase storage)
     console.log("Using image from history, URL:", imageUrl);
-    editor.chain().focus().setImage({ src: imageUrl, alt: "Image from history" }).run();
+    editor
+      .chain()
+      .focus()
+      .setImage({ src: imageUrl, alt: "Image from history" })
+      .run();
     // Verify the image was inserted
     const html = editor.getHTML();
     console.log("Editor HTML after image insert:", html);
@@ -288,27 +297,37 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
     setShowVideoModal(true);
   };
 
-  const handleInsertVideo = (url: string, align: "left" | "center" | "right" = "center") => {
+  const handleInsertVideo = (
+    url: string,
+    align: "left" | "center" | "right" = "center"
+  ) => {
     // Videos will be sized responsively at 70% via CSS
-    editor.chain().focus().setVideo({
-      src: url,
-      align: align || "center"
-    }).run();
+    editor
+      .chain()
+      .focus()
+      .setVideo({
+        src: url,
+        align: align || "center",
+      })
+      .run();
   };
 
   const addQuiz = () => {
     setShowQuizModal(true);
   };
 
-  const handleInsertQuiz = (quizId: string, align: "left" | "center" | "right" = "center") => {
-    editor.chain().focus().setQuiz({
-      quizId: quizId,
-      align: align || "center"
-    }).run();
-  };
-
-  const addImageFromWeb = () => {
-    setShowWebImageModal(true);
+  const handleInsertQuiz = (
+    quizId: string,
+    align: "left" | "center" | "right" = "center"
+  ) => {
+    editor
+      .chain()
+      .focus()
+      .setQuiz({
+        quizId: quizId,
+        align: align || "center",
+      })
+      .run();
   };
 
   const handleInsertWebImage = async (values: ImageAttributionValues) => {
@@ -624,7 +643,11 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
           <Divider />
 
           {/* Alignment */}
-          <div className={`flex items-center gap-0 ${currentAlignment ? "bg-blue-50 rounded px-1 py-0.5" : ""}`}>
+          <div
+            className={`flex items-center gap-0 ${
+              currentAlignment ? "bg-blue-50 rounded px-1 py-0.5" : ""
+            }`}
+          >
             <ToolbarButton
               onClick={() => editor.chain().focus().setTextAlign("left").run()}
               active={currentAlignment === "left"}
@@ -633,7 +656,9 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
               <AlignLeft size={18} />
             </ToolbarButton>
             <ToolbarButton
-              onClick={() => editor.chain().focus().setTextAlign("center").run()}
+              onClick={() =>
+                editor.chain().focus().setTextAlign("center").run()
+              }
               active={currentAlignment === "center"}
               title="Align Center"
             >
@@ -647,7 +672,9 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
               <AlignRight size={18} />
             </ToolbarButton>
             <ToolbarButton
-              onClick={() => editor.chain().focus().setTextAlign("justify").run()}
+              onClick={() =>
+                editor.chain().focus().setTextAlign("justify").run()
+              }
               active={currentAlignment === "justify"}
               title="Justify"
             >
@@ -918,7 +945,11 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
           <Divider />
 
           {/* Table */}
-          <div className={`flex items-center gap-0 ${editor.isActive("table") ? "bg-blue-50 rounded px-1 py-0.5" : ""}`}>
+          <div
+            className={`flex items-center gap-0 ${
+              editor.isActive("table") ? "bg-blue-50 rounded px-1 py-0.5" : ""
+            }`}
+          >
             <ToolbarButton
               onClick={() => setShowTableModal(true)}
               active={editor.isActive("table")}
@@ -1089,40 +1120,40 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
         showHighlightPicker ||
         showLineSpacingPicker ||
         showFontSizePicker) && (
-          <div
-            className="fixed inset-0 z-40"
-            onMouseDown={(e) => {
-              // Only track if clicking on the backdrop itself (not a child)
-              if (e.target === e.currentTarget) {
-                dragStartRef.current = { x: e.clientX, y: e.clientY };
-              }
-            }}
-            onMouseUp={(e) => {
-              // Only close if clicking on the backdrop itself and it was a click (not a drag)
-              if (e.target === e.currentTarget && dragStartRef.current) {
-                const dx = Math.abs(e.clientX - dragStartRef.current.x);
-                const dy = Math.abs(e.clientY - dragStartRef.current.y);
-                // If moved less than 5px, it's a click, not a drag
-                if (dx < 5 && dy < 5) {
-                  setShowColorPicker(false);
-                  setShowHighlightPicker(false);
-                  setShowLineSpacingPicker(false);
-                  setShowFontSizePicker(false);
-                }
-              }
-              dragStartRef.current = null;
-            }}
-            onClick={(e) => {
-              // Fallback: close on click if it's the backdrop
-              if (e.target === e.currentTarget) {
+        <div
+          className="fixed inset-0 z-40"
+          onMouseDown={(e) => {
+            // Only track if clicking on the backdrop itself (not a child)
+            if (e.target === e.currentTarget) {
+              dragStartRef.current = { x: e.clientX, y: e.clientY };
+            }
+          }}
+          onMouseUp={(e) => {
+            // Only close if clicking on the backdrop itself and it was a click (not a drag)
+            if (e.target === e.currentTarget && dragStartRef.current) {
+              const dx = Math.abs(e.clientX - dragStartRef.current.x);
+              const dy = Math.abs(e.clientY - dragStartRef.current.y);
+              // If moved less than 5px, it's a click, not a drag
+              if (dx < 5 && dy < 5) {
                 setShowColorPicker(false);
                 setShowHighlightPicker(false);
                 setShowLineSpacingPicker(false);
                 setShowFontSizePicker(false);
               }
-            }}
-          />
-        )}
+            }
+            dragStartRef.current = null;
+          }}
+          onClick={(e) => {
+            // Fallback: close on click if it's the backdrop
+            if (e.target === e.currentTarget) {
+              setShowColorPicker(false);
+              setShowHighlightPicker(false);
+              setShowLineSpacingPicker(false);
+              setShowFontSizePicker(false);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

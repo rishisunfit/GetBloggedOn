@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import { useState, useCallback } from 'react';
-import { Quiz, QuizAnswer, QuizSubmission } from '@/types/quiz';
-import { QuizCover } from './QuizCover';
-import { QuizCard } from './QuizCard';
-import { QuizContactForm } from './QuizContactForm';
-import { QuizConclusion } from './QuizConclusion';
-import { QuizProgressSimple } from './QuizProgress';
-import { ArrowLeft, ArrowRight, X } from 'lucide-react';
-import { quizzesApi } from '@/services/quizzes';
+import { useState, useCallback } from "react";
+import { Quiz, QuizAnswer, QuizSubmission } from "@/types/quiz";
+import { QuizCover } from "./QuizCover";
+import { QuizCard } from "./QuizCard";
+import { QuizContactForm } from "./QuizContactForm";
+import { QuizConclusion } from "./QuizConclusion";
+import { QuizProgressSimple } from "./QuizProgress";
+import { ArrowLeft, ArrowRight, X } from "lucide-react";
+import { quizzesApi } from "@/services/quizzes";
 
 interface QuizPlayerProps {
   quiz: Quiz;
@@ -16,53 +16,69 @@ interface QuizPlayerProps {
   onClose?: () => void;
 }
 
-type QuizStage = 'cover' | 'questions' | 'contact' | 'conclusion';
+type QuizStage = "cover" | "questions" | "contact" | "conclusion";
 
 export function QuizPlayer({ quiz, onComplete, onClose }: QuizPlayerProps) {
-  const [stage, setStage] = useState<QuizStage>('cover');
+  const [stage, setStage] = useState<QuizStage>("cover");
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, QuizAnswer>>({});
-  const [contactInfo, setContactInfo] = useState<{ name?: string; email?: string; phone?: string }>();
+  const [contactInfo, setContactInfo] = useState<{
+    name?: string;
+    email?: string;
+    phone?: string;
+  }>();
   const [isAnimating, setIsAnimating] = useState(false);
-  const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('left');
+  const [slideDirection, setSlideDirection] = useState<"left" | "right">(
+    "left"
+  );
 
   const currentQuestion = quiz.questions[currentQuestionIndex];
   const isFirstQuestion = currentQuestionIndex === 0;
   const isLastQuestion = currentQuestionIndex === quiz.questions.length - 1;
-  const currentAnswer = currentQuestion ? answers[currentQuestion.id] : undefined;
-  
+  const currentAnswer = currentQuestion
+    ? answers[currentQuestion.id]
+    : undefined;
+
   // Check if current question is answered (for required questions)
-  const isCurrentAnswered = currentQuestion && (
-    !currentQuestion.required || 
-    (currentAnswer && (
-      Array.isArray(currentAnswer.value) 
-        ? currentAnswer.value.length > 0 
-        : currentAnswer.value !== undefined && currentAnswer.value !== ''
-    ))
-  );
+  const isCurrentAnswered =
+    currentQuestion &&
+    (!currentQuestion.required ||
+      (currentAnswer &&
+        (Array.isArray(currentAnswer.value)
+          ? currentAnswer.value.length > 0
+          : currentAnswer.value !== undefined && currentAnswer.value !== "")));
 
   const getBorderRadius = () => {
     switch (quiz.styles.borderRadius) {
-      case 'none': return '0';
-      case 'small': return '0.5rem';
-      case 'medium': return '1rem';
-      case 'large': return '1.5rem';
-      case 'full': return '2rem';
-      default: return '1rem';
+      case "none":
+        return "0";
+      case "small":
+        return "0.5rem";
+      case "medium":
+        return "1rem";
+      case "large":
+        return "1.5rem";
+      case "full":
+        return "2rem";
+      default:
+        return "1rem";
     }
   };
 
-  const animateTransition = useCallback((direction: 'left' | 'right', callback: () => void) => {
-    setSlideDirection(direction);
-    setIsAnimating(true);
-    setTimeout(() => {
-      callback();
-      setIsAnimating(false);
-    }, 200);
-  }, []);
+  const animateTransition = useCallback(
+    (direction: "left" | "right", callback: () => void) => {
+      setSlideDirection(direction);
+      setIsAnimating(true);
+      setTimeout(() => {
+        callback();
+        setIsAnimating(false);
+      }, 200);
+    },
+    []
+  );
 
   const handleStart = () => {
-    animateTransition('left', () => setStage('questions'));
+    animateTransition("left", () => setStage("questions"));
   };
 
   const handleAnswer = (answer: QuizAnswer) => {
@@ -77,16 +93,19 @@ export function QuizPlayer({ quiz, onComplete, onClose }: QuizPlayerProps) {
 
     if (isLastQuestion) {
       // Move to contact or conclusion
-      animateTransition('left', () => {
-        if (quiz.contactSettings.enabled && quiz.contactSettings.position === 'before_conclusion') {
-          setStage('contact');
+      animateTransition("left", () => {
+        if (
+          quiz.contactSettings.enabled &&
+          quiz.contactSettings.position === "before_conclusion"
+        ) {
+          setStage("contact");
         } else {
           handleComplete();
-          setStage('conclusion');
+          setStage("conclusion");
         }
       });
     } else {
-      animateTransition('left', () => {
+      animateTransition("left", () => {
         setCurrentQuestionIndex((prev) => prev + 1);
       });
     }
@@ -94,30 +113,38 @@ export function QuizPlayer({ quiz, onComplete, onClose }: QuizPlayerProps) {
 
   const handleBack = () => {
     if (isFirstQuestion) {
-      animateTransition('right', () => setStage('cover'));
+      animateTransition("right", () => setStage("cover"));
     } else {
-      animateTransition('right', () => {
+      animateTransition("right", () => {
         setCurrentQuestionIndex((prev) => prev - 1);
       });
     }
   };
 
-  const handleContactSubmit = (info: { name?: string; email?: string; phone?: string }) => {
+  const handleContactSubmit = (info: {
+    name?: string;
+    email?: string;
+    phone?: string;
+  }) => {
     setContactInfo(info);
-    animateTransition('left', () => {
+    animateTransition("left", () => {
       handleComplete(info);
-      setStage('conclusion');
+      setStage("conclusion");
     });
   };
 
   const handleContactSkip = () => {
-    animateTransition('left', () => {
+    animateTransition("left", () => {
       handleComplete();
-      setStage('conclusion');
+      setStage("conclusion");
     });
   };
 
-  const handleComplete = async (info?: { name?: string; email?: string; phone?: string }) => {
+  const handleComplete = async (info?: {
+    name?: string;
+    email?: string;
+    phone?: string;
+  }) => {
     const submission = await quizzesApi.submitQuiz({
       quizId: quiz.id,
       answers: Object.values(answers),
@@ -131,26 +158,26 @@ export function QuizPlayer({ quiz, onComplete, onClose }: QuizPlayerProps) {
 
   // Animation classes
   const getAnimationClass = () => {
-    if (!isAnimating) return 'translate-x-0 opacity-100';
-    return slideDirection === 'left' 
-      ? '-translate-x-8 opacity-0' 
-      : 'translate-x-8 opacity-0';
+    if (!isAnimating) return "translate-x-0 opacity-100";
+    return slideDirection === "left"
+      ? "-translate-x-8 opacity-0"
+      : "translate-x-8 opacity-0";
   };
 
   return (
-    <div 
+    <div
       className="min-h-screen relative overflow-hidden"
-      style={{ 
+      style={{
         backgroundColor: quiz.styles.backgroundColor,
         fontFamily: quiz.styles.fontFamily,
       }}
     >
       {/* Background Pattern */}
-      <div 
+      <div
         className="absolute inset-0 opacity-[0.03]"
         style={{
           backgroundImage: `radial-gradient(${quiz.styles.secondaryColor} 1px, transparent 1px)`,
-          backgroundSize: '24px 24px',
+          backgroundSize: "24px 24px",
         }}
       />
 
@@ -166,7 +193,7 @@ export function QuizPlayer({ quiz, onComplete, onClose }: QuizPlayerProps) {
       )}
 
       {/* Progress Bar (only during questions) */}
-      {stage === 'questions' && (
+      {stage === "questions" && (
         <div className="absolute top-0 left-0 right-0 p-4 md:p-6 z-40">
           <div className="max-w-2xl mx-auto">
             <QuizProgressSimple
@@ -180,11 +207,11 @@ export function QuizPlayer({ quiz, onComplete, onClose }: QuizPlayerProps) {
       )}
 
       {/* Main Content */}
-      <div 
+      <div
         className={`relative z-10 transition-all duration-200 ease-out ${getAnimationClass()}`}
       >
         {/* Cover Page */}
-        {stage === 'cover' && (
+        {stage === "cover" && (
           <QuizCover
             cover={quiz.coverPage}
             styles={quiz.styles}
@@ -193,7 +220,7 @@ export function QuizPlayer({ quiz, onComplete, onClose }: QuizPlayerProps) {
         )}
 
         {/* Question Cards */}
-        {stage === 'questions' && currentQuestion && (
+        {stage === "questions" && currentQuestion && (
           <div className="min-h-screen flex flex-col pt-20 pb-32 px-4">
             <div className="flex-1 flex items-center justify-center">
               <QuizCard
@@ -209,7 +236,7 @@ export function QuizPlayer({ quiz, onComplete, onClose }: QuizPlayerProps) {
         )}
 
         {/* Contact Form */}
-        {stage === 'contact' && (
+        {stage === "contact" && (
           <QuizContactForm
             settings={quiz.contactSettings}
             styles={quiz.styles}
@@ -219,7 +246,7 @@ export function QuizPlayer({ quiz, onComplete, onClose }: QuizPlayerProps) {
         )}
 
         {/* Conclusion */}
-        {stage === 'conclusion' && (
+        {stage === "conclusion" && (
           <QuizConclusion
             conclusion={quiz.conclusionPage}
             styles={quiz.styles}
@@ -231,10 +258,10 @@ export function QuizPlayer({ quiz, onComplete, onClose }: QuizPlayerProps) {
       </div>
 
       {/* Navigation (only during questions) */}
-      {stage === 'questions' && (
-        <div 
+      {stage === "questions" && (
+        <div
           className="fixed bottom-0 left-0 right-0 p-4 md:p-6 z-40"
-          style={{ 
+          style={{
             background: `linear-gradient(to top, ${quiz.styles.backgroundColor}, ${quiz.styles.backgroundColor}ee, transparent)`,
           }}
         >
@@ -258,12 +285,14 @@ export function QuizPlayer({ quiz, onComplete, onClose }: QuizPlayerProps) {
               disabled={!isCurrentAnswered}
               className="px-6 py-3 font-semibold transition-all duration-200 flex items-center gap-2 hover:gap-3 disabled:opacity-40 disabled:cursor-not-allowed"
               style={{
-                backgroundColor: isCurrentAnswered ? quiz.styles.primaryColor : `${quiz.styles.primaryColor}60`,
-                color: '#ffffff',
+                backgroundColor: isCurrentAnswered
+                  ? quiz.styles.primaryColor
+                  : `${quiz.styles.primaryColor}60`,
+                color: "#ffffff",
                 borderRadius: getBorderRadius(),
               }}
             >
-              {isLastQuestion ? 'Finish' : 'Next'}
+              {isLastQuestion ? "Finish" : "Next"}
               <ArrowRight size={18} />
             </button>
           </div>
@@ -272,4 +301,3 @@ export function QuizPlayer({ quiz, onComplete, onClose }: QuizPlayerProps) {
     </div>
   );
 }
-

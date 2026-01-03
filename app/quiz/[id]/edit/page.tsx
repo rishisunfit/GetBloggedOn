@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { Quiz } from '@/types/quiz';
-import { quizzesApi } from '@/services/quizzes';
-import { QuizBuilder, QuizPlayer } from '@/components/quiz';
-import { Loader2 } from 'lucide-react';
-import { useDialog } from '@/hooks/useDialog';
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { Quiz } from "@/types/quiz";
+import { quizzesApi } from "@/services/quizzes";
+import { QuizBuilder, QuizPlayer } from "@/components/quiz";
+import { Loader2 } from "lucide-react";
+import { useDialog } from "@/hooks/useDialog";
 
 export default function EditQuizPage() {
   const params = useParams();
@@ -17,7 +17,6 @@ export default function EditQuizPage() {
   const [error, setError] = useState<string | null>(null);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [previewQuiz, setPreviewQuiz] = useState<Quiz | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     const loadQuiz = async () => {
@@ -26,12 +25,12 @@ export default function EditQuizPage() {
         const loadedQuiz = await quizzesApi.getById(quizId);
 
         if (!loadedQuiz) {
-          setError('Quiz not found');
+          setError("Quiz not found");
         } else {
           setQuiz(loadedQuiz);
         }
       } catch (err) {
-        setError('Failed to load quiz');
+        setError("Failed to load quiz");
         console.error(err);
       } finally {
         setLoading(false);
@@ -41,10 +40,11 @@ export default function EditQuizPage() {
     loadQuiz();
   }, [params.id]);
 
-  const handleSave = async (quizData: Omit<Quiz, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
+  const handleSave = async (
+    quizData: Omit<Quiz, "id" | "createdAt" | "updatedAt" | "userId">
+  ) => {
     if (!quiz) return;
 
-    setIsSaving(true);
     try {
       // Update quiz in Supabase
       const updatedQuiz = await quizzesApi.update(quiz.id, quizData);
@@ -54,37 +54,38 @@ export default function EditQuizPage() {
 
         // Show success message
         showDialog({
-          type: 'alert',
-          title: 'Quiz Updated',
-          message: 'Your quiz has been successfully updated in Supabase.',
+          type: "alert",
+          title: "Quiz Updated",
+          message: "Your quiz has been successfully updated in Supabase.",
         });
       } else {
         // Quiz not found or user doesn't have permission
         showDialog({
-          type: 'alert',
-          title: 'Update Failed',
-          message: 'Quiz not found or you do not have permission to update it.',
+          type: "alert",
+          title: "Update Failed",
+          message: "Quiz not found or you do not have permission to update it.",
         });
       }
     } catch (error) {
-      console.error('Failed to update quiz in Supabase:', error);
+      console.error("Failed to update quiz in Supabase:", error);
 
       // Show detailed error message
-      const errorMessage = error instanceof Error
-        ? error.message
-        : 'An unknown error occurred while updating the quiz.';
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "An unknown error occurred while updating the quiz.";
 
       showDialog({
-        type: 'alert',
-        title: 'Failed to Update Quiz',
+        type: "alert",
+        title: "Failed to Update Quiz",
         message: `Unable to update quiz in Supabase: ${errorMessage}. Please check your connection and try again.`,
       });
-    } finally {
-      setIsSaving(false);
     }
   };
 
-  const handlePreview = (quizData: Omit<Quiz, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
+  const handlePreview = (
+    quizData: Omit<Quiz, "id" | "createdAt" | "updatedAt" | "userId">
+  ) => {
     if (!quiz) return;
 
     setPreviewQuiz({
@@ -98,7 +99,7 @@ export default function EditQuizPage() {
   };
 
   const handleBack = () => {
-    router.push('/');
+    router.push("/");
   };
 
   if (loading) {
@@ -120,13 +121,13 @@ export default function EditQuizPage() {
             <span className="text-2xl">😕</span>
           </div>
           <h1 className="text-2xl font-bold text-stone-900 mb-2">
-            {error || 'Quiz not found'}
+            {error || "Quiz not found"}
           </h1>
           <p className="text-stone-600 mb-6">
             The quiz you're trying to edit doesn't exist.
           </p>
           <button
-            onClick={() => router.push('/')}
+            onClick={() => router.push("/")}
             className="px-6 py-3 bg-stone-900 text-white rounded-lg font-medium hover:bg-stone-800 transition-colors"
           >
             Go Home
@@ -138,10 +139,7 @@ export default function EditQuizPage() {
 
   if (isPreviewMode && previewQuiz) {
     return (
-      <QuizPlayer
-        quiz={previewQuiz}
-        onClose={() => setIsPreviewMode(false)}
-      />
+      <QuizPlayer quiz={previewQuiz} onClose={() => setIsPreviewMode(false)} />
     );
   }
 
@@ -154,7 +152,3 @@ export default function EditQuizPage() {
     />
   );
 }
-
-
-
-

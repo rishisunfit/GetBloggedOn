@@ -114,7 +114,9 @@ export function ImagePickerModal({
               <History className="text-gray-900" size={24} />
             </div>
             <div>
-              <div className="font-semibold text-gray-900">Load from History</div>
+              <div className="font-semibold text-gray-900">
+                Load from History
+              </div>
               <div className="text-sm text-gray-600">
                 Select from your previously uploaded images
               </div>

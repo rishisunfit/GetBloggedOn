@@ -238,7 +238,9 @@
 }
 
 .preview-content figure[data-type="image"][data-align="left"] img,
-.preview-content figure[data-type="image"][data-align="left"] .image-source-link {
+.preview-content
+  figure[data-type="image"][data-align="left"]
+  .image-source-link {
   display: inline-block;
   margin-left: 0;
   margin-right: auto;
@@ -249,7 +251,9 @@
 }
 
 .preview-content figure[data-type="image"][data-align="center"] img,
-.preview-content figure[data-type="image"][data-align="center"] .image-source-link {
+.preview-content
+  figure[data-type="image"][data-align="center"]
+  .image-source-link {
   display: inline-block;
   margin-left: auto;
   margin-right: auto;
@@ -260,7 +264,9 @@
 }
 
 .preview-content figure[data-type="image"][data-align="right"] img,
-.preview-content figure[data-type="image"][data-align="right"] .image-source-link {
+.preview-content
+  figure[data-type="image"][data-align="right"]
+  .image-source-link {
   display: inline-block;
   margin-left: auto;
   margin-right: 0;
@@ -454,13 +460,13 @@
   margin-bottom: 0.5rem;
 }
 
-.ProseMirror ul[data-type="taskList"] li>label {
+.ProseMirror ul[data-type="taskList"] li > label {
   flex: 0 0 auto;
   margin-right: 0.5rem;
   user-select: none;
 }
 
-.ProseMirror ul[data-type="taskList"] li>div {
+.ProseMirror ul[data-type="taskList"] li > div {
   flex: 1 1 auto;
 }
 
@@ -487,13 +493,13 @@
   margin-bottom: 0.5rem;
 }
 
-.ProseMirror ul[data-type="taskList"] li>label {
+.ProseMirror ul[data-type="taskList"] li > label {
   flex: 0 0 auto;
   margin-right: 0.5rem;
   user-select: none;
 }
 
-.ProseMirror ul[data-type="taskList"] li>div {
+.ProseMirror ul[data-type="taskList"] li > div {
   flex: 1 1 auto;
 }
 
@@ -743,7 +749,8 @@
   pointer-events: none;
 }
 
-.ProseMirror p[style*="text-align: center"].is-editor-empty:first-child::before {
+.ProseMirror
+  p[style*="text-align: center"].is-editor-empty:first-child::before {
   float: none;
   width: 100%;
   text-align: center;
@@ -962,7 +969,7 @@
 }
 
 .editorial-editor .ProseMirror a {
-  color: var(--link-color, #4746E5);
+  color: var(--link-color, #4746e5);
 }
 
 .editorial-editor .ProseMirror .editorial-header {
@@ -1026,15 +1033,19 @@
 /* Purple badge highlight */
 .editorial-editor .ProseMirror mark[data-color="#c7d2fe"],
 .preview-content mark[data-color="#c7d2fe"] {
-  background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 50%, #7c3aed 100%) !important;
+  background: linear-gradient(
+    135deg,
+    #a78bfa 0%,
+    #8b5cf6 50%,
+    #7c3aed 100%
+  ) !important;
   color: white !important;
   padding: 0.4rem 1rem;
   border-radius: 9999px;
   font-size: 0.8rem;
   font-weight: 600;
   letter-spacing: 0.03em;
-  box-shadow:
-    0 2px 8px rgba(139, 92, 246, 0.3),
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3),
     0 0 20px rgba(139, 92, 246, 0.15);
   border: none;
 }

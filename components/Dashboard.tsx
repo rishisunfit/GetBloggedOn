@@ -1,7 +1,33 @@
 import { useState, useEffect } from "react";
-import { Plus, FileText, Calendar, Edit, Trash2, ClipboardList, Eye, ExternalLink, MessageSquare, Mail, Phone, Reply, Users, ChevronDown, ChevronUp, Search, BarChart3, Folder as FolderIcon, FolderOpen, X, Check } from "lucide-react";
-import { formSubmissionsApi, type FormSubmission } from "@/services/formSubmissions";
-import { quizSubmissionsApi, type QuizSubmission } from "@/services/quizSubmissions";
+import {
+  Plus,
+  FileText,
+  Edit,
+  Trash2,
+  ClipboardList,
+  Eye,
+  ExternalLink,
+  MessageSquare,
+  Mail,
+  Phone,
+  Reply,
+  Users,
+  ChevronDown,
+  ChevronUp,
+  Search,
+  BarChart3,
+  Folder as FolderIcon,
+  X,
+  Check,
+} from "lucide-react";
+import {
+  formSubmissionsApi,
+  type FormSubmission,
+} from "@/services/formSubmissions";
+import {
+  quizSubmissionsApi,
+  type QuizSubmission,
+} from "@/services/quizSubmissions";
 import { useAuth } from "@/hooks/useAuth";
 import { ReplyModal } from "./ReplyModal";
 import { supabase } from "@/lib/supabase";
@@ -32,7 +58,12 @@ type Quiz = {
   status: "draft" | "published";
 };
 
-type ContentTab = "posts" | "quizzes" | "responses" | "quiz-responses" | "folders";
+type ContentTab =
+  | "posts"
+  | "quizzes"
+  | "responses"
+  | "quiz-responses"
+  | "folders";
 
 interface DashboardProps {
   onCreatePost: () => void;
@@ -57,10 +88,10 @@ export function Dashboard({
   onDeletePost,
   onPreviewPost,
   onViewAnalytics,
-  onCreateQuiz = () => { },
-  onEditQuiz = () => { },
-  onDeleteQuiz = () => { },
-  onPreviewQuiz = () => { },
+  onCreateQuiz = () => {},
+  onEditQuiz = () => {},
+  onDeleteQuiz = () => {},
+  onPreviewQuiz = () => {},
   posts,
   quizzes = [],
   folders = [],
@@ -73,9 +104,14 @@ export function Dashboard({
   const [loadingResponses, setLoadingResponses] = useState(false);
   const [loadingQuizResponses, setLoadingQuizResponses] = useState(false);
   const [replyModalOpen, setReplyModalOpen] = useState(false);
-  const [selectedResponse, setSelectedResponse] = useState<FormSubmission | null>(null);
-  const [expandedQuizResponses, setExpandedQuizResponses] = useState<Set<string>>(new Set());
-  const [quizDataCache, setQuizDataCache] = useState<Map<string, FullQuiz>>(new Map());
+  const [selectedResponse, setSelectedResponse] =
+    useState<FormSubmission | null>(null);
+  const [expandedQuizResponses, setExpandedQuizResponses] = useState<
+    Set<string>
+  >(new Set());
+  const [quizDataCache, setQuizDataCache] = useState<Map<string, FullQuiz>>(
+    new Map()
+  );
 
   // Search states for each tab
   const [searchPosts, setSearchPosts] = useState("");
@@ -84,7 +120,9 @@ export function Dashboard({
   const [searchQuizResponses, setSearchQuizResponses] = useState("");
 
   // Folder filter for posts tab
-  const [selectedFolderFilter, setSelectedFolderFilter] = useState<string | null>(null);
+  const [selectedFolderFilter, setSelectedFolderFilter] = useState<
+    string | null
+  >(null);
 
   // Folder management state
   const [editingFolder, setEditingFolder] = useState<Folder | null>(null);
@@ -94,8 +132,12 @@ export function Dashboard({
 
   // Post selection modal state
   const [showAddPostsModal, setShowAddPostsModal] = useState(false);
-  const [selectedFolderForPosts, setSelectedFolderForPosts] = useState<string | null>(null);
-  const [selectedPostIds, setSelectedPostIds] = useState<Set<string>>(new Set());
+  const [selectedFolderForPosts, setSelectedFolderForPosts] = useState<
+    string | null
+  >(null);
+  const [selectedPostIds, setSelectedPostIds] = useState<Set<string>>(
+    new Set()
+  );
   const [addingPosts, setAddingPosts] = useState(false);
   const [searchPostsInModal, setSearchPostsInModal] = useState("");
 
@@ -199,35 +241,57 @@ export function Dashboard({
   };
 
   // Get formatted answer text
-  const getAnswerText = (quizId: string, questionId: string, answerValue: string | string[] | number): string => {
+  const getAnswerText = (
+    quizId: string,
+    questionId: string,
+    answerValue: string | string[] | number
+  ): string => {
     const quiz = quizDataCache.get(quizId);
     if (!quiz) {
       // Fallback: return raw value
-      return Array.isArray(answerValue) ? answerValue.join(", ") : String(answerValue);
+      return Array.isArray(answerValue)
+        ? answerValue.join(", ")
+        : String(answerValue);
     }
 
-    const question = quiz.questions.find((q: QuizQuestion) => q.id === questionId);
+    const question = quiz.questions.find(
+      (q: QuizQuestion) => q.id === questionId
+    );
     if (!question) {
-      return Array.isArray(answerValue) ? answerValue.join(", ") : String(answerValue);
+      return Array.isArray(answerValue)
+        ? answerValue.join(", ")
+        : String(answerValue);
     }
 
     // Handle different question types
-    if (question.type === 'rating') {
+    if (question.type === "rating") {
       return `${answerValue} out of 5 stars`;
     }
 
-    if (question.type === 'text' || question.type === 'email' || question.type === 'phone') {
-      return (answerValue as string) || 'Not provided';
+    if (
+      question.type === "text" ||
+      question.type === "email" ||
+      question.type === "phone"
+    ) {
+      return (answerValue as string) || "Not provided";
     }
 
-    if (question.type === 'multiple_choice') {
+    if (question.type === "multiple_choice") {
       const selectedIds = answerValue as string[];
-      const selectedOptions = question.options?.filter((o: { id: string; text: string }) => selectedIds.includes(o.id)) || [];
-      return selectedOptions.map((o: { text: string }) => o.text).join(', ') || 'None selected';
+      const selectedOptions =
+        question.options?.filter((o: { id: string; text: string }) =>
+          selectedIds.includes(o.id)
+        ) || [];
+      return (
+        selectedOptions.map((o: { text: string }) => o.text).join(", ") ||
+        "None selected"
+      );
     }
 
     // Single choice
-    const selectedOption = question.options?.find((o: { id: string; text: string }) => o.id === answerValue);
+    const selectedOption = question.options?.find(
+      (o: { id: string; text: string }) => o.id === answerValue
+    );
     return selectedOption?.text || String(answerValue);
   };
 
@@ -251,7 +315,9 @@ export function Dashboard({
 
   // Filter functions
   const filteredPosts = posts.filter((post) => {
-    const matchesSearch = post.title.toLowerCase().includes(searchPosts.toLowerCase());
+    const matchesSearch = post.title
+      .toLowerCase()
+      .includes(searchPosts.toLowerCase());
     if (!selectedFolderFilter) return matchesSearch;
 
     const postFolderId = post.folder_id;
@@ -296,7 +362,11 @@ export function Dashboard({
     const answerText = response.answers
       .map((answer) => {
         try {
-          return getAnswerText(response.quiz_id, answer.questionId, answer.value);
+          return getAnswerText(
+            response.quiz_id,
+            answer.questionId,
+            answer.value
+          );
         } catch {
           return String(answer.value);
         }
@@ -318,7 +388,8 @@ export function Dashboard({
       showDialog({
         type: "alert",
         title: "No Contact Information",
-        message: "This submission doesn't have email or phone number to reply to.",
+        message:
+          "This submission doesn't have email or phone number to reply to.",
       });
       return;
     }
@@ -332,7 +403,10 @@ export function Dashboard({
     }
 
     // Get the session token
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
 
     if (sessionError || !session) {
       throw new Error("Please log in to send a reply");
@@ -354,7 +428,9 @@ export function Dashboard({
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || errorData.details || "Failed to send reply");
+      throw new Error(
+        errorData.error || errorData.details || "Failed to send reply"
+      );
     }
 
     // Show success message (non-blocking)
@@ -381,22 +457,31 @@ export function Dashboard({
       console.error("Error creating folder:", error);
       await showDialog({
         type: "alert",
-        message: error instanceof Error ? error.message : "Failed to create folder",
+        message:
+          error instanceof Error ? error.message : "Failed to create folder",
         title: "Error",
       });
     }
   };
 
-  const handleUpdateFolder = async (folder: Folder, name: string, slug: string) => {
+  const handleUpdateFolder = async (
+    folder: Folder,
+    name: string,
+    slug: string
+  ) => {
     try {
-      await foldersApi.update(folder.id, { name: name.trim(), slug: slug.trim() });
+      await foldersApi.update(folder.id, {
+        name: name.trim(),
+        slug: slug.trim(),
+      });
       setEditingFolder(null);
       if (onFoldersChange) onFoldersChange();
     } catch (error) {
       console.error("Error updating folder:", error);
       await showDialog({
         type: "alert",
-        message: error instanceof Error ? error.message : "Failed to update folder",
+        message:
+          error instanceof Error ? error.message : "Failed to update folder",
         title: "Error",
       });
     }
@@ -410,7 +495,9 @@ export function Dashboard({
 
     const confirmed = await showDialog({
       type: "confirm",
-      message: `Are you sure you want to delete "${folderName}"? This will permanently delete the folder and mark all ${postCount} post${postCount !== 1 ? 's' : ''} in this folder as unfiled. This action cannot be undone.`,
+      message: `Are you sure you want to delete "${folderName}"? This will permanently delete the folder and mark all ${postCount} post${
+        postCount !== 1 ? "s" : ""
+      } in this folder as unfiled. This action cannot be undone.`,
       title: "Delete Folder",
       confirmText: "Delete Folder",
       cancelText: "Cancel",
@@ -436,14 +523,17 @@ export function Dashboard({
 
         await showDialog({
           type: "alert",
-          message: `Folder "${folderName}" has been deleted. ${postCount} post${postCount !== 1 ? 's have' : ' has'} been marked as unfiled.`,
+          message: `Folder "${folderName}" has been deleted. ${postCount} post${
+            postCount !== 1 ? "s have" : " has"
+          } been marked as unfiled.`,
           title: "Folder Deleted",
         });
       } catch (error) {
         console.error("Error deleting folder:", error);
         await showDialog({
           type: "alert",
-          message: error instanceof Error ? error.message : "Failed to delete folder",
+          message:
+            error instanceof Error ? error.message : "Failed to delete folder",
           title: "Error",
         });
       }
@@ -517,11 +607,19 @@ export function Dashboard({
       const removedCount = postsToRemove.length;
       let message = "";
       if (addedCount > 0 && removedCount > 0) {
-        message = `Successfully added ${addedCount} post${addedCount > 1 ? 's' : ''} and removed ${removedCount} post${removedCount > 1 ? 's' : ''} from folder.`;
+        message = `Successfully added ${addedCount} post${
+          addedCount > 1 ? "s" : ""
+        } and removed ${removedCount} post${
+          removedCount > 1 ? "s" : ""
+        } from folder.`;
       } else if (addedCount > 0) {
-        message = `Successfully added ${addedCount} post${addedCount > 1 ? 's' : ''} to folder.`;
+        message = `Successfully added ${addedCount} post${
+          addedCount > 1 ? "s" : ""
+        } to folder.`;
       } else if (removedCount > 0) {
-        message = `Successfully removed ${removedCount} post${removedCount > 1 ? 's' : ''} from folder.`;
+        message = `Successfully removed ${removedCount} post${
+          removedCount > 1 ? "s" : ""
+        } from folder.`;
       } else {
         message = "Folder updated.";
       }
@@ -535,7 +633,10 @@ export function Dashboard({
       console.error("Error updating posts in folder:", error);
       await showDialog({
         type: "alert",
-        message: error instanceof Error ? error.message : "Failed to update posts in folder",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Failed to update posts in folder",
         title: "Error",
       });
     } finally {
@@ -561,10 +662,14 @@ export function Dashboard({
     if (!selectedFolderForPosts) return [];
 
     // Get posts in the folder
-    let postsInFolder = posts.filter((post) => post.folder_id === selectedFolderForPosts);
+    let postsInFolder = posts.filter(
+      (post) => post.folder_id === selectedFolderForPosts
+    );
 
     // Get posts not in the folder
-    let postsNotInFolder = posts.filter((post) => post.folder_id !== selectedFolderForPosts);
+    let postsNotInFolder = posts.filter(
+      (post) => post.folder_id !== selectedFolderForPosts
+    );
 
     // Sort both by most recently created (newest first)
     postsInFolder = postsInFolder.sort((a, b) => {
@@ -633,71 +738,91 @@ export function Dashboard({
         <div className="flex gap-1 mb-6 bg-white rounded-xl p-1.5 shadow-sm border border-gray-200 w-fit">
           <button
             onClick={() => setActiveTab("posts")}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium transition-all ${activeTab === "posts"
-              ? "bg-black text-white shadow-sm"
-              : "text-gray-600 hover:bg-gray-100"
-              }`}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium transition-all ${
+              activeTab === "posts"
+                ? "bg-black text-white shadow-sm"
+                : "text-gray-600 hover:bg-gray-100"
+            }`}
           >
             <FileText size={18} />
             Posts
-            <span className={`text-xs px-2 py-0.5 rounded-full ${activeTab === "posts" ? "bg-white/20" : "bg-gray-200"
-              }`}>
+            <span
+              className={`text-xs px-2 py-0.5 rounded-full ${
+                activeTab === "posts" ? "bg-white/20" : "bg-gray-200"
+              }`}
+            >
               {posts.length}
             </span>
           </button>
           <button
             onClick={() => setActiveTab("quizzes")}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium transition-all ${activeTab === "quizzes"
-              ? "bg-violet-600 text-white shadow-sm"
-              : "text-gray-600 hover:bg-gray-100"
-              }`}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium transition-all ${
+              activeTab === "quizzes"
+                ? "bg-violet-600 text-white shadow-sm"
+                : "text-gray-600 hover:bg-gray-100"
+            }`}
           >
             <ClipboardList size={18} />
             Quizzes
-            <span className={`text-xs px-2 py-0.5 rounded-full ${activeTab === "quizzes" ? "bg-white/20" : "bg-gray-200"
-              }`}>
+            <span
+              className={`text-xs px-2 py-0.5 rounded-full ${
+                activeTab === "quizzes" ? "bg-white/20" : "bg-gray-200"
+              }`}
+            >
               {quizzes.length}
             </span>
           </button>
           <button
             onClick={() => setActiveTab("responses")}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium transition-all ${activeTab === "responses"
-              ? "bg-blue-600 text-white shadow-sm"
-              : "text-gray-600 hover:bg-gray-100"
-              }`}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium transition-all ${
+              activeTab === "responses"
+                ? "bg-blue-600 text-white shadow-sm"
+                : "text-gray-600 hover:bg-gray-100"
+            }`}
           >
             <MessageSquare size={18} />
             Responses
-            <span className={`text-xs px-2 py-0.5 rounded-full ${activeTab === "responses" ? "bg-white/20" : "bg-gray-200"
-              }`}>
+            <span
+              className={`text-xs px-2 py-0.5 rounded-full ${
+                activeTab === "responses" ? "bg-white/20" : "bg-gray-200"
+              }`}
+            >
               {responses.length}
             </span>
           </button>
           <button
             onClick={() => setActiveTab("quiz-responses")}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium transition-all ${activeTab === "quiz-responses"
-              ? "bg-purple-600 text-white shadow-sm"
-              : "text-gray-600 hover:bg-gray-100"
-              }`}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium transition-all ${
+              activeTab === "quiz-responses"
+                ? "bg-purple-600 text-white shadow-sm"
+                : "text-gray-600 hover:bg-gray-100"
+            }`}
           >
             <Users size={18} />
             Quiz Responses
-            <span className={`text-xs px-2 py-0.5 rounded-full ${activeTab === "quiz-responses" ? "bg-white/20" : "bg-gray-200"
-              }`}>
+            <span
+              className={`text-xs px-2 py-0.5 rounded-full ${
+                activeTab === "quiz-responses" ? "bg-white/20" : "bg-gray-200"
+              }`}
+            >
               {quizResponses.length}
             </span>
           </button>
           <button
             onClick={() => setActiveTab("folders")}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium transition-all ${activeTab === "folders"
-              ? "bg-orange-600 text-white shadow-sm"
-              : "text-gray-600 hover:bg-gray-100"
-              }`}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium transition-all ${
+              activeTab === "folders"
+                ? "bg-orange-600 text-white shadow-sm"
+                : "text-gray-600 hover:bg-gray-100"
+            }`}
           >
             <FolderIcon size={18} />
             Folders
-            <span className={`text-xs px-2 py-0.5 rounded-full ${activeTab === "folders" ? "bg-white/20" : "bg-gray-200"
-              }`}>
+            <span
+              className={`text-xs px-2 py-0.5 rounded-full ${
+                activeTab === "folders" ? "bg-white/20" : "bg-gray-200"
+              }`}
+            >
               {folders.length}
             </span>
           </button>
@@ -781,7 +906,10 @@ export function Dashboard({
             {/* Search Bar and Folder Filter for Posts */}
             <div className="mb-6 flex gap-4">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                <Search
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                  size={20}
+                />
                 <input
                   type="text"
                   placeholder="Search posts by title..."
@@ -793,7 +921,9 @@ export function Dashboard({
               <div className="relative">
                 <select
                   value={selectedFolderFilter || ""}
-                  onChange={(e) => setSelectedFolderFilter(e.target.value || null)}
+                  onChange={(e) =>
+                    setSelectedFolderFilter(e.target.value || null)
+                  }
                   className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent appearance-none bg-white pr-10"
                 >
                   <option value="">All Posts</option>
@@ -804,14 +934,22 @@ export function Dashboard({
                     </option>
                   ))}
                 </select>
-                <FolderIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={18} />
+                <FolderIcon
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"
+                  size={18}
+                />
               </div>
             </div>
             <div className="space-y-4">
               {filteredPosts.map((post) => {
                 // Strip HTML tags and get plain text preview
-                const plainText = post.content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-                const wordCount = plainText.split(' ').filter(word => word.length > 0).length;
+                const plainText = post.content
+                  .replace(/<[^>]*>/g, " ")
+                  .replace(/\s+/g, " ")
+                  .trim();
+                const wordCount = plainText
+                  .split(" ")
+                  .filter((word) => word.length > 0).length;
                 const preview = plainText.substring(0, 120);
 
                 return (
@@ -828,23 +966,30 @@ export function Dashboard({
                               {post.title}
                             </h2>
                             {/* Folder Tag */}
-                            {post.folder_id && (() => {
-                              const folder = folders.find((f) => f.id === post.folder_id);
-                              return folder ? (
-                                <div className="flex items-center gap-2 mt-1">
-                                  <FolderIcon size={14} className="text-orange-600" />
-                                  <span className="text-xs text-orange-600 font-medium">
-                                    {folder.name}
-                                  </span>
-                                </div>
-                              ) : null;
-                            })()}
+                            {post.folder_id &&
+                              (() => {
+                                const folder = folders.find(
+                                  (f) => f.id === post.folder_id
+                                );
+                                return folder ? (
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <FolderIcon
+                                      size={14}
+                                      className="text-orange-600"
+                                    />
+                                    <span className="text-xs text-orange-600 font-medium">
+                                      {folder.name}
+                                    </span>
+                                  </div>
+                                ) : null;
+                              })()}
                           </div>
                           <span
-                            className={`px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap flex-shrink-0 ${post.status === "published"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-yellow-100 text-yellow-800"
-                              }`}
+                            className={`px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap flex-shrink-0 ${
+                              post.status === "published"
+                                ? "bg-green-100 text-green-800"
+                                : "bg-yellow-100 text-yellow-800"
+                            }`}
                           >
                             {post.status}
                           </span>
@@ -853,17 +998,22 @@ export function Dashboard({
                         {/* Content Preview */}
                         {plainText ? (
                           <p className="text-gray-600 text-sm line-clamp-2 mb-3">
-                            {preview}{plainText.length > 120 ? '...' : ''}
+                            {preview}
+                            {plainText.length > 120 ? "..." : ""}
                           </p>
                         ) : (
-                          <p className="text-gray-400 italic text-sm mb-3">No content yet</p>
+                          <p className="text-gray-400 italic text-sm mb-3">
+                            No content yet
+                          </p>
                         )}
 
                         {/* Metadata - Subtle footer */}
                         <div className="flex items-center gap-3 text-xs text-gray-500">
                           <span>{formatDate(post.createdAt)}</span>
                           <span>•</span>
-                          <span>{wordCount} {wordCount === 1 ? 'word' : 'words'}</span>
+                          <span>
+                            {wordCount} {wordCount === 1 ? "word" : "words"}
+                          </span>
                         </div>
                       </div>
 
@@ -872,7 +1022,11 @@ export function Dashboard({
                         {/* Preview Button - use canonical URL for published posts with folder/slug, otherwise /posts/[id] */}
                         {(() => {
                           // Published posts with canonical URL use canonical path
-                          if (post.status === "published" && post.folder_slug && post.post_slug) {
+                          if (
+                            post.status === "published" &&
+                            post.folder_slug &&
+                            post.post_slug
+                          ) {
                             return (
                               <a
                                 href={`/${post.folder_slug}/${post.post_slug}`}
@@ -970,7 +1124,10 @@ export function Dashboard({
             {/* Search Bar for Responses */}
             <div className="mb-6">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                <Search
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                  size={20}
+                />
                 <input
                   type="text"
                   placeholder="Search by name, phone, email, or message..."
@@ -1021,7 +1178,9 @@ export function Dashboard({
                             </div>
                           )}
                           {!response.email && !response.phone && (
-                            <span className="text-gray-400 italic">No contact information</span>
+                            <span className="text-gray-400 italic">
+                              No contact information
+                            </span>
                           )}
                         </div>
                       </div>
@@ -1042,28 +1201,35 @@ export function Dashboard({
               </div>
             )}
 
-            {!loadingResponses && filteredResponses.length === 0 && searchResponses && (
-              <div className="text-center py-16">
-                <Search size={64} className="mx-auto text-gray-300 mb-4" />
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  No responses found
-                </h3>
-                <p className="text-gray-600 mb-6">
-                  No responses match your search query "{searchResponses}".
-                </p>
-              </div>
-            )}
-            {!loadingResponses && responses.length === 0 && !searchResponses && (
-              <div className="text-center py-16">
-                <MessageSquare size={64} className="mx-auto text-gray-300 mb-4" />
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  No responses yet
-                </h3>
-                <p className="text-gray-600 mb-6">
-                  Responses from your published posts will appear here
-                </p>
-              </div>
-            )}
+            {!loadingResponses &&
+              filteredResponses.length === 0 &&
+              searchResponses && (
+                <div className="text-center py-16">
+                  <Search size={64} className="mx-auto text-gray-300 mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                    No responses found
+                  </h3>
+                  <p className="text-gray-600 mb-6">
+                    No responses match your search query "{searchResponses}".
+                  </p>
+                </div>
+              )}
+            {!loadingResponses &&
+              responses.length === 0 &&
+              !searchResponses && (
+                <div className="text-center py-16">
+                  <MessageSquare
+                    size={64}
+                    className="mx-auto text-gray-300 mb-4"
+                  />
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                    No responses yet
+                  </h3>
+                  <p className="text-gray-600 mb-6">
+                    Responses from your published posts will appear here
+                  </p>
+                </div>
+              )}
           </>
         )}
 
@@ -1073,7 +1239,10 @@ export function Dashboard({
             {/* Search Bar for Quizzes */}
             <div className="mb-6">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                <Search
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                  size={20}
+                />
                 <input
                   type="text"
                   placeholder="Search quizzes by title..."
@@ -1093,7 +1262,10 @@ export function Dashboard({
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <div className="w-10 h-10 rounded-lg bg-violet-100 flex items-center justify-center">
-                          <ClipboardList size={20} className="text-violet-600" />
+                          <ClipboardList
+                            size={20}
+                            className="text-violet-600"
+                          />
                         </div>
                         <div>
                           <h2 className="text-xl font-bold text-gray-900">
@@ -1106,10 +1278,11 @@ export function Dashboard({
                           </div>
                         </div>
                         <span
-                          className={`px-3 py-1 rounded-full text-xs font-medium ${quiz.status === "published"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-yellow-100 text-yellow-800"
-                            }`}
+                          className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            quiz.status === "published"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-yellow-100 text-yellow-800"
+                          }`}
                         >
                           {quiz.status}
                         </span>
@@ -1124,7 +1297,9 @@ export function Dashboard({
                         <Eye size={20} />
                       </button>
                       <button
-                        onClick={() => window.open(`/quiz/${quiz.id}`, '_blank')}
+                        onClick={() =>
+                          window.open(`/quiz/${quiz.id}`, "_blank")
+                        }
                         className="p-2 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
                         title="Open Quiz"
                       >
@@ -1163,7 +1338,10 @@ export function Dashboard({
             )}
             {quizzes.length === 0 && !searchQuizzes && (
               <div className="text-center py-16">
-                <ClipboardList size={64} className="mx-auto text-gray-300 mb-4" />
+                <ClipboardList
+                  size={64}
+                  className="mx-auto text-gray-300 mb-4"
+                />
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">
                   No quizzes yet
                 </h3>
@@ -1188,7 +1366,10 @@ export function Dashboard({
             {/* Search Bar for Quiz Responses */}
             <div className="mb-6">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                <Search
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                  size={20}
+                />
                 <input
                   type="text"
                   placeholder="Search by name, phone, email, or answer content..."
@@ -1212,10 +1393,12 @@ export function Dashboard({
                       No quiz responses found
                     </h3>
                     <p className="text-gray-600 mb-6">
-                      No quiz responses match your search query "{searchQuizResponses}".
+                      No quiz responses match your search query "
+                      {searchQuizResponses}".
                     </p>
                   </div>
-                ) : filteredQuizResponses.length === 0 && !searchQuizResponses ? (
+                ) : filteredQuizResponses.length === 0 &&
+                  !searchQuizResponses ? (
                   <div className="text-center py-16">
                     <Users size={64} className="mx-auto text-gray-300 mb-4" />
                     <h3 className="text-xl font-semibold text-gray-900 mb-2">
@@ -1236,7 +1419,9 @@ export function Dashboard({
                         {/* Header - Always visible */}
                         <div
                           className="p-6 cursor-pointer"
-                          onClick={() => toggleQuizResponse(response.id, response.quiz_id)}
+                          onClick={() =>
+                            toggleQuizResponse(response.id, response.quiz_id)
+                          }
                         >
                           <div className="flex justify-between items-start">
                             <div className="flex-1">
@@ -1253,47 +1438,77 @@ export function Dashboard({
                                   <div className="flex items-center gap-4 text-sm text-gray-600">
                                     {response.contact_info.name && (
                                       <div className="flex items-center gap-1">
-                                        <span className="font-medium">Name:</span>
-                                        <span>{response.contact_info.name}</span>
+                                        <span className="font-medium">
+                                          Name:
+                                        </span>
+                                        <span>
+                                          {response.contact_info.name}
+                                        </span>
                                       </div>
                                     )}
                                     {response.contact_info.email && (
                                       <div className="flex items-center gap-1">
                                         <Mail size={14} />
-                                        <span>{response.contact_info.email}</span>
+                                        <span>
+                                          {response.contact_info.email}
+                                        </span>
                                       </div>
                                     )}
                                     {response.contact_info.phone && (
                                       <div className="flex items-center gap-1">
                                         <Phone size={14} />
-                                        <span>{response.contact_info.phone}</span>
+                                        <span>
+                                          {response.contact_info.phone}
+                                        </span>
                                       </div>
                                     )}
                                   </div>
                                 </div>
                               )}
                               {!response.contact_info && (
-                                <p className="text-gray-400 italic text-sm mb-2">No contact information provided</p>
+                                <p className="text-gray-400 italic text-sm mb-2">
+                                  No contact information provided
+                                </p>
                               )}
                               <div className="flex items-center gap-2 text-sm text-gray-500">
-                                <span>{response.answers.length} question{response.answers.length !== 1 ? 's' : ''} answered</span>
+                                <span>
+                                  {response.answers.length} question
+                                  {response.answers.length !== 1
+                                    ? "s"
+                                    : ""}{" "}
+                                  answered
+                                </span>
                                 {isExpanded ? (
-                                  <ChevronUp size={16} className="text-gray-400" />
+                                  <ChevronUp
+                                    size={16}
+                                    className="text-gray-400"
+                                  />
                                 ) : (
-                                  <ChevronDown size={16} className="text-gray-400" />
+                                  <ChevronDown
+                                    size={16}
+                                    className="text-gray-400"
+                                  />
                                 )}
                               </div>
                             </div>
-                            <div className="flex gap-2 ml-4" onClick={(e) => e.stopPropagation()}>
-                              {(response.contact_info?.email || response.contact_info?.phone) && (
+                            <div
+                              className="flex gap-2 ml-4"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {(response.contact_info?.email ||
+                                response.contact_info?.phone) && (
                                 <button
                                   onClick={() => {
                                     setSelectedResponse({
                                       id: response.id,
-                                      email: response.contact_info?.email || null,
-                                      phone: response.contact_info?.phone || null,
+                                      email:
+                                        response.contact_info?.email || null,
+                                      phone:
+                                        response.contact_info?.phone || null,
                                       subject: "Quiz Response",
-                                      message: `Quiz: ${getQuizTitle(response.quiz_id)}`,
+                                      message: `Quiz: ${getQuizTitle(
+                                        response.quiz_id
+                                      )}`,
                                       post_id: null,
                                       post_author_id: null,
                                       session_id: null,
@@ -1314,13 +1529,25 @@ export function Dashboard({
                         {/* Expandable Content */}
                         {isExpanded && (
                           <div className="px-6 pb-6 border-t border-gray-100 pt-4">
-                            <p className="text-sm text-gray-600 font-medium mb-3">Answers:</p>
+                            <p className="text-sm text-gray-600 font-medium mb-3">
+                              Answers:
+                            </p>
                             <div className="space-y-4">
                               {response.answers.map((answer, idx) => {
-                                const questionText = getQuestionText(response.quiz_id, answer.questionId);
-                                const answerText = getAnswerText(response.quiz_id, answer.questionId, answer.value);
+                                const questionText = getQuestionText(
+                                  response.quiz_id,
+                                  answer.questionId
+                                );
+                                const answerText = getAnswerText(
+                                  response.quiz_id,
+                                  answer.questionId,
+                                  answer.value
+                                );
                                 return (
-                                  <div key={idx} className="bg-gray-50 rounded-lg p-4">
+                                  <div
+                                    key={idx}
+                                    className="bg-gray-50 rounded-lg p-4"
+                                  >
                                     <div className="flex items-start gap-3">
                                       <div className="w-7 h-7 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center flex-shrink-0 text-xs font-semibold">
                                         {idx + 1}
@@ -1384,7 +1611,10 @@ export function Dashboard({
                       value={editingFolder ? editingFolder.name : newFolderName}
                       onChange={(e) => {
                         if (editingFolder) {
-                          setEditingFolder({ ...editingFolder, name: e.target.value });
+                          setEditingFolder({
+                            ...editingFolder,
+                            name: e.target.value,
+                          });
                         } else {
                           setNewFolderName(e.target.value);
                           if (!newFolderSlug) {
@@ -1405,7 +1635,10 @@ export function Dashboard({
                       value={editingFolder ? editingFolder.slug : newFolderSlug}
                       onChange={(e) => {
                         if (editingFolder) {
-                          setEditingFolder({ ...editingFolder, slug: e.target.value.toLowerCase().trim() });
+                          setEditingFolder({
+                            ...editingFolder,
+                            slug: e.target.value.toLowerCase().trim(),
+                          });
                         } else {
                           setNewFolderSlug(e.target.value.toLowerCase().trim());
                         }
@@ -1418,7 +1651,11 @@ export function Dashboard({
                     <button
                       onClick={async () => {
                         if (editingFolder) {
-                          await handleUpdateFolder(editingFolder, editingFolder.name, editingFolder.slug);
+                          await handleUpdateFolder(
+                            editingFolder,
+                            editingFolder.name,
+                            editingFolder.slug
+                          );
                         } else {
                           await handleCreateFolder();
                         }
@@ -1448,7 +1685,10 @@ export function Dashboard({
               {/* User folders */}
               {folders.length === 0 ? (
                 <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
-                  <FolderIcon size={64} className="mx-auto text-gray-300 mb-4" />
+                  <FolderIcon
+                    size={64}
+                    className="mx-auto text-gray-300 mb-4"
+                  />
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">
                     No folders yet
                   </h3>
@@ -1488,21 +1728,36 @@ export function Dashboard({
                               <input
                                 type="text"
                                 value={editingFolder.name}
-                                onChange={(e) => setEditingFolder({ ...editingFolder, name: e.target.value })}
+                                onChange={(e) =>
+                                  setEditingFolder({
+                                    ...editingFolder,
+                                    name: e.target.value,
+                                  })
+                                }
                                 className="w-full px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm font-semibold"
                               />
                               <input
                                 type="text"
                                 value={editingFolder.slug}
-                                onChange={(e) => setEditingFolder({ ...editingFolder, slug: e.target.value.toLowerCase().trim() })}
+                                onChange={(e) =>
+                                  setEditingFolder({
+                                    ...editingFolder,
+                                    slug: e.target.value.toLowerCase().trim(),
+                                  })
+                                }
                                 className="w-full px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 font-mono text-xs"
                               />
                             </div>
                           ) : (
                             <div>
-                              <h3 className="text-lg font-semibold text-gray-900">{folder.name}</h3>
+                              <h3 className="text-lg font-semibold text-gray-900">
+                                {folder.name}
+                              </h3>
                               <p className="text-sm text-gray-600">
-                                <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">{folder.slug}</code> • {getFolderPostCount(folder.id)} posts
+                                <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">
+                                  {folder.slug}
+                                </code>{" "}
+                                • {getFolderPostCount(folder.id)} posts
                               </p>
                             </div>
                           )}
@@ -1512,7 +1767,13 @@ export function Dashboard({
                         {editingFolder?.id === folder.id ? (
                           <>
                             <button
-                              onClick={() => handleUpdateFolder(editingFolder, editingFolder.name, editingFolder.slug)}
+                              onClick={() =>
+                                handleUpdateFolder(
+                                  editingFolder,
+                                  editingFolder.name,
+                                  editingFolder.slug
+                                )
+                              }
                               className="px-3 py-1.5 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm"
                             >
                               Save
@@ -1594,7 +1855,9 @@ export function Dashboard({
             >
               <div className="flex items-center justify-between p-6 border-b border-gray-200">
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900">Manage Posts in Folder</h3>
+                  <h3 className="text-xl font-bold text-gray-900">
+                    Manage Posts in Folder
+                  </h3>
                   <p className="text-sm text-gray-600 mt-1">
                     {folders.find((f) => f.id === selectedFolderForPosts)?.name}
                   </p>
@@ -1616,7 +1879,10 @@ export function Dashboard({
                 {/* Search Bar */}
                 <div className="mb-4">
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                    <Search
+                      className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                      size={18}
+                    />
                     <input
                       type="text"
                       placeholder="Search posts by title..."
@@ -1629,7 +1895,10 @@ export function Dashboard({
 
                 {getAvailablePosts().length === 0 ? (
                   <div className="text-center py-12">
-                    <FileText size={48} className="mx-auto text-gray-300 mb-4" />
+                    <FileText
+                      size={48}
+                      className="mx-auto text-gray-300 mb-4"
+                    />
                     <p className="text-gray-600">
                       {searchPostsInModal.trim()
                         ? `No posts found matching "${searchPostsInModal}"`
@@ -1645,24 +1914,32 @@ export function Dashboard({
                         <div
                           key={post.id}
                           onClick={() => togglePostSelection(post.id)}
-                          className={`flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer transition-colors ${inFolder
-                            ? isSelected
-                              ? "border-orange-500 bg-orange-50"
-                              : "border-blue-300 bg-blue-50"
-                            : isSelected
+                          className={`flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer transition-colors ${
+                            inFolder
+                              ? isSelected
+                                ? "border-orange-500 bg-orange-50"
+                                : "border-blue-300 bg-blue-50"
+                              : isSelected
                               ? "border-orange-500 bg-orange-50"
                               : "border-gray-200 hover:border-orange-300 hover:bg-orange-50/50"
-                            }`}
+                          }`}
                         >
-                          <div className={`flex-shrink-0 w-5 h-5 border-2 rounded flex items-center justify-center ${isSelected
-                            ? "border-orange-500 bg-orange-500"
-                            : "border-gray-300"
-                            }`}>
-                            {isSelected && <Check size={14} className="text-white" />}
+                          <div
+                            className={`flex-shrink-0 w-5 h-5 border-2 rounded flex items-center justify-center ${
+                              isSelected
+                                ? "border-orange-500 bg-orange-500"
+                                : "border-gray-300"
+                            }`}
+                          >
+                            {isSelected && (
+                              <Check size={14} className="text-white" />
+                            )}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
-                              <h4 className="font-semibold text-gray-900 truncate">{post.title}</h4>
+                              <h4 className="font-semibold text-gray-900 truncate">
+                                {post.title}
+                              </h4>
                               {inFolder && (
                                 <span className="px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-800 whitespace-nowrap">
                                   In Folder
@@ -1673,10 +1950,11 @@ export function Dashboard({
                               <span>{formatDate(post.createdAt)}</span>
                               <span>•</span>
                               <span
-                                className={`px-2 py-0.5 rounded-full text-xs ${post.status === "published"
-                                  ? "bg-green-100 text-green-800"
-                                  : "bg-yellow-100 text-yellow-800"
-                                  }`}
+                                className={`px-2 py-0.5 rounded-full text-xs ${
+                                  post.status === "published"
+                                    ? "bg-green-100 text-green-800"
+                                    : "bg-yellow-100 text-yellow-800"
+                                }`}
                               >
                                 {post.status}
                               </span>
@@ -1692,7 +1970,9 @@ export function Dashboard({
               <div className="flex items-center justify-between p-6 border-t border-gray-200">
                 <div className="text-sm text-gray-600">
                   {selectedPostIds.size > 0
-                    ? `${selectedPostIds.size} post${selectedPostIds.size > 1 ? "s" : ""} selected`
+                    ? `${selectedPostIds.size} post${
+                        selectedPostIds.size > 1 ? "s" : ""
+                      } selected`
                     : "No posts selected"}
                 </div>
                 <div className="flex gap-3">

@@ -1,12 +1,17 @@
-import { useState, useEffect } from 'react';
-import { getSessionId } from '@/lib/session';
+import { useState, useEffect } from "react";
 
 interface StarRating {
   stars: number;
   count: number;
 }
 
-const StarIcon = ({ className, filled = false }: { className?: string; filled?: boolean }) => (
+const StarIcon = ({
+  className,
+  filled = false,
+}: {
+  className?: string;
+  filled?: boolean;
+}) => (
   <svg
     className={className}
     fill={filled ? "currentColor" : "none"}
@@ -64,7 +69,7 @@ export function ReactionBar({ postId }: ReactionBarProps) {
         }
       }
     } catch (error) {
-      console.error('Error loading ratings:', error);
+      console.error("Error loading ratings:", error);
     } finally {
       setLoading(false);
     }
@@ -82,7 +87,9 @@ export function ReactionBar({ postId }: ReactionBarProps) {
       const newRatings = [...prev];
       // Remove previous rating if exists
       if (previousRating) {
-        const prevIndex = newRatings.findIndex(r => r.stars === previousRating);
+        const prevIndex = newRatings.findIndex(
+          (r) => r.stars === previousRating
+        );
         if (prevIndex >= 0 && newRatings[prevIndex].count > 0) {
           newRatings[prevIndex] = {
             ...newRatings[prevIndex],
@@ -91,7 +98,7 @@ export function ReactionBar({ postId }: ReactionBarProps) {
         }
       }
       // Add new rating
-      const newIndex = newRatings.findIndex(r => r.stars === stars);
+      const newIndex = newRatings.findIndex((r) => r.stars === stars);
       if (newIndex >= 0) {
         newRatings[newIndex] = {
           ...newRatings[newIndex],
@@ -102,10 +109,10 @@ export function ReactionBar({ postId }: ReactionBarProps) {
     });
 
     try {
-      const response = await fetch('/api/submit-rating', {
-        method: 'POST',
+      const response = await fetch("/api/submit-rating", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           post_id: postId,
@@ -131,7 +138,7 @@ export function ReactionBar({ postId }: ReactionBarProps) {
         loadRatings(); // Reload to get correct state
       }
     } catch (error) {
-      console.error('Error submitting rating:', error);
+      console.error("Error submitting rating:", error);
       // Revert on error
       setUserRating(previousRating);
       loadRatings(); // Reload to get correct state
@@ -147,8 +154,12 @@ export function ReactionBar({ postId }: ReactionBarProps) {
               <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-8 rotate-12 bg-gray-100">
                 <StarIcon className="w-8 h-8 text-gray-400" filled={false} />
               </div>
-              <p className="text-sm font-medium tracking-wide uppercase mb-4 text-gray-400">RATE THIS ESSAY</p>
-              <h2 className="text-3xl font-bold mb-6 text-gray-900">How was this essay?</h2>
+              <p className="text-sm font-medium tracking-wide uppercase mb-4 text-gray-400">
+                RATE THIS ESSAY
+              </p>
+              <h2 className="text-3xl font-bold mb-6 text-gray-900">
+                How was this essay?
+              </h2>
               <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 justify-center w-full max-w-md">
                 {[5, 3, 1].map((stars) => (
                   <div
@@ -164,7 +175,9 @@ export function ReactionBar({ postId }: ReactionBarProps) {
                         />
                       ))}
                     </div>
-                    <span className="text-lg font-semibold text-gray-300">-</span>
+                    <span className="text-lg font-semibold text-gray-300">
+                      -
+                    </span>
                   </div>
                 ))}
               </div>
@@ -202,27 +215,34 @@ export function ReactionBar({ postId }: ReactionBarProps) {
                   key={rating.stars}
                   onClick={() => handleRating(rating.stars)}
                   disabled={!postId}
-                  className={`flex flex-col items-center gap-2 px-6 py-4 rounded-lg transition-all w-full sm:w-auto sm:flex-1 ${userRating === rating.stars
-                    ? 'bg-blue-50 border-2 border-blue-500 shadow-md'
-                    : 'bg-gray-50 hover:bg-gray-100 border-2 border-transparent hover:border-gray-200'
-                    } ${!postId ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                  className={`flex flex-col items-center gap-2 px-6 py-4 rounded-lg transition-all w-full sm:w-auto sm:flex-1 ${
+                    userRating === rating.stars
+                      ? "bg-blue-50 border-2 border-blue-500 shadow-md"
+                      : "bg-gray-50 hover:bg-gray-100 border-2 border-transparent hover:border-gray-200"
+                  } ${
+                    !postId ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+                  }`}
                 >
                   <div className="flex gap-1">
                     {Array.from({ length: rating.stars }).map((_, i) => (
                       <StarIcon
                         key={i}
                         filled={userRating === rating.stars}
-                        className={`w-6 h-6 ${userRating === rating.stars
-                          ? 'text-blue-600'
-                          : 'text-gray-400'
-                          }`}
+                        className={`w-6 h-6 ${
+                          userRating === rating.stars
+                            ? "text-blue-600"
+                            : "text-gray-400"
+                        }`}
                       />
                     ))}
                   </div>
-                  <span className={`text-lg font-semibold ${userRating === rating.stars
-                    ? 'text-blue-600'
-                    : 'text-gray-700'
-                    }`}>
+                  <span
+                    className={`text-lg font-semibold ${
+                      userRating === rating.stars
+                        ? "text-blue-600"
+                        : "text-gray-700"
+                    }`}
+                  >
                     {rating.count}
                   </span>
                 </button>
@@ -234,5 +254,3 @@ export function ReactionBar({ postId }: ReactionBarProps) {
     </div>
   );
 }
-
-

@@ -113,8 +113,7 @@ export function ImageHistoryModal({
                   item.metadata?.filename ||
                   item.metadata?.source_name ||
                   "Image";
-                const aspectRatio =
-                  item.metadata?.aspect_ratio || "Unknown";
+                const aspectRatio = item.metadata?.aspect_ratio || "Unknown";
 
                 return (
                   <div

@@ -1,5 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Node } from "@tiptap/core";
-import { NodeViewWrapper, ReactNodeViewRenderer, type NodeViewProps } from "@tiptap/react";
+import {
+  NodeViewWrapper,
+  ReactNodeViewRenderer,
+  type NodeViewProps,
+} from "@tiptap/react";
 import { NodeSelection } from "prosemirror-state";
 import React from "react";
 import { QuizPlayer } from "@/components/quiz/QuizPlayer";
@@ -154,7 +159,9 @@ export const QuizExtension = Node.create<QuizOptions>({
       align: {
         default: "center",
         parseHTML: (element: any) => {
-          const align = element.getAttribute("data-align") || (element as HTMLElement).style.textAlign;
+          const align =
+            element.getAttribute("data-align") ||
+            (element as HTMLElement).style.textAlign;
           return align || "center";
         },
         renderHTML: (attributes: any) => {
@@ -208,26 +215,27 @@ export const QuizExtension = Node.create<QuizOptions>({
     return {
       setQuiz:
         (options: { quizId: string; align?: "left" | "center" | "right" }) =>
-          ({ commands }: any) => {
-            return commands.insertContent({
-              type: this.name,
-              attrs: {
-                quizId: options.quizId,
-                align: options.align || "center",
-              },
-            });
-          },
+        ({ commands }: any) => {
+          return commands.insertContent({
+            type: this.name,
+            attrs: {
+              quizId: options.quizId,
+              align: options.align || "center",
+            },
+          });
+        },
       setQuizAlign:
         (align: "left" | "center" | "right") =>
-          ({ chain, state }: any) => {
-            const { selection } = state;
-            if (selection instanceof NodeSelection && selection.node.type.name === this.name) {
-              return chain()
-                .updateAttributes(this.name, { align })
-                .run();
-            }
-            return false;
-          },
+        ({ chain, state }: any) => {
+          const { selection } = state;
+          if (
+            selection instanceof NodeSelection &&
+            selection.node.type.name === this.name
+          ) {
+            return chain().updateAttributes(this.name, { align }).run();
+          }
+          return false;
+        },
     };
   },
 });

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
@@ -9,7 +10,12 @@ import { postsApi } from "@/services/posts";
 import { useAuth } from "@/hooks/useAuth";
 import { useDialog } from "@/hooks/useDialog";
 import type { Post as DbPost, PostStyles } from "@/services/posts";
-import { getDefaultTemplateData, normalizeTemplateData, splitTemplateFromHtml, type PostTemplateData } from "@/services/postTemplate";
+import {
+  getDefaultTemplateData,
+  normalizeTemplateData,
+  splitTemplateFromHtml,
+  type PostTemplateData,
+} from "@/services/postTemplate";
 
 type View = "dashboard" | "editor" | "preview";
 
@@ -219,14 +225,18 @@ export function AppContent() {
         />
       )}
 
-      {currentView === "editor" && currentPost && (
+      {currentView === "editor" &&
+        currentPost &&
         (() => {
           const created = currentPost.createdAt?.toISOString?.() || undefined;
           const derived = currentPost.template_data
             ? {
-              template: normalizeTemplateData(currentPost.template_data as any, created),
-              body: currentPost.content || "",
-            }
+                template: normalizeTemplateData(
+                  currentPost.template_data as any,
+                  created
+                ),
+                body: currentPost.content || "",
+              }
             : splitTemplateFromHtml(currentPost.content || "", created);
 
           return (
@@ -239,8 +249,7 @@ export function AppContent() {
               onSave={handleSavePost}
             />
           );
-        })()
-      )}
+        })()}
 
       {currentView === "preview" && currentPost && (
         <Preview

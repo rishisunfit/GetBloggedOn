@@ -1,7 +1,7 @@
-import { ArrowLeft, Calendar } from 'lucide-react';
-import { ReactionBar } from './ReactionBar';
-import { CTAForm } from './CTAForm';
-import { QuizRenderer } from './QuizRenderer';
+import { ArrowLeft, Calendar } from "lucide-react";
+import { ReactionBar } from "./ReactionBar";
+import { CTAForm } from "./CTAForm";
+import { QuizRenderer } from "./QuizRenderer";
 
 interface PreviewProps {
   title: string;
@@ -12,12 +12,19 @@ interface PreviewProps {
   onBack: () => void;
 }
 
-export function Preview({ title, content, date = new Date(), postId, quizId, onBack }: PreviewProps) {
+export function Preview({
+  title,
+  content,
+  date = new Date(),
+  postId,
+  quizId,
+  onBack,
+}: PreviewProps) {
   const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
+    return new Date(date).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
   };
 
@@ -44,15 +51,17 @@ export function Preview({ title, content, date = new Date(), postId, quizId, onB
             <Calendar size={16} />
             {formatDate(date)}
           </div>
-          <h1 className="text-5xl font-bold text-gray-900 mb-4">{title || 'Untitled Post'}</h1>
+          <h1 className="text-5xl font-bold text-gray-900 mb-4">
+            {title || "Untitled Post"}
+          </h1>
         </header>
 
         {/* Content */}
         <div
           className="prose prose-lg max-w-none"
           style={{
-            color: 'rgb(17 24 39)',
-            lineHeight: '1.75',
+            color: "rgb(17 24 39)",
+            lineHeight: "1.75",
           }}
         >
           {content ? (
@@ -61,7 +70,9 @@ export function Preview({ title, content, date = new Date(), postId, quizId, onB
               className="preview-content"
             />
           ) : (
-            <p className="text-gray-400 italic">No content yet. Start writing in the editor!</p>
+            <p className="text-gray-400 italic">
+              No content yet. Start writing in the editor!
+            </p>
           )}
         </div>
 
@@ -84,4 +95,3 @@ export function Preview({ title, content, date = new Date(), postId, quizId, onB
     </div>
   );
 }
-

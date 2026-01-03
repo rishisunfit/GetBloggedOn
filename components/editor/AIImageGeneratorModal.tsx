@@ -271,10 +271,11 @@ export function AIImageGeneratorModal({
                   <button
                     type="button"
                     onClick={() => setSelectedModel("gemini-2.5-flash-image")}
-                    className={`w-full p-3 border rounded-lg text-left transition-all ${selectedModel === "gemini-2.5-flash-image"
+                    className={`w-full p-3 border rounded-lg text-left transition-all ${
+                      selectedModel === "gemini-2.5-flash-image"
                         ? "border-gray-900 bg-gray-50"
                         : "border-gray-200 hover:border-gray-300 bg-white"
-                      }`}
+                    }`}
                   >
                     <div className="font-semibold text-gray-900 text-sm">
                       Gemini 2.5 Flash Image
@@ -288,10 +289,11 @@ export function AIImageGeneratorModal({
                     onClick={() =>
                       setSelectedModel("gemini-3-pro-image-preview")
                     }
-                    className={`w-full p-3 border rounded-lg text-left transition-all ${selectedModel === "gemini-3-pro-image-preview"
+                    className={`w-full p-3 border rounded-lg text-left transition-all ${
+                      selectedModel === "gemini-3-pro-image-preview"
                         ? "border-gray-900 bg-gray-50"
                         : "border-gray-200 hover:border-gray-300 bg-white"
-                      }`}
+                    }`}
                   >
                     <div className="font-semibold text-gray-900 text-sm">
                       Gemini 3 Pro Image
@@ -384,10 +386,11 @@ export function AIImageGeneratorModal({
                       key={ratio.value}
                       type="button"
                       onClick={() => setAspectRatio(ratio.value)}
-                      className={`py-2 px-4 border rounded-lg text-sm font-semibold transition-all ${aspectRatio === ratio.value
+                      className={`py-2 px-4 border rounded-lg text-sm font-semibold transition-all ${
+                        aspectRatio === ratio.value
                           ? "border-gray-900 bg-gray-900 text-white"
                           : "border-gray-300 text-gray-700 hover:border-gray-400 bg-white"
-                        }`}
+                      }`}
                     >
                       {ratio.label}
                     </button>
