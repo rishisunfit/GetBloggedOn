@@ -30,6 +30,7 @@ import {
   Type,
   Clock,
   Video,
+  Eraser,
 } from "lucide-react";
 import { Editor } from "@tiptap/react";
 import { useState, useRef, useEffect } from "react";
@@ -40,6 +41,7 @@ import { ImageHistoryModal } from "./ImageHistoryModal";
 import { TableModal } from "./TableModal";
 import { VideoModal } from "./VideoModal";
 import { QuizModal } from "./QuizModal";
+import { ColorPickerPopover } from "./ColorPickerPopover";
 import {
   ImageAttributionModal,
   type ImageAttributionValues,
@@ -89,6 +91,7 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
   const [currentAlignment, setCurrentAlignment] = useState<string | null>(null);
   const [showLineSpacingPicker, setShowLineSpacingPicker] = useState(false);
   const [showFontSizePicker, setShowFontSizePicker] = useState(false);
+  const [customColor, setCustomColor] = useState("#3B82F6");
   const [showImagePicker, setShowImagePicker] = useState(false);
   const [showAIGenerator, setShowAIGenerator] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -536,47 +539,78 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
           <Divider />
 
           {/* Font Size Dropdown */}
-          <div className="flex items-center gap-0  relative">
+          <div className="flex items-center gap-0 relative">
             <div className="relative">
-              <ToolbarButton
+              <button
                 onClick={() => {
                   setShowFontSizePicker(!showFontSizePicker);
                   setShowColorPicker(false);
                   setShowHighlightPicker(false);
                   setShowLineSpacingPicker(false);
                 }}
-                active={showFontSizePicker}
-                title="Font Size"
+                className={`flex items-center gap-1 px-2 py-1 rounded hover:bg-gray-100 transition-colors text-sm font-medium ${
+                  showFontSizePicker ? "bg-gray-100 text-gray-900" : "text-gray-700"
+                }`}
+                title="Font Size - Click to change text size"
               >
-                <Type size={18} />
-              </ToolbarButton>
+                <Type size={16} />
+                <span className="text-xs">Size</span>
+              </button>
               {showFontSizePicker && (
                 <div
-                  className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto"
+                  className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-[9999] w-48"
                   onMouseDown={(e) => e.stopPropagation()}
                   onMouseUp={(e) => e.stopPropagation()}
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <div className="py-1">
-                    {fontSizes.map((size) => (
-                      <button
-                        key={size}
-                        onMouseDown={(e) => e.stopPropagation()}
-                        onMouseUp={(e) => e.stopPropagation()}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          editor.chain().focus().setFontSize(`${size}px`).run();
-                          setShowFontSizePicker(false);
-                        }}
-                        className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors"
-                      >
-                        {size}
-                      </button>
-                    ))}
+                  <div className="p-2">
+                    <div className="text-xs text-gray-500 font-medium mb-2 px-2">Text Size</div>
+                    {/* Clear Font Size - Standardize to default */}
+                    <button
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onMouseUp={(e) => e.stopPropagation()}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        editor.chain().focus().unsetFontSize().run();
+                        setShowFontSizePicker(false);
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-blue-50 text-blue-600 font-medium rounded-md mb-1 transition-colors flex items-center gap-2"
+                    >
+                      <Eraser size={14} />
+                      Reset to Default
+                    </button>
+                    <div className="border-t border-gray-200 my-2" />
+                    <div className="grid grid-cols-4 gap-1">
+                      {fontSizes.map((size) => (
+                        <button
+                          key={size}
+                          onMouseDown={(e) => e.stopPropagation()}
+                          onMouseUp={(e) => e.stopPropagation()}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            editor.chain().focus().setFontSize(`${size}px`).run();
+                            setShowFontSizePicker(false);
+                          }}
+                          className="px-2 py-1.5 text-sm hover:bg-gray-100 rounded transition-colors text-center font-medium"
+                        >
+                          {size}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}
             </div>
+            {/* Clear All Formatting - useful for pasted content from Google Docs */}
+            <ToolbarButton
+              onClick={() => {
+                editor.chain().focus().unsetAllMarks().run();
+                editor.chain().focus().clearNodes().run();
+              }}
+              title="Clear All Formatting (removes all styles from selected text)"
+            >
+              <Eraser size={18} />
+            </ToolbarButton>
           </div>
 
           <Divider />
@@ -784,28 +818,20 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
                 </div>
               </ToolbarButton>
               {showColorPicker && (
-                <div
-                  className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-md shadow-xl p-3 z-50"
-                  style={{ minWidth: "180px" }}
-                  onMouseDown={(e) => e.stopPropagation()}
-                  onMouseUp={(e) => e.stopPropagation()}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div className="grid grid-cols-5 gap-2">
-                    {textColors.map((color) => (
-                      <button
-                        key={color.value}
-                        onMouseDown={(e) => e.stopPropagation()}
-                        onMouseUp={(e) => e.stopPropagation()}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setColor(color.value);
-                        }}
-                        className="w-8 h-8 rounded border border-gray-300 hover:border-gray-500 hover:scale-110 transition-all cursor-pointer"
-                        style={{ backgroundColor: color.value }}
-                        title={color.name}
-                      />
-                    ))}
+                <div className="fixed inset-0 z-[9999]" onClick={() => setShowColorPicker(false)}>
+                  <div 
+                    className="absolute"
+                    style={{ top: "100px", left: "50%", transform: "translateX(-50%)" }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <ColorPickerPopover
+                      initialColor={customColor}
+                      onColorChange={(color) => {
+                        setCustomColor(color);
+                        setColor(color);
+                      }}
+                      onClose={() => setShowColorPicker(false)}
+                    />
                   </div>
                 </div>
               )}

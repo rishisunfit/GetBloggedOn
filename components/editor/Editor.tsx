@@ -12,6 +12,7 @@ import Underline from "@tiptap/extension-underline";
 import Highlight from "@tiptap/extension-highlight";
 import { Color } from "@tiptap/extension-color";
 import { TextStyle } from "@tiptap/extension-text-style";
+import FontFamily from "@tiptap/extension-font-family";
 import CodeBlock from "@tiptap/extension-code-block";
 import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
@@ -70,6 +71,11 @@ import {
   Sparkles,
   MessageSquare,
   Video,
+  Eraser,
+  PanelRightClose,
+  PanelRight,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { StyleExtension, FontSizeExtension } from "./StyleExtension";
 import { CalloutExtension, calloutPresets } from "./CalloutExtension";
@@ -93,6 +99,7 @@ import {
 import { VideoModal } from "./VideoModal";
 import { VideoTimestampModal } from "./VideoTimestampModal";
 import { QuizModal } from "./QuizModal";
+import { ColorPickerPopover } from "./ColorPickerPopover";
 import { NodeSelection } from "prosemirror-state";
 import { uploadImageToStorage, uploadDataURLToStorage } from "@/lib/storage";
 import { useAuth } from "@/hooks/useAuth";
@@ -256,6 +263,31 @@ export function Editor({
   });
   const [showCalloutPicker, setShowCalloutPicker] = useState(false);
   const [showUnsavedChangesModal, setShowUnsavedChangesModal] = useState(false);
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [customColor, setCustomColor] = useState("#3B82F6");
+  const [showFontSizePicker, setShowFontSizePicker] = useState(false);
+  const [showFontPicker, setShowFontPicker] = useState(false);
+  const [showRightSidebar, setShowRightSidebar] = useState(true);
+  const [showBubbleFontPicker, setShowBubbleFontPicker] = useState(false);
+  const [showBubbleSizePicker, setShowBubbleSizePicker] = useState(false);
+  
+  // Font sizes like Google Docs
+  const fontSizes = [8, 9, 10, 11, 12, 14, 18, 24, 30, 36, 48, 60, 72, 96];
+  
+  // Clean blog fonts
+  const blogFonts = [
+    { name: "Default", value: "inherit", preview: "Aa" },
+    { name: "Georgia", value: "Georgia, serif", preview: "Aa" },
+    { name: "Lora", value: "'Lora', serif", preview: "Aa" },
+    { name: "Merriweather", value: "'Merriweather', serif", preview: "Aa" },
+    { name: "Playfair Display", value: "'Playfair Display', serif", preview: "Aa" },
+    { name: "Open Sans", value: "'Open Sans', sans-serif", preview: "Aa" },
+    { name: "Roboto", value: "'Roboto', sans-serif", preview: "Aa" },
+    { name: "Lato", value: "'Lato', sans-serif", preview: "Aa" },
+    { name: "Source Sans Pro", value: "'Source Sans Pro', sans-serif", preview: "Aa" },
+    { name: "Nunito", value: "'Nunito', sans-serif", preview: "Aa" },
+    { name: "PT Serif", value: "'PT Serif', serif", preview: "Aa" },
+  ];
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const lastSavedContent = useRef<string>(initialContent);
   const lastSavedTemplate = useRef<PostTemplateData>(
@@ -300,6 +332,7 @@ export function Editor({
         multicolor: true,
       }),
       TextStyle,
+      FontFamily,
       Color,
       CodeBlock.configure({
         HTMLAttributes: {
@@ -1329,6 +1362,17 @@ export function Editor({
                 </div>
               )}
             </div>
+
+            {/* Sidebar Toggle - Only show when sidebar is hidden */}
+            {!showRightSidebar && (
+              <button
+                onClick={() => setShowRightSidebar(true)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                title="Show sidebar"
+              >
+                <ChevronLeft size={18} className="text-gray-600" />
+              </button>
+            )}
           </div>
         </header>
 
@@ -1389,6 +1433,50 @@ export function Editor({
               title="Heading 3"
             >
               <Heading3 size={16} />
+            </ToolbarButton>
+
+            <Divider />
+
+            {/* Font Picker Dropdown */}
+            <button
+              onClick={() => {
+                setShowFontPicker(!showFontPicker);
+                setShowFontSizePicker(false);
+              }}
+              className={`flex items-center gap-1 px-2 py-1 rounded hover:bg-gray-100 transition-colors text-sm font-medium ${
+                showFontPicker ? "bg-gray-100 text-gray-900" : "text-gray-700"
+              }`}
+              title="Font Family - Select text and click to change font"
+            >
+              <span className="text-xs font-serif">Aa</span>
+              <span className="text-xs">Font</span>
+              <ChevronDown size={12} />
+            </button>
+
+            {/* Font Size Dropdown */}
+            <button
+              onClick={() => {
+                setShowFontSizePicker(!showFontSizePicker);
+                setShowFontPicker(false);
+              }}
+              className={`flex items-center gap-1 px-2 py-1 rounded hover:bg-gray-100 transition-colors text-sm font-medium ${
+                showFontSizePicker ? "bg-gray-100 text-gray-900" : "text-gray-700"
+              }`}
+              title="Font Size - Select text and click to change size"
+            >
+              <Type size={14} />
+              <span className="text-xs">Size</span>
+              <ChevronDown size={12} />
+            </button>
+
+            {/* Clear All Formatting */}
+            <ToolbarButton
+              onClick={() => {
+                editor.chain().focus().unsetAllMarks().run();
+              }}
+              title="Clear Formatting (remove all styles from selected text)"
+            >
+              <Eraser size={16} />
             </ToolbarButton>
 
             <Divider />
@@ -1472,16 +1560,16 @@ export function Editor({
               <div className="w-4 h-4 rounded-full bg-black border border-gray-300" />
             </ToolbarButton>
             <ToolbarButton
-              onClick={() => editor.chain().focus().setColor("#B8860B").run()}
-              title="Gold Text"
+              onClick={() => editor.chain().focus().setColor("#3B82F6").run()}
+              title="Blue Text"
             >
-              <div className="w-4 h-4 rounded-full bg-yellow-600 border border-gray-300" />
+              <div className="w-4 h-4 rounded-full bg-blue-500 border border-gray-300" />
             </ToolbarButton>
             <ToolbarButton
-              onClick={() => editor.chain().focus().setColor("#DB2777").run()}
-              title="Pink Text"
+              onClick={() => editor.chain().focus().setColor("#EF4444").run()}
+              title="Red Text"
             >
-              <div className="w-4 h-4 rounded-full bg-pink-600 border border-gray-300" />
+              <div className="w-4 h-4 rounded-full bg-red-500 border border-gray-300" />
             </ToolbarButton>
             <ToolbarButton
               onClick={() => editor.chain().focus().setColor("#16A34A").run()}
@@ -1489,6 +1577,38 @@ export function Editor({
             >
               <div className="w-4 h-4 rounded-full bg-green-600 border border-gray-300" />
             </ToolbarButton>
+            {/* Color Picker */}
+            <div className="relative">
+              <ToolbarButton
+                onClick={() => setShowColorPicker(!showColorPicker)}
+                title="Custom Color"
+              >
+                <div 
+                  className="w-4 h-4 rounded-full border border-gray-300 flex items-center justify-center"
+                  style={{ background: `conic-gradient(red, yellow, lime, aqua, blue, magenta, red)` }}
+                >
+                  <div className="w-2 h-2 rounded-full bg-white" />
+                </div>
+              </ToolbarButton>
+              {showColorPicker && (
+                <div className="fixed inset-0 z-[9999]" onClick={() => setShowColorPicker(false)}>
+                  <div 
+                    className="absolute"
+                    style={{ top: "140px", left: "50%", transform: "translateX(-50%)" }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <ColorPickerPopover
+                      initialColor={customColor}
+                      onColorChange={(color) => {
+                        setCustomColor(color);
+                        editor.chain().focus().setColor(color).run();
+                      }}
+                      onClose={() => setShowColorPicker(false)}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
 
             <Divider />
 
@@ -1616,6 +1736,87 @@ export function Editor({
           </div>
         )}
 
+        {/* Font Picker Modal */}
+        {showFontPicker && (
+          <div className="fixed inset-0 z-[9999]" onClick={() => setShowFontPicker(false)}>
+            <div 
+              className="absolute bg-white border border-gray-200 rounded-lg shadow-2xl w-64"
+              style={{ top: "120px", left: "120px" }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-3">
+                <div className="text-xs text-gray-500 font-medium mb-2 px-1">Select Font</div>
+                <div className="space-y-1 max-h-80 overflow-y-auto">
+                  {blogFonts.map((font) => (
+                    <button
+                      key={font.name}
+                      onClick={() => {
+                        if (font.value === "inherit") {
+                          // Reset font
+                          editor.chain().focus().unsetFontFamily().run();
+                        } else {
+                          editor.chain().focus().setFontFamily(font.value).run();
+                        }
+                        setShowFontPicker(false);
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded-md transition-colors flex items-center gap-3"
+                    >
+                      <span 
+                        className="text-lg w-8"
+                        style={{ fontFamily: font.value }}
+                      >
+                        {font.preview}
+                      </span>
+                      <span className="text-gray-700">{font.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Font Size Picker Modal */}
+        {showFontSizePicker && (
+          <div className="fixed inset-0 z-[9999]" onClick={() => setShowFontSizePicker(false)}>
+            <div 
+              className="absolute bg-white border border-gray-200 rounded-lg shadow-2xl w-52"
+              style={{ top: "120px", left: "200px" }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-2">
+                <div className="text-xs text-gray-500 font-medium mb-2 px-2">Text Size</div>
+                {/* Clear Font Size */}
+                <button
+                  onClick={() => {
+                    editor.chain().focus().unsetFontSize().run();
+                    setShowFontSizePicker(false);
+                  }}
+                  className="w-full text-left px-3 py-2 text-sm hover:bg-blue-50 text-blue-600 font-medium rounded-md mb-1 transition-colors flex items-center gap-2"
+                >
+                  <Eraser size={14} />
+                  Reset to Default
+                </button>
+                <div className="border-t border-gray-200 my-2" />
+                <div className="grid grid-cols-4 gap-1">
+                  {fontSizes.map((size) => (
+                    <button
+                      key={size}
+                      onClick={() => {
+                        editor.chain().focus().setFontSize(`${size}px`).run();
+                        setShowFontSizePicker(false);
+                      }}
+                      className="px-2 py-1.5 text-sm hover:bg-gray-100 rounded transition-colors text-center font-medium"
+                    >
+                      {size}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Callout Color Picker */}
         {showCalloutPicker && editor && (
           <>
@@ -1705,6 +1906,7 @@ export function Editor({
 
         {/* Bubble Menu for selected text */}
         {editor && (
+          <>
           <BubbleMenu
             editor={editor}
             className="bg-gray-900 rounded-lg shadow-xl p-1 flex items-center gap-1"
@@ -1727,6 +1929,89 @@ export function Editor({
             >
               <UnderlineIcon size={14} />
             </BubbleButton>
+            <div className="w-px h-4 bg-gray-600 mx-1" />
+            {/* Font Picker */}
+            <div className="relative">
+              <BubbleButton
+                onClick={() => {
+                  setShowBubbleFontPicker(!showBubbleFontPicker);
+                  setShowBubbleSizePicker(false);
+                }}
+                active={showBubbleFontPicker}
+              >
+                <span className="text-xs font-serif">Aa</span>
+              </BubbleButton>
+              {showBubbleFontPicker && (
+                <div 
+                  className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-white border border-gray-200 rounded-lg shadow-xl w-48 max-h-64 overflow-y-auto z-50"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="p-2">
+                    {blogFonts.map((font) => (
+                      <button
+                        key={font.name}
+                        onClick={() => {
+                          if (font.value === "inherit") {
+                            editor.chain().focus().unsetFontFamily().run();
+                          } else {
+                            editor.chain().focus().setFontFamily(font.value).run();
+                          }
+                          setShowBubbleFontPicker(false);
+                        }}
+                        className="w-full text-left px-2 py-1.5 text-sm hover:bg-gray-100 rounded transition-colors flex items-center gap-2"
+                      >
+                        <span style={{ fontFamily: font.value }} className="text-base">Aa</span>
+                        <span className="text-gray-700 text-xs">{font.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            {/* Size Picker */}
+            <div className="relative">
+              <BubbleButton
+                onClick={() => {
+                  setShowBubbleSizePicker(!showBubbleSizePicker);
+                  setShowBubbleFontPicker(false);
+                }}
+                active={showBubbleSizePicker}
+              >
+                <Type size={12} />
+              </BubbleButton>
+              {showBubbleSizePicker && (
+                <div 
+                  className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-white border border-gray-200 rounded-lg shadow-xl w-40 z-50"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="p-2">
+                    <button
+                      onClick={() => {
+                        editor.chain().focus().unsetFontSize().run();
+                        setShowBubbleSizePicker(false);
+                      }}
+                      className="w-full text-left px-2 py-1.5 text-xs hover:bg-blue-50 text-blue-600 font-medium rounded transition-colors mb-1"
+                    >
+                      Reset Default
+                    </button>
+                    <div className="grid grid-cols-4 gap-1">
+                      {[10, 12, 14, 16, 18, 20, 24, 28, 32, 36, 48, 72].map((size) => (
+                        <button
+                          key={size}
+                          onClick={() => {
+                            editor.chain().focus().setFontSize(`${size}px`).run();
+                            setShowBubbleSizePicker(false);
+                          }}
+                          className="px-1 py-1 text-xs hover:bg-gray-100 rounded transition-colors text-center text-gray-700"
+                        >
+                          {size}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
             <div className="w-px h-4 bg-gray-600 mx-1" />
             <BubbleButton
               onClick={() => editor.chain().focus().setParagraph().run()}
@@ -1801,21 +2086,31 @@ export function Editor({
               <div className="w-3 h-3 rounded-full bg-black" />
             </BubbleButton>
             <BubbleButton
-              onClick={() => editor.chain().focus().setColor("#B8860B").run()}
+              onClick={() => editor.chain().focus().setColor("#3B82F6").run()}
             >
-              <div className="w-3 h-3 rounded-full bg-yellow-600" />
+              <div className="w-3 h-3 rounded-full bg-blue-500" />
             </BubbleButton>
             <BubbleButton
-              onClick={() => editor.chain().focus().setColor("#DB2777").run()}
+              onClick={() => editor.chain().focus().setColor("#EF4444").run()}
             >
-              <div className="w-3 h-3 rounded-full bg-pink-600" />
+              <div className="w-3 h-3 rounded-full bg-red-500" />
             </BubbleButton>
             <BubbleButton
               onClick={() => editor.chain().focus().setColor("#16A34A").run()}
             >
               <div className="w-3 h-3 rounded-full bg-green-600" />
             </BubbleButton>
+            {/* Color Picker in Bubble Menu */}
+            <BubbleButton
+              onClick={() => setShowColorPicker(!showColorPicker)}
+            >
+              <div 
+                className="w-3 h-3 rounded-full"
+                style={{ background: `conic-gradient(red, yellow, lime, aqua, blue, magenta, red)` }}
+              />
+            </BubbleButton>
           </BubbleMenu>
+          </>
         )}
 
         {/* Analytics Drawer */}
@@ -2374,7 +2669,19 @@ export function Editor({
       </div>
 
       {/* RIGHT SIDEBAR: Properties */}
+      {showRightSidebar && (
       <div className="w-80 bg-white border-l border-gray-200 flex flex-col shrink-0">
+        {/* Sidebar Header with Close Button on Left */}
+        <div className="p-3 border-b border-gray-100 flex items-center gap-2">
+          <button
+            onClick={() => setShowRightSidebar(false)}
+            className="p-1.5 hover:bg-gray-100 rounded-md transition-colors"
+            title="Hide sidebar"
+          >
+            <ChevronRight size={16} className="text-gray-500" />
+          </button>
+          <span className="text-sm font-semibold text-gray-700">Properties</span>
+        </div>
         {/* Search */}
         <div className="p-4 border-b border-gray-100">
           <div className="relative">
@@ -2751,6 +3058,7 @@ export function Editor({
           )}
         </div>
       </div>
+      )}
 
       {/* Close save dropdown when clicking outside */}
       {showSaveDropdown && (
