@@ -10,8 +10,8 @@ import { quizzesApi } from "@/services/quizzes";
 import { foldersApi, type Folder } from "@/services/folders";
 import { useAuth } from "@/hooks/useAuth";
 import { useDialog } from "@/hooks/useDialog";
-import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Quiz } from "@/types/quiz";
+import LandingPage from "./landingpage/page";
 
 type Post = {
   id: string;
@@ -57,14 +57,18 @@ export default function HomePage() {
   const [quizzes, setQuizzes] = useState<ReturnType<typeof convertQuiz>[]>([]);
   const [folders, setFolders] = useState<Folder[]>([]);
   const [loading, setLoading] = useState(true);
-  const { signOut, profile } = useAuth();
+  const { signOut, profile, user, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const { showDialog } = useDialog();
 
-  // Load posts and quizzes on mount
+  // Load posts and quizzes on mount (only if authenticated)
   useEffect(() => {
-    loadData();
-  }, []);
+    if (user) {
+      loadData();
+    } else if (!authLoading) {
+      setLoading(false);
+    }
+  }, [user, authLoading]);
 
   const loadData = async () => {
     try {
@@ -164,18 +168,29 @@ export default function HomePage() {
   const handleSignOut = async () => {
     try {
       await signOut();
-      router.push("/login");
+      router.push("/");
     } catch (error) {
       console.error("Error signing out:", error);
     }
   };
 
+  // Show loading while auth is checking
+  if (authLoading) {
+    return <DashboardShimmer />;
+  }
+
+  // Show landing page for unauthenticated users
+  if (!user) {
+    return <LandingPage />;
+  }
+
+  // Show loading while fetching data for authenticated users
   if (loading) {
     return <DashboardShimmer />;
   }
 
   return (
-    <ProtectedRoute>
+    <>
       {/* Header with user info and logout */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
@@ -219,6 +234,6 @@ export default function HomePage() {
         }}
         isCreating={false}
       />
-    </ProtectedRoute>
+    </>
   );
 }
