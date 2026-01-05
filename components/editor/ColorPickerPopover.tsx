@@ -410,7 +410,7 @@ export function ColorPickerPopover({
     const newSavedColors = [...savedColors];
     newSavedColors[index] = null;
     // Compact: move all non-null to the front
-    const compacted = newSavedColors.filter((c) => c !== null);
+    const compacted: (string | null)[] = newSavedColors.filter((c) => c !== null);
     while (compacted.length < MAX_SAVED_COLORS) {
       compacted.push(null);
     }

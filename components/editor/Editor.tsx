@@ -1751,6 +1751,7 @@ export function Editor({
                     <button
                       key={font.name}
                       onClick={() => {
+                        if (!editor) return;
                         if (font.value === "inherit") {
                           // Reset font
                           editor.chain().focus().unsetFontFamily().run();
@@ -1789,6 +1790,7 @@ export function Editor({
                 {/* Clear Font Size */}
                 <button
                   onClick={() => {
+                    if (!editor) return;
                     editor.chain().focus().unsetFontSize().run();
                     setShowFontSizePicker(false);
                   }}
@@ -1803,6 +1805,7 @@ export function Editor({
                     <button
                       key={size}
                       onClick={() => {
+                        if (!editor) return;
                         editor.chain().focus().setFontSize(`${size}px`).run();
                         setShowFontSizePicker(false);
                       }}
