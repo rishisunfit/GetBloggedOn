@@ -408,7 +408,7 @@ Then they can access their blog at: `their-chosen-subdomain.bloggish.io`
 
 ---
 
-## Local Testing (Optional)
+## #Local Testing (Optional)
 
 To test subdomains locally:
 
