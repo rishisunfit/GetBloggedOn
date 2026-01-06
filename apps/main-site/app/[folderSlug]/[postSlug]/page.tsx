@@ -279,7 +279,7 @@ export default function CanonicalPostPage() {
   return (
     <div
       className="min-h-screen"
-      style={{ backgroundColor: styles.backgroundColor }}
+      style={{ backgroundColor: template?.useGreenTemplate ? "#10B981" : styles.backgroundColor }}
     >
       <HeatmapTracker postId={post.id} />
       <div className="max-w-3xl mx-auto px-4 py-12">
@@ -296,7 +296,7 @@ export default function CanonicalPostPage() {
                   fontFamily: template.seriesFont || "inherit",
                   fontWeight: template.seriesWeight || "400",
                   fontSize: template.seriesSize || "0.875rem",
-                  color: template.seriesColor || styles.textColor,
+                  color: template.useGreenTemplate ? "#FFFFFF" : (template.seriesColor || styles.textColor),
                 }}
               >
                 {template.seriesName} • Volume {template.volume}
@@ -310,7 +310,7 @@ export default function CanonicalPostPage() {
                   fontWeight: styles.headingWeight || "700",
                   fontSize: "2.5rem",
                   lineHeight: "1.2",
-                  color: styles.textColor,
+                  color: template.useGreenTemplate ? "#FFFFFF" : styles.textColor,
                 }}
               >
                 {template.title}
@@ -323,7 +323,7 @@ export default function CanonicalPostPage() {
                   fontFamily: bodyFontOption.value,
                   fontWeight: template.subtitleWeight || "400",
                   fontSize: template.subtitleSize || "1.125rem",
-                  color: template.subtitleColor || styles.textColor,
+                  color: template.useGreenTemplate ? "#FFFFFF" : (template.subtitleColor || styles.textColor),
                 }}
               >
                 {template.subtitle}
@@ -336,7 +336,7 @@ export default function CanonicalPostPage() {
                   fontFamily: bodyFontOption.value,
                   fontWeight: template.bylineWeight || "400",
                   fontSize: template.bylineSize || "0.875rem",
-                  color: template.bylineColor || styles.secondaryColor,
+                  color: template.useGreenTemplate ? "#FFFFFF" : (template.bylineColor || styles.secondaryColor),
                 }}
               >
                 {template.authorName && <span>By {template.authorName}</span>}
@@ -352,56 +352,59 @@ export default function CanonicalPostPage() {
           </div>
         )}
 
-        {/* Post Content */}
-        <div
-          className="prose prose-lg max-w-none mb-12"
-          style={{
-            fontFamily: bodyFontOption.value,
-            fontWeight: styles.bodyWeight || "400",
-            color: styles.textColor,
-          }}
-          dangerouslySetInnerHTML={{ __html: processedHtml }}
-        />
-
-        {/* Videos */}
-        {extractedVideos.map((video) => (
-          <VideoJsPlayer
-            key={video.placeholderId}
-            postId={post.id}
-            placeholderId={video.placeholderId}
-            videoUrl={video.src}
-            videoId={video.id || null}
-            primaryColor={video.primaryColor || styles.primaryColor}
+        {/* Content Wrapper - White card for green template */}
+        <div className={template?.useGreenTemplate ? "bg-white rounded-lg p-8 shadow-lg" : ""}>
+          {/* Post Content */}
+          <div
+            className="prose prose-lg max-w-none mb-12"
+            style={{
+              fontFamily: bodyFontOption.value,
+              fontWeight: styles.bodyWeight || "400",
+              color: template?.useGreenTemplate ? "#000000" : styles.textColor,
+            }}
+            dangerouslySetInnerHTML={{ __html: processedHtml }}
           />
-        ))}
 
-        {/* Components in order */}
-        {post.component_order && post.component_order.length > 0 ? (
-          post.component_order.map((componentType: string) => {
-            if (
-              componentType === "quiz" &&
-              post.quiz_id &&
-              post.quiz_id !== null
-            ) {
-              return <QuizRenderer key="quiz" quizId={post.quiz_id} />;
-            }
-            if (componentType === "rating" && post.rating_enabled !== false) {
-              return <ReactionBar key="rating" postId={post.id} />;
-            }
-            if (componentType === "cta" && post.cta_enabled !== false) {
-              return <CTAForm key="cta" postId={post.id} />;
-            }
-            return null;
-          })
-        ) : (
-          <>
-            {post.quiz_id && post.quiz_id !== null && (
-              <QuizRenderer quizId={post.quiz_id} />
-            )}
-            {post.rating_enabled !== false && <ReactionBar postId={post.id} />}
-            {post.cta_enabled !== false && <CTAForm postId={post.id} />}
-          </>
-        )}
+          {/* Videos */}
+          {extractedVideos.map((video) => (
+            <VideoJsPlayer
+              key={video.placeholderId}
+              postId={post.id}
+              placeholderId={video.placeholderId}
+              videoUrl={video.src}
+              videoId={video.id || null}
+              primaryColor={video.primaryColor || styles.primaryColor}
+            />
+          ))}
+
+          {/* Components in order */}
+          {post.component_order && post.component_order.length > 0 ? (
+            post.component_order.map((componentType: string) => {
+              if (
+                componentType === "quiz" &&
+                post.quiz_id &&
+                post.quiz_id !== null
+              ) {
+                return <QuizRenderer key="quiz" quizId={post.quiz_id} />;
+              }
+              if (componentType === "rating" && post.rating_enabled !== false) {
+                return <ReactionBar key="rating" postId={post.id} />;
+              }
+              if (componentType === "cta" && post.cta_enabled !== false) {
+                return <CTAForm key="cta" postId={post.id} />;
+              }
+              return null;
+            })
+          ) : (
+            <>
+              {post.quiz_id && post.quiz_id !== null && (
+                <QuizRenderer quizId={post.quiz_id} />
+              )}
+              {post.rating_enabled !== false && <ReactionBar postId={post.id} />}
+              {post.cta_enabled !== false && <CTAForm postId={post.id} />}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

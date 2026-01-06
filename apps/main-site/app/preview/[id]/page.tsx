@@ -7,6 +7,7 @@ import { postsApi } from "@/services/posts";
 import { useDialog } from "@/hooks/useDialog";
 import { DashboardShimmer } from "@/components/DashboardShimmer";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { PostTemplateData } from "@/services/postTemplate";
 
 type Post = {
   id: string;
@@ -18,6 +19,7 @@ type Post = {
   user_id: string;
   is_draft: boolean;
   quiz_id: string | null;
+  template_data?: PostTemplateData | null;
 };
 
 export default function PreviewPage() {
@@ -84,6 +86,7 @@ export default function PreviewPage() {
         date={new Date(post.created_at)}
         postId={post.id}
         quizId={post.quiz_id}
+        templateData={post.template_data || undefined}
         onBack={handleBack}
       />
     </ProtectedRoute>

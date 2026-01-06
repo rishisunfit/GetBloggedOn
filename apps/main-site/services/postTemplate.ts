@@ -6,6 +6,7 @@
 
 export interface PostTemplateData {
   headerEnabled?: boolean; // Whether to show the template header
+  useGreenTemplate?: boolean; // Whether to use green template with white content card
   seriesName?: string;
   volume?: string;
   title?: string;

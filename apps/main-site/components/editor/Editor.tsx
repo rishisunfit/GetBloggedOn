@@ -270,10 +270,10 @@ export function Editor({
   const [showRightSidebar, setShowRightSidebar] = useState(true);
   const [showBubbleFontPicker, setShowBubbleFontPicker] = useState(false);
   const [showBubbleSizePicker, setShowBubbleSizePicker] = useState(false);
-  
+
   // Font sizes like Google Docs
   const fontSizes = [8, 9, 10, 11, 12, 14, 18, 24, 30, 36, 48, 60, 72, 96];
-  
+
   // Clean blog fonts
   const blogFonts = [
     { name: "Default", value: "inherit", preview: "Aa" },
@@ -826,22 +826,18 @@ export function Editor({
 
     return `
 <header class="post-header">
-  ${
-    hasSeries
-      ? `<div class="post-series">${seriesName}${
-          seriesName && volume ? ` <span class="dot">•</span> ` : ""
+  ${hasSeries
+        ? `<div class="post-series">${seriesName}${seriesName && volume ? ` <span class="dot">•</span> ` : ""
         }${volume || ""}</div>`
-      : ""
-  }
+        : ""
+      }
   ${hasTitle ? `<h1 class="post-title">${title}</h1>` : ""}
   ${hasSubtitle ? `<p class="post-subtitle">${subtitle}</p>` : ""}
-  ${
-    hasByline
-      ? `<div class="post-byline">${authorName ? `By ${authorName}` : ""}${
-          authorName && date ? ` <span class="dot">•</span> ` : ""
+  ${hasByline
+        ? `<div class="post-byline">${authorName ? `By ${authorName}` : ""}${authorName && date ? ` <span class="dot">•</span> ` : ""
         }${date || ""}</div>`
-      : ""
-  }
+        : ""
+      }
 </header>`;
   };
 
@@ -1276,19 +1272,17 @@ export function Editor({
             <div className="flex bg-gray-100 rounded-md p-0.5 mr-4">
               <button
                 onClick={() => setViewMode("desktop")}
-                className={`flex items-center gap-2 px-3 py-1 rounded text-xs font-medium transition-all ${
-                  viewMode === "desktop"
-                    ? "bg-white shadow-sm"
-                    : "text-gray-500"
-                }`}
+                className={`flex items-center gap-2 px-3 py-1 rounded text-xs font-medium transition-all ${viewMode === "desktop"
+                  ? "bg-white shadow-sm"
+                  : "text-gray-500"
+                  }`}
               >
                 <Monitor size={12} /> Desktop
               </button>
               <button
                 onClick={() => setViewMode("mobile")}
-                className={`flex items-center gap-2 px-3 py-1 rounded text-xs font-medium transition-all ${
-                  viewMode === "mobile" ? "bg-white shadow-sm" : "text-gray-500"
-                }`}
+                className={`flex items-center gap-2 px-3 py-1 rounded text-xs font-medium transition-all ${viewMode === "mobile" ? "bg-white shadow-sm" : "text-gray-500"
+                  }`}
               >
                 <Smartphone size={12} /> Mobile
               </button>
@@ -1297,11 +1291,10 @@ export function Editor({
             {/* Preview Button */}
             <button
               onClick={handlePreview}
-              className={`flex items-center gap-2 px-3 py-1.5 border rounded text-sm transition-all ${
-                showPreview
-                  ? "bg-indigo-50 border-indigo-300 text-indigo-700"
-                  : "border-gray-200 hover:bg-gray-50"
-              }`}
+              className={`flex items-center gap-2 px-3 py-1.5 border rounded text-sm transition-all ${showPreview
+                ? "bg-indigo-50 border-indigo-300 text-indigo-700"
+                : "border-gray-200 hover:bg-gray-50"
+                }`}
             >
               <Eye size={14} /> {showPreview ? "Edit" : "Preview"}
             </button>
@@ -1443,9 +1436,8 @@ export function Editor({
                 setShowFontPicker(!showFontPicker);
                 setShowFontSizePicker(false);
               }}
-              className={`flex items-center gap-1 px-2 py-1 rounded hover:bg-gray-100 transition-colors text-sm font-medium ${
-                showFontPicker ? "bg-gray-100 text-gray-900" : "text-gray-700"
-              }`}
+              className={`flex items-center gap-1 px-2 py-1 rounded hover:bg-gray-100 transition-colors text-sm font-medium ${showFontPicker ? "bg-gray-100 text-gray-900" : "text-gray-700"
+                }`}
               title="Font Family - Select text and click to change font"
             >
               <span className="text-xs font-serif">Aa</span>
@@ -1459,9 +1451,8 @@ export function Editor({
                 setShowFontSizePicker(!showFontSizePicker);
                 setShowFontPicker(false);
               }}
-              className={`flex items-center gap-1 px-2 py-1 rounded hover:bg-gray-100 transition-colors text-sm font-medium ${
-                showFontSizePicker ? "bg-gray-100 text-gray-900" : "text-gray-700"
-              }`}
+              className={`flex items-center gap-1 px-2 py-1 rounded hover:bg-gray-100 transition-colors text-sm font-medium ${showFontSizePicker ? "bg-gray-100 text-gray-900" : "text-gray-700"
+                }`}
               title="Font Size - Select text and click to change size"
             >
               <Type size={14} />
@@ -1583,7 +1574,7 @@ export function Editor({
                 onClick={() => setShowColorPicker(!showColorPicker)}
                 title="Custom Color"
               >
-                <div 
+                <div
                   className="w-4 h-4 rounded-full border border-gray-300 flex items-center justify-center"
                   style={{ background: `conic-gradient(red, yellow, lime, aqua, blue, magenta, red)` }}
                 >
@@ -1592,7 +1583,7 @@ export function Editor({
               </ToolbarButton>
               {showColorPicker && (
                 <div className="fixed inset-0 z-[9999]" onClick={() => setShowColorPicker(false)}>
-                  <div 
+                  <div
                     className="absolute"
                     style={{ top: "140px", left: "50%", transform: "translateX(-50%)" }}
                     onClick={(e) => e.stopPropagation()}
@@ -1739,7 +1730,7 @@ export function Editor({
         {/* Font Picker Modal */}
         {showFontPicker && (
           <div className="fixed inset-0 z-[9999]" onClick={() => setShowFontPicker(false)}>
-            <div 
+            <div
               className="absolute bg-white border border-gray-200 rounded-lg shadow-2xl w-64"
               style={{ top: "120px", left: "120px" }}
               onClick={(e) => e.stopPropagation()}
@@ -1762,7 +1753,7 @@ export function Editor({
                       }}
                       className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded-md transition-colors flex items-center gap-3"
                     >
-                      <span 
+                      <span
                         className="text-lg w-8"
                         style={{ fontFamily: font.value }}
                       >
@@ -1780,7 +1771,7 @@ export function Editor({
         {/* Font Size Picker Modal */}
         {showFontSizePicker && (
           <div className="fixed inset-0 z-[9999]" onClick={() => setShowFontSizePicker(false)}>
-            <div 
+            <div
               className="absolute bg-white border border-gray-200 rounded-lg shadow-2xl w-52"
               style={{ top: "120px", left: "200px" }}
               onClick={(e) => e.stopPropagation()}
@@ -1910,209 +1901,209 @@ export function Editor({
         {/* Bubble Menu for selected text */}
         {editor && (
           <>
-          <BubbleMenu
-            editor={editor}
-            className="bg-gray-900 rounded-lg shadow-xl p-1 flex items-center gap-1"
-          >
-            <BubbleButton
-              onClick={() => editor.chain().focus().toggleBold().run()}
-              active={editor.isActive("bold")}
+            <BubbleMenu
+              editor={editor}
+              className="bg-gray-900 rounded-lg shadow-xl p-1 flex items-center gap-1"
             >
-              <Bold size={14} />
-            </BubbleButton>
-            <BubbleButton
-              onClick={() => editor.chain().focus().toggleItalic().run()}
-              active={editor.isActive("italic")}
-            >
-              <Italic size={14} />
-            </BubbleButton>
-            <BubbleButton
-              onClick={() => editor.chain().focus().toggleUnderline().run()}
-              active={editor.isActive("underline")}
-            >
-              <UnderlineIcon size={14} />
-            </BubbleButton>
-            <div className="w-px h-4 bg-gray-600 mx-1" />
-            {/* Font Picker */}
-            <div className="relative">
               <BubbleButton
-                onClick={() => {
-                  setShowBubbleFontPicker(!showBubbleFontPicker);
-                  setShowBubbleSizePicker(false);
-                }}
-                active={showBubbleFontPicker}
+                onClick={() => editor.chain().focus().toggleBold().run()}
+                active={editor.isActive("bold")}
               >
-                <span className="text-xs font-serif">Aa</span>
+                <Bold size={14} />
               </BubbleButton>
-              {showBubbleFontPicker && (
-                <div 
-                  className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-white border border-gray-200 rounded-lg shadow-xl w-48 max-h-64 overflow-y-auto z-50"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div className="p-2">
-                    {blogFonts.map((font) => (
-                      <button
-                        key={font.name}
-                        onClick={() => {
-                          if (font.value === "inherit") {
-                            editor.chain().focus().unsetFontFamily().run();
-                          } else {
-                            editor.chain().focus().setFontFamily(font.value).run();
-                          }
-                          setShowBubbleFontPicker(false);
-                        }}
-                        className="w-full text-left px-2 py-1.5 text-sm hover:bg-gray-100 rounded transition-colors flex items-center gap-2"
-                      >
-                        <span style={{ fontFamily: font.value }} className="text-base">Aa</span>
-                        <span className="text-gray-700 text-xs">{font.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-            {/* Size Picker */}
-            <div className="relative">
               <BubbleButton
-                onClick={() => {
-                  setShowBubbleSizePicker(!showBubbleSizePicker);
-                  setShowBubbleFontPicker(false);
-                }}
-                active={showBubbleSizePicker}
+                onClick={() => editor.chain().focus().toggleItalic().run()}
+                active={editor.isActive("italic")}
               >
-                <Type size={12} />
+                <Italic size={14} />
               </BubbleButton>
-              {showBubbleSizePicker && (
-                <div 
-                  className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-white border border-gray-200 rounded-lg shadow-xl w-40 z-50"
-                  onClick={(e) => e.stopPropagation()}
+              <BubbleButton
+                onClick={() => editor.chain().focus().toggleUnderline().run()}
+                active={editor.isActive("underline")}
+              >
+                <UnderlineIcon size={14} />
+              </BubbleButton>
+              <div className="w-px h-4 bg-gray-600 mx-1" />
+              {/* Font Picker */}
+              <div className="relative">
+                <BubbleButton
+                  onClick={() => {
+                    setShowBubbleFontPicker(!showBubbleFontPicker);
+                    setShowBubbleSizePicker(false);
+                  }}
+                  active={showBubbleFontPicker}
                 >
-                  <div className="p-2">
-                    <button
-                      onClick={() => {
-                        editor.chain().focus().unsetFontSize().run();
-                        setShowBubbleSizePicker(false);
-                      }}
-                      className="w-full text-left px-2 py-1.5 text-xs hover:bg-blue-50 text-blue-600 font-medium rounded transition-colors mb-1"
-                    >
-                      Reset Default
-                    </button>
-                    <div className="grid grid-cols-4 gap-1">
-                      {[10, 12, 14, 16, 18, 20, 24, 28, 32, 36, 48, 72].map((size) => (
+                  <span className="text-xs font-serif">Aa</span>
+                </BubbleButton>
+                {showBubbleFontPicker && (
+                  <div
+                    className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-white border border-gray-200 rounded-lg shadow-xl w-48 max-h-64 overflow-y-auto z-50"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="p-2">
+                      {blogFonts.map((font) => (
                         <button
-                          key={size}
+                          key={font.name}
                           onClick={() => {
-                            editor.chain().focus().setFontSize(`${size}px`).run();
-                            setShowBubbleSizePicker(false);
+                            if (font.value === "inherit") {
+                              editor.chain().focus().unsetFontFamily().run();
+                            } else {
+                              editor.chain().focus().setFontFamily(font.value).run();
+                            }
+                            setShowBubbleFontPicker(false);
                           }}
-                          className="px-1 py-1 text-xs hover:bg-gray-100 rounded transition-colors text-center text-gray-700"
+                          className="w-full text-left px-2 py-1.5 text-sm hover:bg-gray-100 rounded transition-colors flex items-center gap-2"
                         >
-                          {size}
+                          <span style={{ fontFamily: font.value }} className="text-base">Aa</span>
+                          <span className="text-gray-700 text-xs">{font.name}</span>
                         </button>
                       ))}
                     </div>
                   </div>
-                </div>
-              )}
-            </div>
-            <div className="w-px h-4 bg-gray-600 mx-1" />
-            <BubbleButton
-              onClick={() => editor.chain().focus().setParagraph().run()}
-              active={
-                editor.isActive("paragraph") && !editor.isActive("heading")
-              }
-            >
-              <Pilcrow size={14} />
-            </BubbleButton>
-            <BubbleButton
-              onClick={() =>
-                editor.chain().focus().toggleHeading({ level: 1 }).run()
-              }
-              active={editor.isActive("heading", { level: 1 })}
-            >
-              H1
-            </BubbleButton>
-            <BubbleButton
-              onClick={() =>
-                editor.chain().focus().toggleHeading({ level: 2 }).run()
-              }
-              active={editor.isActive("heading", { level: 2 })}
-            >
-              H2
-            </BubbleButton>
-            <BubbleButton
-              onClick={() =>
-                editor.chain().focus().toggleHeading({ level: 3 }).run()
-              }
-              active={editor.isActive("heading", { level: 3 })}
-            >
-              H3
-            </BubbleButton>
-            <div className="w-px h-4 bg-gray-600 mx-1" />
-            <BubbleButton
-              onClick={() => editor.chain().focus().setTextAlign("left").run()}
-              active={editor.isActive({ textAlign: "left" })}
-            >
-              <AlignLeft size={14} />
-            </BubbleButton>
-            <BubbleButton
-              onClick={() =>
-                editor.chain().focus().setTextAlign("center").run()
-              }
-              active={editor.isActive({ textAlign: "center" })}
-            >
-              <AlignCenter size={14} />
-            </BubbleButton>
-            <BubbleButton
-              onClick={() => editor.chain().focus().setTextAlign("right").run()}
-              active={editor.isActive({ textAlign: "right" })}
-            >
-              <AlignRight size={14} />
-            </BubbleButton>
-            <div className="w-px h-4 bg-gray-600 mx-1" />
-            <BubbleButton
-              onClick={() => {
-                const url = prompt("Enter URL:");
-                if (url) {
-                  editor.chain().focus().setLink({ href: url }).run();
+                )}
+              </div>
+              {/* Size Picker */}
+              <div className="relative">
+                <BubbleButton
+                  onClick={() => {
+                    setShowBubbleSizePicker(!showBubbleSizePicker);
+                    setShowBubbleFontPicker(false);
+                  }}
+                  active={showBubbleSizePicker}
+                >
+                  <Type size={12} />
+                </BubbleButton>
+                {showBubbleSizePicker && (
+                  <div
+                    className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-white border border-gray-200 rounded-lg shadow-xl w-40 z-50"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="p-2">
+                      <button
+                        onClick={() => {
+                          editor.chain().focus().unsetFontSize().run();
+                          setShowBubbleSizePicker(false);
+                        }}
+                        className="w-full text-left px-2 py-1.5 text-xs hover:bg-blue-50 text-blue-600 font-medium rounded transition-colors mb-1"
+                      >
+                        Reset Default
+                      </button>
+                      <div className="grid grid-cols-4 gap-1">
+                        {[10, 12, 14, 16, 18, 20, 24, 28, 32, 36, 48, 72].map((size) => (
+                          <button
+                            key={size}
+                            onClick={() => {
+                              editor.chain().focus().setFontSize(`${size}px`).run();
+                              setShowBubbleSizePicker(false);
+                            }}
+                            className="px-1 py-1 text-xs hover:bg-gray-100 rounded transition-colors text-center text-gray-700"
+                          >
+                            {size}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="w-px h-4 bg-gray-600 mx-1" />
+              <BubbleButton
+                onClick={() => editor.chain().focus().setParagraph().run()}
+                active={
+                  editor.isActive("paragraph") && !editor.isActive("heading")
                 }
-              }}
-              active={editor.isActive("link")}
-            >
-              <LinkIcon size={14} />
-            </BubbleButton>
-            <div className="w-px h-4 bg-gray-600 mx-1" />
-            {/* Quick Colors */}
-            <BubbleButton
-              onClick={() => editor.chain().focus().setColor("#000000").run()}
-            >
-              <div className="w-3 h-3 rounded-full bg-black" />
-            </BubbleButton>
-            <BubbleButton
-              onClick={() => editor.chain().focus().setColor("#3B82F6").run()}
-            >
-              <div className="w-3 h-3 rounded-full bg-blue-500" />
-            </BubbleButton>
-            <BubbleButton
-              onClick={() => editor.chain().focus().setColor("#EF4444").run()}
-            >
-              <div className="w-3 h-3 rounded-full bg-red-500" />
-            </BubbleButton>
-            <BubbleButton
-              onClick={() => editor.chain().focus().setColor("#16A34A").run()}
-            >
-              <div className="w-3 h-3 rounded-full bg-green-600" />
-            </BubbleButton>
-            {/* Color Picker in Bubble Menu */}
-            <BubbleButton
-              onClick={() => setShowColorPicker(!showColorPicker)}
-            >
-              <div 
-                className="w-3 h-3 rounded-full"
-                style={{ background: `conic-gradient(red, yellow, lime, aqua, blue, magenta, red)` }}
-              />
-            </BubbleButton>
-          </BubbleMenu>
+              >
+                <Pilcrow size={14} />
+              </BubbleButton>
+              <BubbleButton
+                onClick={() =>
+                  editor.chain().focus().toggleHeading({ level: 1 }).run()
+                }
+                active={editor.isActive("heading", { level: 1 })}
+              >
+                H1
+              </BubbleButton>
+              <BubbleButton
+                onClick={() =>
+                  editor.chain().focus().toggleHeading({ level: 2 }).run()
+                }
+                active={editor.isActive("heading", { level: 2 })}
+              >
+                H2
+              </BubbleButton>
+              <BubbleButton
+                onClick={() =>
+                  editor.chain().focus().toggleHeading({ level: 3 }).run()
+                }
+                active={editor.isActive("heading", { level: 3 })}
+              >
+                H3
+              </BubbleButton>
+              <div className="w-px h-4 bg-gray-600 mx-1" />
+              <BubbleButton
+                onClick={() => editor.chain().focus().setTextAlign("left").run()}
+                active={editor.isActive({ textAlign: "left" })}
+              >
+                <AlignLeft size={14} />
+              </BubbleButton>
+              <BubbleButton
+                onClick={() =>
+                  editor.chain().focus().setTextAlign("center").run()
+                }
+                active={editor.isActive({ textAlign: "center" })}
+              >
+                <AlignCenter size={14} />
+              </BubbleButton>
+              <BubbleButton
+                onClick={() => editor.chain().focus().setTextAlign("right").run()}
+                active={editor.isActive({ textAlign: "right" })}
+              >
+                <AlignRight size={14} />
+              </BubbleButton>
+              <div className="w-px h-4 bg-gray-600 mx-1" />
+              <BubbleButton
+                onClick={() => {
+                  const url = prompt("Enter URL:");
+                  if (url) {
+                    editor.chain().focus().setLink({ href: url }).run();
+                  }
+                }}
+                active={editor.isActive("link")}
+              >
+                <LinkIcon size={14} />
+              </BubbleButton>
+              <div className="w-px h-4 bg-gray-600 mx-1" />
+              {/* Quick Colors */}
+              <BubbleButton
+                onClick={() => editor.chain().focus().setColor("#000000").run()}
+              >
+                <div className="w-3 h-3 rounded-full bg-black" />
+              </BubbleButton>
+              <BubbleButton
+                onClick={() => editor.chain().focus().setColor("#3B82F6").run()}
+              >
+                <div className="w-3 h-3 rounded-full bg-blue-500" />
+              </BubbleButton>
+              <BubbleButton
+                onClick={() => editor.chain().focus().setColor("#EF4444").run()}
+              >
+                <div className="w-3 h-3 rounded-full bg-red-500" />
+              </BubbleButton>
+              <BubbleButton
+                onClick={() => editor.chain().focus().setColor("#16A34A").run()}
+              >
+                <div className="w-3 h-3 rounded-full bg-green-600" />
+              </BubbleButton>
+              {/* Color Picker in Bubble Menu */}
+              <BubbleButton
+                onClick={() => setShowColorPicker(!showColorPicker)}
+              >
+                <div
+                  className="w-3 h-3 rounded-full"
+                  style={{ background: `conic-gradient(red, yellow, lime, aqua, blue, magenta, red)` }}
+                />
+              </BubbleButton>
+            </BubbleMenu>
           </>
         )}
 
@@ -2175,14 +2166,13 @@ export function Editor({
         {/* Scrollable Canvas Area */}
         <main className="flex-1 overflow-y-auto overflow-x-hidden p-8 flex justify-center bg-[#F9FAFB]">
           <div
-            className={`bg-white shadow-sm min-h-[1000px] relative transition-all duration-300 overflow-x-hidden ${
-              viewMode === "mobile"
-                ? "w-[430px] mobile-preview"
-                : "w-full max-w-[800px]"
-            }`}
+            className={`bg-white shadow-sm min-h-[1000px] relative transition-all duration-300 overflow-x-hidden ${viewMode === "mobile"
+              ? "w-[430px] mobile-preview"
+              : "w-full max-w-[800px]"
+              }`}
             style={{
               ...editorStyles,
-              backgroundColor: styles.backgroundColor,
+              backgroundColor: templateData.useGreenTemplate ? "#10B981" : styles.backgroundColor,
               color: styles.textColor,
               fontFamily:
                 fontOptions.find((f) => f.name === styles.bodyFont)?.value ||
@@ -2194,9 +2184,8 @@ export function Editor({
             {!showPreview && (
               <button
                 onClick={handleAddBlock}
-                className={`absolute top-16 w-8 h-8 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-600 hover:border-gray-300 shadow-sm transition-all ${
-                  viewMode === "mobile" ? "-left-10" : "-left-12"
-                }`}
+                className={`absolute top-16 w-8 h-8 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-600 hover:border-gray-300 shadow-sm transition-all ${viewMode === "mobile" ? "-left-10" : "-left-12"
+                  }`}
               >
                 <Plus size={16} />
               </button>
@@ -2212,22 +2201,21 @@ export function Editor({
             >
               {/* Template Header (React inputs, not part of TipTap) */}
               {templateData.headerEnabled !== false && (
-                <div className="mb-10">
+                <div className={`mb-10 ${templateData.useGreenTemplate ? "text-white" : ""}`}>
                   {showPreview ? (
                     <div>
                       <div
-                        className={`${
-                          templateData.alignment === "center"
-                            ? "text-center"
-                            : templateData.alignment === "right"
+                        className={`${templateData.alignment === "center"
+                          ? "text-center"
+                          : templateData.alignment === "right"
                             ? "text-right"
                             : "text-left"
-                        } tracking-[0.18em] uppercase mb-4`}
+                          } tracking-[0.18em] uppercase mb-4`}
                         style={{
                           fontFamily: templateData.seriesFont
                             ? fontOptions.find(
-                                (f) => f.name === templateData.seriesFont
-                              )?.value || templateData.seriesFont
+                              (f) => f.name === templateData.seriesFont
+                            )?.value || templateData.seriesFont
                             : undefined,
                           fontWeight: templateData.seriesWeight || "700",
                           fontSize: templateData.seriesSize || "0.75rem",
@@ -2237,27 +2225,26 @@ export function Editor({
                       >
                         {(templateData.seriesName || "").trim()}
                         {(templateData.seriesName || "").trim() &&
-                        (templateData.volume || "").trim()
+                          (templateData.volume || "").trim()
                           ? " • "
                           : ""}
                         {(templateData.volume || "").trim() || ""}
                       </div>
                       <h1
-                        className={`${
-                          templateData.alignment === "center"
-                            ? "text-center"
-                            : templateData.alignment === "right"
+                        className={`${templateData.alignment === "center"
+                          ? "text-center"
+                          : templateData.alignment === "right"
                             ? "text-right"
                             : "text-left"
-                        } mb-4`}
+                          } mb-4`}
                         style={{
                           fontFamily: templateData.titleFont
                             ? fontOptions.find(
-                                (f) => f.name === templateData.titleFont
-                              )?.value || templateData.titleFont
+                              (f) => f.name === templateData.titleFont
+                            )?.value || templateData.titleFont
                             : fontOptions.find(
-                                (f) => f.name === styles.headingFont
-                              )?.value || styles.headingFont,
+                              (f) => f.name === styles.headingFont
+                            )?.value || styles.headingFont,
                           fontWeight:
                             templateData.titleWeight || styles.headingWeight,
                           fontSize: templateData.titleSize || "3rem",
@@ -2268,18 +2255,17 @@ export function Editor({
                       </h1>
                       {(templateData.subtitle || "").trim() ? (
                         <p
-                          className={`${
-                            templateData.alignment === "center"
-                              ? "text-center"
-                              : templateData.alignment === "right"
+                          className={`${templateData.alignment === "center"
+                            ? "text-center"
+                            : templateData.alignment === "right"
                               ? "text-right"
                               : "text-left"
-                          } italic mb-6`}
+                            } italic mb-6`}
                           style={{
                             fontFamily: templateData.subtitleFont
                               ? fontOptions.find(
-                                  (f) => f.name === templateData.subtitleFont
-                                )?.value || templateData.subtitleFont
+                                (f) => f.name === templateData.subtitleFont
+                              )?.value || templateData.subtitleFont
                               : undefined,
                             fontWeight:
                               templateData.subtitleWeight || undefined,
@@ -2292,18 +2278,17 @@ export function Editor({
                         </p>
                       ) : null}
                       <div
-                        className={`${
-                          templateData.alignment === "center"
-                            ? "text-center"
-                            : templateData.alignment === "right"
+                        className={`${templateData.alignment === "center"
+                          ? "text-center"
+                          : templateData.alignment === "right"
                             ? "text-right"
                             : "text-left"
-                        } tracking-[0.14em] uppercase border-b pb-4`}
+                          } tracking-[0.14em] uppercase border-b pb-4`}
                         style={{
                           fontFamily: templateData.bylineFont
                             ? fontOptions.find(
-                                (f) => f.name === templateData.bylineFont
-                              )?.value || templateData.bylineFont
+                              (f) => f.name === templateData.bylineFont
+                            )?.value || templateData.bylineFont
                             : undefined,
                           fontWeight: templateData.bylineWeight || "700",
                           fontSize: templateData.bylineSize || "0.75rem",
@@ -2315,7 +2300,7 @@ export function Editor({
                           ? `By ${templateData.authorName}`
                           : ""}
                         {(templateData.authorName || "").trim() &&
-                        (templateData.date || "").trim()
+                          (templateData.date || "").trim()
                           ? " • "
                           : ""}
                         {(templateData.date || "").trim() || ""}
@@ -2324,13 +2309,12 @@ export function Editor({
                   ) : (
                     <div>
                       <div
-                        className={`flex items-center ${
-                          templateData.alignment === "center"
-                            ? "justify-center"
-                            : templateData.alignment === "right"
+                        className={`flex items-center ${templateData.alignment === "center"
+                          ? "justify-center"
+                          : templateData.alignment === "right"
                             ? "justify-end"
                             : "justify-start"
-                        } gap-2 tracking-[0.18em] uppercase mb-4`}
+                          } gap-2 tracking-[0.18em] uppercase mb-4`}
                       >
                         <input
                           type="text"
@@ -2349,8 +2333,8 @@ export function Editor({
                             )}px`,
                             fontFamily: templateData.seriesFont
                               ? fontOptions.find(
-                                  (f) => f.name === templateData.seriesFont
-                                )?.value || templateData.seriesFont
+                                (f) => f.name === templateData.seriesFont
+                              )?.value || templateData.seriesFont
                               : undefined,
                             fontWeight: templateData.seriesWeight || "700",
                             fontSize: templateData.seriesSize || "0.75rem",
@@ -2359,8 +2343,8 @@ export function Editor({
                               templateData.alignment === "center"
                                 ? "center"
                                 : templateData.alignment === "right"
-                                ? "right"
-                                : "left",
+                                  ? "right"
+                                  : "left",
                           }}
                           placeholder="The Editorial Review"
                         />
@@ -2382,8 +2366,8 @@ export function Editor({
                             )}px`,
                             fontFamily: templateData.seriesFont
                               ? fontOptions.find(
-                                  (f) => f.name === templateData.seriesFont
-                                )?.value || templateData.seriesFont
+                                (f) => f.name === templateData.seriesFont
+                              )?.value || templateData.seriesFont
                               : undefined,
                             fontWeight: templateData.seriesWeight || "700",
                             fontSize: templateData.seriesSize || "0.75rem",
@@ -2392,8 +2376,8 @@ export function Editor({
                               templateData.alignment === "center"
                                 ? "center"
                                 : templateData.alignment === "right"
-                                ? "right"
-                                : "left",
+                                  ? "right"
+                                  : "left",
                           }}
                           placeholder="Volume XXIII"
                         />
@@ -2414,11 +2398,11 @@ export function Editor({
                         style={{
                           fontFamily: templateData.titleFont
                             ? fontOptions.find(
-                                (f) => f.name === templateData.titleFont
-                              )?.value || templateData.titleFont
+                              (f) => f.name === templateData.titleFont
+                            )?.value || templateData.titleFont
                             : fontOptions.find(
-                                (f) => f.name === styles.headingFont
-                              )?.value || styles.headingFont,
+                              (f) => f.name === styles.headingFont
+                            )?.value || styles.headingFont,
                           fontWeight:
                             templateData.titleWeight || styles.headingWeight,
                           fontSize: templateData.titleSize || "3rem",
@@ -2427,8 +2411,8 @@ export function Editor({
                             templateData.alignment === "center"
                               ? "center"
                               : templateData.alignment === "right"
-                              ? "right"
-                              : "left",
+                                ? "right"
+                                : "left",
                           lineHeight: "1.2",
                           minHeight: "1.2em",
                         }}
@@ -2454,8 +2438,8 @@ export function Editor({
                         style={{
                           fontFamily: templateData.subtitleFont
                             ? fontOptions.find(
-                                (f) => f.name === templateData.subtitleFont
-                              )?.value || templateData.subtitleFont
+                              (f) => f.name === templateData.subtitleFont
+                            )?.value || templateData.subtitleFont
                             : undefined,
                           fontWeight: templateData.subtitleWeight || undefined,
                           fontSize: templateData.subtitleSize || "1.25rem",
@@ -2465,8 +2449,8 @@ export function Editor({
                             templateData.alignment === "center"
                               ? "center"
                               : templateData.alignment === "right"
-                              ? "right"
-                              : "left",
+                                ? "right"
+                                : "left",
                           lineHeight: "1.4",
                           minHeight: "1.4em",
                         }}
@@ -2478,13 +2462,12 @@ export function Editor({
                       />
 
                       <div
-                        className={`flex items-center ${
-                          templateData.alignment === "center"
-                            ? "justify-center"
-                            : templateData.alignment === "right"
+                        className={`flex items-center ${templateData.alignment === "center"
+                          ? "justify-center"
+                          : templateData.alignment === "right"
                             ? "justify-end"
                             : "justify-start"
-                        } gap-2 tracking-[0.14em] uppercase border-b pb-4`}
+                          } gap-2 tracking-[0.14em] uppercase border-b pb-4`}
                       >
                         <input
                           type="text"
@@ -2516,8 +2499,8 @@ export function Editor({
                             )}px`,
                             fontFamily: templateData.bylineFont
                               ? fontOptions.find(
-                                  (f) => f.name === templateData.bylineFont
-                                )?.value || templateData.bylineFont
+                                (f) => f.name === templateData.bylineFont
+                              )?.value || templateData.bylineFont
                               : undefined,
                             fontWeight: templateData.bylineWeight || "700",
                             fontSize: templateData.bylineSize || "0.75rem",
@@ -2526,8 +2509,8 @@ export function Editor({
                               templateData.alignment === "center"
                                 ? "center"
                                 : templateData.alignment === "right"
-                                ? "right"
-                                : "left",
+                                  ? "right"
+                                  : "left",
                           }}
                           placeholder="By Author Name"
                         />
@@ -2549,8 +2532,8 @@ export function Editor({
                             )}px`,
                             fontFamily: templateData.bylineFont
                               ? fontOptions.find(
-                                  (f) => f.name === templateData.bylineFont
-                                )?.value || templateData.bylineFont
+                                (f) => f.name === templateData.bylineFont
+                              )?.value || templateData.bylineFont
                               : undefined,
                             fontWeight: templateData.bylineWeight || "700",
                             fontSize: templateData.bylineSize || "0.75rem",
@@ -2559,8 +2542,8 @@ export function Editor({
                               templateData.alignment === "center"
                                 ? "center"
                                 : templateData.alignment === "right"
-                                ? "right"
-                                : "left",
+                                  ? "right"
+                                  : "left",
                           }}
                           placeholder={new Date().toLocaleDateString("en-US", {
                             year: "numeric",
@@ -2574,98 +2557,102 @@ export function Editor({
                 </div>
               )}
 
-              {showPreview ? (
-                <>
-                  <div
-                    className="preview-content prose prose-lg max-w-none"
-                    dangerouslySetInnerHTML={{
-                      __html: editor?.getHTML() || "",
-                    }}
-                    style={{
-                      fontFamily: fontOptions.find(
-                        (f) => f.name === styles.bodyFont
-                      )?.value,
-                    }}
-                  />
-                  {/* Divider before components - only show if there are components */}
-                  {(quizId ||
-                    (ratingEnabled && postId) ||
-                    (ctaEnabled && postId)) && (
-                    <div className="border-t border-gray-200 mt-12"></div>
-                  )}
-                  {/* Render components in the specified order */}
-                  {componentOrder.map((componentType) => {
-                    if (componentType === "quiz" && quizId) {
-                      return (
-                        <QuizRenderer
-                          key={`quiz-${quizId}`}
-                          quizId={quizId}
-                          skipInlineScan={true}
-                        />
-                      );
-                    }
-                    if (componentType === "rating" && ratingEnabled && postId) {
-                      return (
-                        <ReactionBar key={`rating-${postId}`} postId={postId} />
-                      );
-                    }
-                    if (componentType === "cta" && ctaEnabled && postId) {
-                      return (
-                        <CTAForm
-                          key={`cta-${postId}`}
-                          postId={postId}
-                          quizId={quizId}
-                        />
-                      );
-                    }
-                    return null;
-                  })}
-                </>
-              ) : (
-                <>
-                  <EditorContent editor={editor} className="editorial-editor" />
-                  {/* Divider before components - only show if there are components */}
-                  {(quizId ||
-                    (ratingEnabled && postId) ||
-                    (ctaEnabled && postId)) && (
-                    <div className="border-t border-gray-200 mt-12"></div>
-                  )}
-                  {/* Render components in the specified order - Non-editable preview */}
-                  {componentOrder.map((componentType) => {
-                    if (componentType === "quiz" && quizId) {
-                      return (
-                        <div
-                          className="mt-8 pointer-events-none opacity-75"
-                          key={`quiz-preview-${quizId}`}
-                        >
-                          <QuizRenderer quizId={quizId} skipInlineScan={true} />
-                        </div>
-                      );
-                    }
-                    if (componentType === "rating" && ratingEnabled && postId) {
-                      return (
-                        <div
-                          className="mt-8 pointer-events-none opacity-75"
-                          key={`rating-preview-${postId}`}
-                        >
-                          <ReactionBar postId={postId} />
-                        </div>
-                      );
-                    }
-                    if (componentType === "cta" && ctaEnabled && postId) {
-                      return (
-                        <div
-                          className="mt-8 pointer-events-none opacity-75"
-                          key={`cta-preview-${postId}`}
-                        >
-                          <CTAForm postId={postId} quizId={quizId} />
-                        </div>
-                      );
-                    }
-                    return null;
-                  })}
-                </>
-              )}
+              {/* Content Area - Wrapped in white card when green template is active */}
+              <div className={templateData.useGreenTemplate ? "bg-white rounded-lg p-8 shadow-lg" : ""}>
+                {showPreview ? (
+                  <>
+                    <div
+                      className="preview-content prose prose-lg max-w-none"
+                      dangerouslySetInnerHTML={{
+                        __html: editor?.getHTML() || "",
+                      }}
+                      style={{
+                        fontFamily: fontOptions.find(
+                          (f) => f.name === styles.bodyFont
+                        )?.value,
+                        color: templateData.useGreenTemplate ? "#000000" : undefined,
+                      }}
+                    />
+                    {/* Divider before components - only show if there are components */}
+                    {(quizId ||
+                      (ratingEnabled && postId) ||
+                      (ctaEnabled && postId)) && (
+                        <div className="border-t border-gray-200 mt-12"></div>
+                      )}
+                    {/* Render components in the specified order */}
+                    {componentOrder.map((componentType) => {
+                      if (componentType === "quiz" && quizId) {
+                        return (
+                          <QuizRenderer
+                            key={`quiz-${quizId}`}
+                            quizId={quizId}
+                            skipInlineScan={true}
+                          />
+                        );
+                      }
+                      if (componentType === "rating" && ratingEnabled && postId) {
+                        return (
+                          <ReactionBar key={`rating-${postId}`} postId={postId} />
+                        );
+                      }
+                      if (componentType === "cta" && ctaEnabled && postId) {
+                        return (
+                          <CTAForm
+                            key={`cta-${postId}`}
+                            postId={postId}
+                            quizId={quizId}
+                          />
+                        );
+                      }
+                      return null;
+                    })}
+                  </>
+                ) : (
+                  <>
+                    <EditorContent editor={editor} className="editorial-editor" />
+                    {/* Divider before components - only show if there are components */}
+                    {(quizId ||
+                      (ratingEnabled && postId) ||
+                      (ctaEnabled && postId)) && (
+                        <div className="border-t border-gray-200 mt-12"></div>
+                      )}
+                    {/* Render components in the specified order - Non-editable preview */}
+                    {componentOrder.map((componentType) => {
+                      if (componentType === "quiz" && quizId) {
+                        return (
+                          <div
+                            className="mt-8 pointer-events-none opacity-75"
+                            key={`quiz-preview-${quizId}`}
+                          >
+                            <QuizRenderer quizId={quizId} skipInlineScan={true} />
+                          </div>
+                        );
+                      }
+                      if (componentType === "rating" && ratingEnabled && postId) {
+                        return (
+                          <div
+                            className="mt-8 pointer-events-none opacity-75"
+                            key={`rating-preview-${postId}`}
+                          >
+                            <ReactionBar postId={postId} />
+                          </div>
+                        );
+                      }
+                      if (componentType === "cta" && ctaEnabled && postId) {
+                        return (
+                          <div
+                            className="mt-8 pointer-events-none opacity-75"
+                            key={`cta-preview-${postId}`}
+                          >
+                            <CTAForm postId={postId} quizId={quizId} />
+                          </div>
+                        );
+                      }
+                      return null;
+                    })}
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </main>
@@ -2673,394 +2660,413 @@ export function Editor({
 
       {/* RIGHT SIDEBAR: Properties */}
       {showRightSidebar && (
-      <div className="w-80 bg-white border-l border-gray-200 flex flex-col shrink-0">
-        {/* Sidebar Header with Close Button on Left */}
-        <div className="p-3 border-b border-gray-100 flex items-center gap-2">
-          <button
-            onClick={() => setShowRightSidebar(false)}
-            className="p-1.5 hover:bg-gray-100 rounded-md transition-colors"
-            title="Hide sidebar"
-          >
-            <ChevronRight size={16} className="text-gray-500" />
-          </button>
-          <span className="text-sm font-semibold text-gray-700">Properties</span>
-        </div>
-        {/* Search */}
-        <div className="p-4 border-b border-gray-100">
-          <div className="relative">
-            <Search size={14} className="absolute left-3 top-3 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search..."
-              className="w-full bg-gray-50 rounded border border-gray-200 pl-9 pr-3 py-2 text-sm focus:outline-none focus:border-gray-400"
-            />
-          </div>
-        </div>
-
-        {/* Tabs */}
-        <div className="p-4">
-          <div className="flex bg-gray-100 p-1 rounded-lg">
+        <div className="w-80 bg-white border-l border-gray-200 flex flex-col shrink-0">
+          {/* Sidebar Header with Close Button on Left */}
+          <div className="p-3 border-b border-gray-100 flex items-center gap-2">
             <button
-              onClick={() => setMode("Basic")}
-              className={`flex-1 text-sm font-medium py-1.5 rounded-md transition-all ${
-                mode === "Basic" ? "bg-white shadow-sm" : "text-gray-500"
-              }`}
+              onClick={() => setShowRightSidebar(false)}
+              className="p-1.5 hover:bg-gray-100 rounded-md transition-colors"
+              title="Hide sidebar"
             >
-              Basic
+              <ChevronRight size={16} className="text-gray-500" />
             </button>
-            <button
-              onClick={() => setMode("Advanced")}
-              className={`flex-1 text-sm font-medium py-1.5 rounded-md transition-all ${
-                mode === "Advanced" ? "bg-white shadow-sm" : "text-gray-500"
-              }`}
-            >
-              Advanced
-            </button>
+            <span className="text-sm font-semibold text-gray-700">Properties</span>
           </div>
-        </div>
+          {/* Search */}
+          <div className="p-4 border-b border-gray-100">
+            <div className="relative">
+              <Search size={14} className="absolute left-3 top-3 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search..."
+                className="w-full bg-gray-50 rounded border border-gray-200 pl-9 pr-3 py-2 text-sm focus:outline-none focus:border-gray-400"
+              />
+            </div>
+          </div>
 
-        {/* Controls Scroll Area */}
-        <div className="flex-1 overflow-y-auto px-4 pb-4">
-          {/* Video Options - Show when video is selected */}
-          {selectedVideo && !showPreview && (
-            <div className="mb-6 pb-6 border-b border-gray-200">
-              <div className="flex items-center justify-between mb-4">
-                <SectionHeader title="Video Settings" />
-                <button
-                  onClick={handleDeleteVideo}
-                  className="text-red-600 hover:text-red-700 text-sm font-medium"
-                >
-                  Delete
-                </button>
-              </div>
-
-              {/* Video Alignment */}
-              <div className="mb-4">
-                <label className="block text-xs font-medium text-gray-500 mb-2">
-                  Alignment
-                </label>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleVideoAlignChange("left")}
-                    className={`flex-1 px-3 py-2 rounded-lg border text-sm transition-colors ${
-                      selectedVideo.align === "left"
-                        ? "bg-black text-white border-black"
-                        : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                    }`}
-                  >
-                    Left
-                  </button>
-                  <button
-                    onClick={() => handleVideoAlignChange("center")}
-                    className={`flex-1 px-3 py-2 rounded-lg border text-sm transition-colors ${
-                      selectedVideo.align === "center"
-                        ? "bg-black text-white border-black"
-                        : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                    }`}
-                  >
-                    Center
-                  </button>
-                  <button
-                    onClick={() => handleVideoAlignChange("right")}
-                    className={`flex-1 px-3 py-2 rounded-lg border text-sm transition-colors ${
-                      selectedVideo.align === "right"
-                        ? "bg-black text-white border-black"
-                        : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                    }`}
-                  >
-                    Right
-                  </button>
-                </div>
-              </div>
-
-              {/* Video Theme Color */}
-              <div className="mb-4">
-                <label className="block text-xs font-medium text-gray-500 mb-2">
-                  Player Theme Color
-                </label>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="color"
-                    value={selectedVideo.primaryColor || "#F48120"}
-                    onChange={(e) => handleVideoThemeChange(e.target.value)}
-                    className="w-16 h-10 rounded border border-gray-300 cursor-pointer"
-                  />
-                  <input
-                    type="text"
-                    value={selectedVideo.primaryColor || "#F48120"}
-                    onChange={(e) => handleVideoThemeChange(e.target.value)}
-                    placeholder="#F48120"
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black text-sm font-mono"
-                  />
-                </div>
-                <p className="mt-1 text-xs text-gray-500">
-                  Customize the seekbar and play button color
-                </p>
-              </div>
-
-              {/* Timestamps Button */}
+          {/* Tabs */}
+          <div className="p-4">
+            <div className="flex bg-gray-100 p-1 rounded-lg">
               <button
-                onClick={() => {
-                  setSelectedVideoId(selectedVideo.videoId);
-                  setShowVideoTimestampModal(true);
-                }}
-                className="w-full px-4 py-2 bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg transition-colors text-sm font-medium flex items-center justify-center gap-2"
+                onClick={() => setMode("Basic")}
+                className={`flex-1 text-sm font-medium py-1.5 rounded-md transition-all ${mode === "Basic" ? "bg-white shadow-sm" : "text-gray-500"
+                  }`}
               >
-                <Clock size={16} />
-                Manage Timestamps
+                Basic
+              </button>
+              <button
+                onClick={() => setMode("Advanced")}
+                className={`flex-1 text-sm font-medium py-1.5 rounded-md transition-all ${mode === "Advanced" ? "bg-white shadow-sm" : "text-gray-500"
+                  }`}
+              >
+                Advanced
               </button>
             </div>
-          )}
-
-          {/* Colors Section */}
-          <div className="mb-6">
-            <SectionHeader title="Colors" />
-            <div className="space-y-3">
-              <ColorInput
-                label="Background"
-                value={styles.backgroundColor}
-                onChange={(v) => updateStyle("backgroundColor", v)}
-              />
-              <ColorInput
-                label="Text on background"
-                value={styles.textColor}
-                onChange={(v) => updateStyle("textColor", v)}
-              />
-              <ColorInput
-                label="Primary"
-                value={styles.primaryColor}
-                onChange={(v) => updateStyle("primaryColor", v)}
-                info
-              />
-              <ColorInput
-                label="Text on primary"
-                value={styles.primaryTextColor}
-                onChange={(v) => updateStyle("primaryTextColor", v)}
-              />
-              <ColorInput
-                label="Secondary"
-                value={styles.secondaryColor}
-                onChange={(v) => updateStyle("secondaryColor", v)}
-                info
-              />
-              <ColorInput
-                label="Link text"
-                value={styles.linkColor}
-                onChange={(v) => updateStyle("linkColor", v)}
-              />
-            </div>
           </div>
 
-          {/* Typography Section */}
-          <div className="mb-6 border-t border-gray-100 pt-4">
-            <SectionHeader title="Typography" />
-            <div className="space-y-4">
-              {/* Heading Typography */}
-              <div className="space-y-3">
-                <div className="text-xs font-medium text-gray-400 uppercase tracking-wide">
-                  Heading
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-500">Font family</span>
-                  <FontSelect
-                    value={styles.headingFont}
-                    onChange={(v) => updateStyle("headingFont", v)}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-500">Font weight</span>
-                  <WeightSelect
-                    value={styles.headingWeight}
-                    onChange={(v) => updateStyle("headingWeight", v)}
-                  />
-                </div>
-              </div>
-
-              {/* Body Typography */}
-              {mode === "Advanced" && (
-                <div className="space-y-3 pt-3 border-t border-gray-100">
-                  <div className="text-xs font-medium text-gray-400 uppercase tracking-wide">
-                    Body
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-500">Font family</span>
-                    <FontSelect
-                      value={styles.bodyFont}
-                      onChange={(v) => updateStyle("bodyFont", v)}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-500">Font weight</span>
-                    <WeightSelect
-                      value={styles.bodyWeight}
-                      onChange={(v) => updateStyle("bodyWeight", v)}
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Template Settings Section */}
-          {!showPreview && (
-            <div className="mb-6 border-t border-gray-100 pt-4">
-              <SectionHeader title="Template Settings" />
-
-              {/* Show Header Toggle */}
-              <div className="mb-4">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm text-gray-700">Show Header</label>
+          {/* Controls Scroll Area */}
+          <div className="flex-1 overflow-y-auto px-4 pb-4">
+            {/* Video Options - Show when video is selected */}
+            {selectedVideo && !showPreview && (
+              <div className="mb-6 pb-6 border-b border-gray-200">
+                <div className="flex items-center justify-between mb-4">
+                  <SectionHeader title="Video Settings" />
                   <button
-                    onClick={() =>
-                      setTemplateData((prev) => ({
-                        ...prev,
-                        headerEnabled: !prev.headerEnabled,
-                      }))
-                    }
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      templateData.headerEnabled !== false
-                        ? "bg-indigo-600"
-                        : "bg-gray-200"
-                    }`}
+                    onClick={handleDeleteVideo}
+                    className="text-red-600 hover:text-red-700 text-sm font-medium"
                   >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        templateData.headerEnabled !== false
-                          ? "translate-x-6"
-                          : "translate-x-1"
-                      }`}
-                    />
+                    Delete
                   </button>
                 </div>
-                <p className="text-xs text-gray-400 mt-1">
-                  Toggle the editorial header (series, title, byline)
-                </p>
-              </div>
 
-              {/* Template Alignment - only show if header is enabled */}
-              {templateData.headerEnabled !== false && (
+                {/* Video Alignment */}
                 <div className="mb-4">
                   <label className="block text-xs font-medium text-gray-500 mb-2">
                     Alignment
                   </label>
                   <div className="flex gap-2">
                     <button
-                      onClick={() =>
-                        setTemplateData((prev) => ({
-                          ...prev,
-                          alignment: "left",
-                        }))
-                      }
-                      className={`flex-1 px-3 py-2 rounded-lg border text-sm transition-colors ${
-                        (templateData.alignment || "left") === "left"
-                          ? "bg-black text-white border-black"
-                          : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                      }`}
+                      onClick={() => handleVideoAlignChange("left")}
+                      className={`flex-1 px-3 py-2 rounded-lg border text-sm transition-colors ${selectedVideo.align === "left"
+                        ? "bg-black text-white border-black"
+                        : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                        }`}
                     >
                       Left
                     </button>
                     <button
-                      onClick={() =>
-                        setTemplateData((prev) => ({
-                          ...prev,
-                          alignment: "center",
-                        }))
-                      }
-                      className={`flex-1 px-3 py-2 rounded-lg border text-sm transition-colors ${
-                        templateData.alignment === "center"
-                          ? "bg-black text-white border-black"
-                          : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                      }`}
+                      onClick={() => handleVideoAlignChange("center")}
+                      className={`flex-1 px-3 py-2 rounded-lg border text-sm transition-colors ${selectedVideo.align === "center"
+                        ? "bg-black text-white border-black"
+                        : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                        }`}
                     >
                       Center
                     </button>
                     <button
-                      onClick={() =>
-                        setTemplateData((prev) => ({
-                          ...prev,
-                          alignment: "right",
-                        }))
-                      }
-                      className={`flex-1 px-3 py-2 rounded-lg border text-sm transition-colors ${
-                        templateData.alignment === "right"
-                          ? "bg-black text-white border-black"
-                          : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                      }`}
+                      onClick={() => handleVideoAlignChange("right")}
+                      className={`flex-1 px-3 py-2 rounded-lg border text-sm transition-colors ${selectedVideo.align === "right"
+                        ? "bg-black text-white border-black"
+                        : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                        }`}
                     >
                       Right
                     </button>
                   </div>
                 </div>
-              )}
 
-              {/* Template Typography Controls - only show if header is enabled */}
-              {templateData.headerEnabled !== false && (
-                <TemplateTypographyControls
-                  templateData={templateData}
-                  setTemplateData={setTemplateData}
-                />
-              )}
-            </div>
-          )}
+                {/* Video Theme Color */}
+                <div className="mb-4">
+                  <label className="block text-xs font-medium text-gray-500 mb-2">
+                    Player Theme Color
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={selectedVideo.primaryColor || "#F48120"}
+                      onChange={(e) => handleVideoThemeChange(e.target.value)}
+                      className="w-16 h-10 rounded border border-gray-300 cursor-pointer"
+                    />
+                    <input
+                      type="text"
+                      value={selectedVideo.primaryColor || "#F48120"}
+                      onChange={(e) => handleVideoThemeChange(e.target.value)}
+                      placeholder="#F48120"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black text-sm font-mono"
+                    />
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Customize the seekbar and play button color
+                  </p>
+                </div>
 
-          {/* Preset Templates */}
-          {mode === "Advanced" && (
-            <div className="mb-6 border-t border-gray-100 pt-4">
-              <SectionHeader title="Quick Presets" />
-              <div className="grid grid-cols-2 gap-2">
-                <PresetButton
-                  label="Editorial"
-                  onClick={() =>
-                    setStyles({
-                      ...defaultStyles,
-                      headingFont: "PT Serif",
-                      bodyFont: "Georgia",
-                    })
-                  }
+                {/* Timestamps Button */}
+                <button
+                  onClick={() => {
+                    setSelectedVideoId(selectedVideo.videoId);
+                    setShowVideoTimestampModal(true);
+                  }}
+                  className="w-full px-4 py-2 bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg transition-colors text-sm font-medium flex items-center justify-center gap-2"
+                >
+                  <Clock size={16} />
+                  Manage Timestamps
+                </button>
+              </div>
+            )}
+
+            {/* Colors Section */}
+            <div className="mb-6">
+              <SectionHeader title="Colors" />
+              <div className="space-y-3">
+                <ColorInput
+                  label="Background"
+                  value={styles.backgroundColor}
+                  onChange={(v) => updateStyle("backgroundColor", v)}
                 />
-                <PresetButton
-                  label="Modern"
-                  onClick={() =>
-                    setStyles({
-                      ...defaultStyles,
-                      backgroundColor: "#1F2937",
-                      textColor: "#F9FAFB",
-                      headingFont: "Inter",
-                      bodyFont: "Inter",
-                      linkColor: "#60A5FA",
-                    })
-                  }
+                <ColorInput
+                  label="Text on background"
+                  value={styles.textColor}
+                  onChange={(v) => updateStyle("textColor", v)}
                 />
-                <PresetButton
-                  label="Minimal"
-                  onClick={() =>
-                    setStyles({
-                      ...defaultStyles,
-                      headingFont: "Inter",
-                      bodyFont: "Inter",
-                      primaryColor: "#000000",
-                    })
-                  }
+                <ColorInput
+                  label="Primary"
+                  value={styles.primaryColor}
+                  onChange={(v) => updateStyle("primaryColor", v)}
+                  info
                 />
-                <PresetButton
-                  label="Warm"
-                  onClick={() =>
-                    setStyles({
-                      ...defaultStyles,
-                      backgroundColor: "#FFFBEB",
-                      textColor: "#78350F",
-                      primaryColor: "#D97706",
-                      linkColor: "#B45309",
-                      headingFont: "Playfair Display",
-                      bodyFont: "Lora",
-                    })
-                  }
+                <ColorInput
+                  label="Text on primary"
+                  value={styles.primaryTextColor}
+                  onChange={(v) => updateStyle("primaryTextColor", v)}
+                />
+                <ColorInput
+                  label="Secondary"
+                  value={styles.secondaryColor}
+                  onChange={(v) => updateStyle("secondaryColor", v)}
+                  info
+                />
+                <ColorInput
+                  label="Link text"
+                  value={styles.linkColor}
+                  onChange={(v) => updateStyle("linkColor", v)}
                 />
               </div>
             </div>
-          )}
+
+            {/* Typography Section */}
+            <div className="mb-6 border-t border-gray-100 pt-4">
+              <SectionHeader title="Typography" />
+              <div className="space-y-4">
+                {/* Heading Typography */}
+                <div className="space-y-3">
+                  <div className="text-xs font-medium text-gray-400 uppercase tracking-wide">
+                    Heading
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-500">Font family</span>
+                    <FontSelect
+                      value={styles.headingFont}
+                      onChange={(v) => updateStyle("headingFont", v)}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-500">Font weight</span>
+                    <WeightSelect
+                      value={styles.headingWeight}
+                      onChange={(v) => updateStyle("headingWeight", v)}
+                    />
+                  </div>
+                </div>
+
+                {/* Body Typography */}
+                {mode === "Advanced" && (
+                  <div className="space-y-3 pt-3 border-t border-gray-100">
+                    <div className="text-xs font-medium text-gray-400 uppercase tracking-wide">
+                      Body
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-500">Font family</span>
+                      <FontSelect
+                        value={styles.bodyFont}
+                        onChange={(v) => updateStyle("bodyFont", v)}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-500">Font weight</span>
+                      <WeightSelect
+                        value={styles.bodyWeight}
+                        onChange={(v) => updateStyle("bodyWeight", v)}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Template Settings Section */}
+            {!showPreview && (
+              <div className="mb-6 border-t border-gray-100 pt-4">
+                <SectionHeader title="Template Settings" />
+
+                {/* Show Header Toggle */}
+                <div className="mb-4">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm text-gray-700">Show Header</label>
+                    <button
+                      onClick={() =>
+                        setTemplateData((prev) => ({
+                          ...prev,
+                          headerEnabled: !prev.headerEnabled,
+                        }))
+                      }
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${templateData.headerEnabled !== false
+                        ? "bg-indigo-600"
+                        : "bg-gray-200"
+                        }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${templateData.headerEnabled !== false
+                          ? "translate-x-6"
+                          : "translate-x-1"
+                          }`}
+                      />
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Toggle the editorial header (series, title, byline)
+                  </p>
+                </div>
+
+                {/* Green Template Mode Toggle */}
+                <div className="mb-4">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm text-gray-700">Green Template</label>
+                    <button
+                      onClick={() =>
+                        setTemplateData((prev) => ({
+                          ...prev,
+                          useGreenTemplate: !prev.useGreenTemplate,
+                        }))
+                      }
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${templateData.useGreenTemplate
+                        ? "bg-green-600"
+                        : "bg-gray-200"
+                        }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${templateData.useGreenTemplate
+                          ? "translate-x-6"
+                          : "translate-x-1"
+                          }`}
+                      />
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Display with green background and white content card
+                  </p>
+                </div>
+
+                {/* Template Alignment - only show if header is enabled */}
+                {templateData.headerEnabled !== false && (
+                  <div className="mb-4">
+                    <label className="block text-xs font-medium text-gray-500 mb-2">
+                      Alignment
+                    </label>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() =>
+                          setTemplateData((prev) => ({
+                            ...prev,
+                            alignment: "left",
+                          }))
+                        }
+                        className={`flex-1 px-3 py-2 rounded-lg border text-sm transition-colors ${(templateData.alignment || "left") === "left"
+                          ? "bg-black text-white border-black"
+                          : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                          }`}
+                      >
+                        Left
+                      </button>
+                      <button
+                        onClick={() =>
+                          setTemplateData((prev) => ({
+                            ...prev,
+                            alignment: "center",
+                          }))
+                        }
+                        className={`flex-1 px-3 py-2 rounded-lg border text-sm transition-colors ${templateData.alignment === "center"
+                          ? "bg-black text-white border-black"
+                          : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                          }`}
+                      >
+                        Center
+                      </button>
+                      <button
+                        onClick={() =>
+                          setTemplateData((prev) => ({
+                            ...prev,
+                            alignment: "right",
+                          }))
+                        }
+                        className={`flex-1 px-3 py-2 rounded-lg border text-sm transition-colors ${templateData.alignment === "right"
+                          ? "bg-black text-white border-black"
+                          : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                          }`}
+                      >
+                        Right
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Template Typography Controls - only show if header is enabled */}
+                {templateData.headerEnabled !== false && (
+                  <TemplateTypographyControls
+                    templateData={templateData}
+                    setTemplateData={setTemplateData}
+                  />
+                )}
+              </div>
+            )}
+
+            {/* Preset Templates */}
+            {mode === "Advanced" && (
+              <div className="mb-6 border-t border-gray-100 pt-4">
+                <SectionHeader title="Quick Presets" />
+                <div className="grid grid-cols-2 gap-2">
+                  <PresetButton
+                    label="Editorial"
+                    onClick={() =>
+                      setStyles({
+                        ...defaultStyles,
+                        headingFont: "PT Serif",
+                        bodyFont: "Georgia",
+                      })
+                    }
+                  />
+                  <PresetButton
+                    label="Modern"
+                    onClick={() =>
+                      setStyles({
+                        ...defaultStyles,
+                        backgroundColor: "#1F2937",
+                        textColor: "#F9FAFB",
+                        headingFont: "Inter",
+                        bodyFont: "Inter",
+                        linkColor: "#60A5FA",
+                      })
+                    }
+                  />
+                  <PresetButton
+                    label="Minimal"
+                    onClick={() =>
+                      setStyles({
+                        ...defaultStyles,
+                        headingFont: "Inter",
+                        bodyFont: "Inter",
+                        primaryColor: "#000000",
+                      })
+                    }
+                  />
+                  <PresetButton
+                    label="Warm"
+                    onClick={() =>
+                      setStyles({
+                        ...defaultStyles,
+                        backgroundColor: "#FFFBEB",
+                        textColor: "#78350F",
+                        primaryColor: "#D97706",
+                        linkColor: "#B45309",
+                        headingFont: "Playfair Display",
+                        bodyFont: "Lora",
+                      })
+                    }
+                  />
+                </div>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
       )}
 
       {/* Close save dropdown when clicking outside */}
@@ -3313,10 +3319,10 @@ export function Editor({
         videoUrl={
           selectedVideo
             ? buildCloudflareEmbedUrl(
-                selectedVideo.videoId,
-                selectedVideo.customerCode,
-                selectedVideo.primaryColor
-              )
+              selectedVideo.videoId,
+              selectedVideo.customerCode,
+              selectedVideo.primaryColor
+            )
             : undefined
         }
         customerCode={selectedVideo?.customerCode}
@@ -3390,9 +3396,8 @@ const ToolbarButton = ({
   <button
     onClick={onClick}
     disabled={disabled}
-    className={`p-2 rounded transition-colors ${
-      active ? "bg-gray-100 text-gray-900" : "text-gray-600 hover:bg-gray-50"
-    } ${disabled ? "opacity-40 cursor-not-allowed" : ""}`}
+    className={`p-2 rounded transition-colors ${active ? "bg-gray-100 text-gray-900" : "text-gray-600 hover:bg-gray-50"
+      } ${disabled ? "opacity-40 cursor-not-allowed" : ""}`}
     title={title}
   >
     {children}
@@ -3410,9 +3415,8 @@ const BubbleButton = ({
 }) => (
   <button
     onClick={onClick}
-    className={`p-1.5 rounded text-sm font-medium transition-colors ${
-      active ? "bg-white text-gray-900" : "text-gray-300 hover:text-white"
-    }`}
+    className={`p-1.5 rounded text-sm font-medium transition-colors ${active ? "bg-white text-gray-900" : "text-gray-300 hover:text-white"
+      }`}
   >
     {children}
   </button>
@@ -3452,11 +3456,10 @@ const NavItem = ({
 }) => (
   <button
     onClick={onClick}
-    className={`p-2 rounded-lg transition-colors relative group ${
-      active
-        ? "bg-indigo-50 text-indigo-600"
-        : "text-gray-400 hover:bg-gray-50 hover:text-gray-600"
-    }`}
+    className={`p-2 rounded-lg transition-colors relative group ${active
+      ? "bg-indigo-50 text-indigo-600"
+      : "text-gray-400 hover:bg-gray-50 hover:text-gray-600"
+      }`}
     title={tooltip}
   >
     {icon}
@@ -3540,9 +3543,8 @@ const FontSelect = ({
                   onChange(font.name);
                   setIsOpen(false);
                 }}
-                className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 ${
-                  value === font.name ? "bg-indigo-50 text-indigo-700" : ""
-                }`}
+                className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 ${value === font.name ? "bg-indigo-50 text-indigo-700" : ""
+                  }`}
                 style={{ fontFamily: font.value }}
               >
                 {font.name}
@@ -3589,9 +3591,8 @@ const WeightSelect = ({
                   onChange(weight.value);
                   setIsOpen(false);
                 }}
-                className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 ${
-                  value === weight.value ? "bg-indigo-50 text-indigo-700" : ""
-                }`}
+                className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 ${value === weight.value ? "bg-indigo-50 text-indigo-700" : ""
+                  }`}
                 style={{ fontWeight: weight.value }}
               >
                 {weight.name}
@@ -3644,9 +3645,8 @@ const TypographySection = ({
         <span className="text-sm font-medium text-gray-700">{title}</span>
         <ChevronDown
           size={14}
-          className={`text-gray-400 transition-transform ${
-            isExpanded ? "rotate-180" : ""
-          }`}
+          className={`text-gray-400 transition-transform ${isExpanded ? "rotate-180" : ""
+            }`}
         />
       </button>
       {isExpanded && (
