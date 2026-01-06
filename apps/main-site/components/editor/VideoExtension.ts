@@ -124,7 +124,12 @@ function extractCloudflareStreamId(url: string): {
 function buildCloudflareEmbedUrl(
   videoId: string,
   customerCode: string | null = null,
-  primaryColor?: string
+  primaryColor?: string,
+  options?: {
+    autoplay?: boolean;
+    showDuration?: boolean;
+    showBackground?: boolean;
+  }
 ): string {
   // Default customer code if not provided (you may want to set this from env)
   const code =
@@ -139,6 +144,15 @@ function buildCloudflareEmbedUrl(
   if (primaryColor) {
     // URLSearchParams will automatically encode # as %23
     params.append("primaryColor", primaryColor);
+  }
+  if (options?.autoplay !== undefined) {
+    params.append("autoplay", String(options.autoplay));
+  }
+  if (options?.showDuration !== undefined) {
+    params.append("showDuration", String(options.showDuration));
+  }
+  if (options?.showBackground !== undefined) {
+    params.append("showBackground", String(options.showBackground));
   }
 
   const queryString = params.toString();
@@ -242,6 +256,30 @@ export const VideoExtension = Node.create<VideoOptions>({
           };
         },
       },
+      autoplay: {
+        default: true,
+        parseHTML: (element) =>
+          element.getAttribute("data-autoplay") !== "false",
+        renderHTML: (attributes) => ({
+          "data-autoplay": attributes.autoplay,
+        }),
+      },
+      showDuration: {
+        default: true,
+        parseHTML: (element) =>
+          element.getAttribute("data-show-duration") !== "false",
+        renderHTML: (attributes) => ({
+          "data-show-duration": attributes.showDuration,
+        }),
+      },
+      showBackground: {
+        default: true,
+        parseHTML: (element) =>
+          element.getAttribute("data-show-background") !== "false",
+        renderHTML: (attributes) => ({
+          "data-show-background": attributes.showBackground,
+        }),
+      },
       width: {
         default: null,
         parseHTML: (element) => {
@@ -295,6 +333,10 @@ export const VideoExtension = Node.create<VideoOptions>({
             primaryColor: primaryColor,
             width: iframe.width,
             height: iframe.height,
+            autoplay: iframe.getAttribute("data-autoplay") !== "false",
+            showDuration: iframe.getAttribute("data-show-duration") !== "false",
+            showBackground:
+              iframe.getAttribute("data-show-background") !== "false",
           };
         },
       },
@@ -302,7 +344,16 @@ export const VideoExtension = Node.create<VideoOptions>({
   },
 
   renderHTML({ HTMLAttributes, node }) {
-    const { src, videoId, customerCode, primaryColor, align } = node.attrs;
+    const {
+      src,
+      videoId,
+      customerCode,
+      primaryColor,
+      align,
+      autoplay,
+      showDuration,
+      showBackground,
+    } = node.attrs;
     const sourceUrl = src || HTMLAttributes.src;
 
     // Extract video ID and customer code from URL if not already stored
@@ -333,7 +384,12 @@ export const VideoExtension = Node.create<VideoOptions>({
     const embedUrl = buildCloudflareEmbedUrl(
       finalVideoId,
       finalCustomerCode,
-      primaryColor
+      primaryColor,
+      {
+        autoplay: autoplay !== false,
+        showDuration: showDuration !== false,
+        showBackground: showBackground !== false,
+      }
     );
     if (!embedUrl) {
       return ["div", { class: "video-error" }, "Failed to build embed URL"];
@@ -347,6 +403,9 @@ export const VideoExtension = Node.create<VideoOptions>({
       "data-customer-code": finalCustomerCode || "",
       "data-align": align || "center",
       "data-primary-color": primaryColor || "",
+      "data-autoplay": String(autoplay),
+      "data-show-duration": String(showDuration),
+      "data-show-background": String(showBackground),
       style: alignmentStyle,
     };
 
@@ -369,6 +428,10 @@ export const VideoExtension = Node.create<VideoOptions>({
               "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture",
             allowfullscreen: "true",
             style: "width: 100%; height: auto; aspect-ratio: 16 / 9;",
+            // Store attributes on iframe too for easier extraction if needed
+            "data-autoplay": String(autoplay),
+            "data-show-duration": String(showDuration),
+            "data-show-background": String(showBackground),
           },
         ],
       ],
@@ -377,7 +440,16 @@ export const VideoExtension = Node.create<VideoOptions>({
 
   addNodeView() {
     return ({ node, getPos, editor }) => {
-      const { src, videoId, customerCode, primaryColor, align } = node.attrs;
+      const {
+        src,
+        videoId,
+        customerCode,
+        primaryColor,
+        align,
+        autoplay,
+        showDuration,
+        showBackground,
+      } = node.attrs;
 
       // Extract video ID and customer code from URL if not already stored
       let finalVideoId = videoId;
@@ -391,6 +463,9 @@ export const VideoExtension = Node.create<VideoOptions>({
       const wrapper = document.createElement("div");
       wrapper.setAttribute("data-type", "video");
       wrapper.setAttribute("data-align", align || "center");
+      wrapper.setAttribute("data-autoplay", String(autoplay));
+      wrapper.setAttribute("data-show-duration", String(showDuration));
+      wrapper.setAttribute("data-show-background", String(showBackground));
       if (finalVideoId) {
         wrapper.setAttribute("data-video-id", finalVideoId);
       }
@@ -442,7 +517,12 @@ export const VideoExtension = Node.create<VideoOptions>({
       const embedUrl = buildCloudflareEmbedUrl(
         finalVideoId,
         finalCustomerCode,
-        primaryColor
+        primaryColor,
+        {
+          autoplay: false, // Never autoplay in editor
+          showDuration: showDuration !== false,
+          showBackground: showBackground !== false,
+        }
       );
       const innerDiv = document.createElement("div");
       innerDiv.className = "video-inner";
@@ -484,6 +564,9 @@ export const VideoExtension = Node.create<VideoOptions>({
           width?: number;
           height?: number;
           primaryColor?: string;
+          autoplay?: boolean;
+          showDuration?: boolean;
+          showBackground?: boolean;
         }) =>
         ({ commands }) => {
           const { videoId, customerCode } = extractCloudflareStreamId(
@@ -522,6 +605,9 @@ export const VideoExtension = Node.create<VideoOptions>({
               primaryColor: options.primaryColor,
               width: options.width,
               height: options.height,
+              autoplay: options.autoplay !== false, // default true
+              showDuration: options.showDuration !== false, // default true
+              showBackground: options.showBackground !== false, // default true
             },
           });
         },
@@ -557,6 +643,30 @@ export const VideoExtension = Node.create<VideoOptions>({
             tr.setNodeMarkup(pos, undefined, {
               ...selection.node.attrs,
               primaryColor,
+            });
+            if (dispatch) {
+              dispatch(tr);
+            }
+            return true;
+          }
+          return false;
+        },
+      setVideoSettings:
+        (settings: {
+          autoplay?: boolean;
+          showDuration?: boolean;
+          showBackground?: boolean;
+        }) =>
+        ({ tr, state, dispatch }: any) => {
+          const { selection } = state;
+          if (
+            selection instanceof NodeSelection &&
+            selection.node.type === this.type
+          ) {
+            const pos = selection.$anchor.pos;
+            tr.setNodeMarkup(pos, undefined, {
+              ...selection.node.attrs,
+              ...settings,
             });
             if (dispatch) {
               dispatch(tr);

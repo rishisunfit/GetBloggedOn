@@ -2,7 +2,9 @@ import { ArrowLeft, Calendar } from "lucide-react";
 import { ReactionBar } from "./ReactionBar";
 import { CTAForm } from "./CTAForm";
 import { QuizRenderer } from "./QuizRenderer";
+import { VideoJsPlayer, extractCloudflareVideoIdFromUrl } from "./VideoJsPlayer";
 import { PostTemplateData } from "@/services/postTemplate";
+import { useMemo } from "react";
 
 interface PreviewProps {
   title: string;
@@ -30,6 +32,72 @@ export function Preview({
       day: "numeric",
     });
   };
+
+  // Process HTML to extract videos and replace with placeholders
+  const { processedHtml, extractedVideos } = useMemo(() => {
+    if (typeof window === "undefined" || !content) {
+      return { processedHtml: content, extractedVideos: [] };
+    }
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(content, "text/html");
+    const iframes = doc.querySelectorAll<HTMLIFrameElement>(
+      'iframe[src*="cloudflarestream.com"], iframe[src*="videodelivery.net"]'
+    );
+
+    const videos: Array<{
+      src: string;
+      id: string | null;
+      primaryColor: string | null;
+      placeholderId: string;
+    }> = [];
+
+    iframes.forEach((iframe, index) => {
+      const src = iframe.getAttribute("src");
+      if (!src) return;
+
+      const normalizedSrc = src.startsWith("http")
+        ? src
+        : `https://${src.replace(/^\/\//, "")}`;
+      const { videoId } = extractCloudflareVideoIdFromUrl(normalizedSrc);
+
+      // Extract primaryColor from URL
+      let primaryColor: string | null = null;
+      try {
+        const urlObj = new URL(normalizedSrc);
+        const pc = urlObj.searchParams.get("primaryColor");
+        if (pc) {
+          primaryColor = pc.startsWith("#") ? pc : `#${pc.replace(/^%23/, "")}`;
+        }
+      } catch {
+        const match = normalizedSrc.match(/primaryColor=%23([a-fA-F0-9]{6})/);
+        if (match) {
+          primaryColor = `#${match[1]}`;
+        }
+      }
+
+      if (videoId) {
+        const placeholderId = `preview-video-${videoId}-${index}`;
+        videos.push({
+          src: normalizedSrc,
+          id: videoId,
+          primaryColor,
+          placeholderId,
+        });
+
+        // Replace iframe with placeholder div
+        const placeholder = doc.createElement("div");
+        placeholder.id = placeholderId;
+        placeholder.className = "video-js-placeholder";
+        iframe.parentNode?.replaceChild(placeholder, iframe);
+      }
+    });
+
+    return {
+      processedHtml: doc.documentElement.outerHTML,
+      extractedVideos: videos,
+    };
+  }, [content]);
 
   return (
     <div
@@ -91,7 +159,7 @@ export function Preview({
           >
             {content ? (
               <div
-                dangerouslySetInnerHTML={{ __html: content }}
+                dangerouslySetInnerHTML={{ __html: processedHtml }}
                 className="preview-content"
               />
             ) : (
@@ -100,6 +168,18 @@ export function Preview({
               </p>
             )}
           </div>
+
+          {/* Render VideoJsPlayer components */}
+          {extractedVideos.map((video) => (
+            <VideoJsPlayer
+              key={video.placeholderId}
+              postId={postId || "preview"}
+              placeholderId={video.placeholderId}
+              videoUrl={video.src}
+              videoId={video.id}
+              primaryColor={video.primaryColor}
+            />
+          ))}
 
           {/* Quiz CTA (if enabled) */}
           {quizId && <QuizRenderer quizId={quizId} />}

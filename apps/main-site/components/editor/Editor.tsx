@@ -253,6 +253,9 @@ export function Editor({
     customerCode: string | null;
     primaryColor: string | null;
     align: string;
+    autoplay: boolean;
+    showDuration: boolean;
+    showBackground: boolean;
   } | null>(null);
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
@@ -298,6 +301,7 @@ export function Editor({
   );
   const titleTextareaRef = useRef<HTMLTextAreaElement>(null);
   const subtitleTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const openedForVideo = useRef(false);
   const { user } = useAuth();
 
   const editor = useEditor({
@@ -1034,6 +1038,12 @@ export function Editor({
         selection instanceof NodeSelection &&
         selection.node.type.name === "video"
       ) {
+        // Auto-open sidebar if not open
+        if (!showRightSidebar) {
+          setShowRightSidebar(true);
+          openedForVideo.current = true;
+        }
+
         const node = selection.node;
         const videoId = node.attrs.videoId || node.attrs.src;
         let finalVideoId = videoId;
@@ -1074,8 +1084,16 @@ export function Editor({
           customerCode: finalCustomerCode,
           primaryColor: node.attrs.primaryColor || null,
           align: node.attrs.align || "center",
+          autoplay: node.attrs.autoplay !== false,
+          showDuration: node.attrs.showDuration !== false,
+          showBackground: node.attrs.showBackground !== false,
         });
       } else {
+        // Close sidebar if it was auto-opened for video
+        if (openedForVideo.current) {
+          setShowRightSidebar(false);
+          openedForVideo.current = false;
+        }
         setSelectedVideo(null);
       }
     };
@@ -1088,7 +1106,34 @@ export function Editor({
       editor.off("selectionUpdate", updateVideoSelection);
       editor.off("transaction", updateVideoSelection);
     };
-  }, [editor]);
+  }, [editor, showRightSidebar]);
+
+  // Close sidebar when clicking outside if it was auto-opened for video
+  useEffect(() => {
+    if (!selectedVideo) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      // Check if click is on the video node itself
+      const isVideoClick = target.closest('.video-wrapper');
+      // Check if click is on the sidebar
+      const isSidebarClick = target.closest('.w-80.bg-white.border-l');
+
+      // If clicking outside both video and sidebar, deselect the video
+      if (!isVideoClick && !isSidebarClick && openedForVideo.current) {
+        // Deselect by clicking elsewhere in the editor
+        if (editor) {
+          editor.commands.focus();
+          editor.commands.setTextSelection(0);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [selectedVideo, editor]);
 
   // Handle video theme color change
   const handleVideoThemeChange = useCallback(
@@ -1159,6 +1204,43 @@ export function Editor({
       setSelectedVideo({
         ...selectedVideo,
         align,
+      });
+    },
+    [editor, selectedVideo]
+  );
+
+  // Handle video settings change
+  const handleVideoSettingChange = useCallback(
+    (key: "autoplay" | "showDuration" | "showBackground", value: boolean) => {
+      if (!editor || !selectedVideo) return;
+
+      const { state } = editor;
+      const { selection } = state;
+
+      if (
+        !(selection instanceof NodeSelection) ||
+        selection.node.type.name !== "video"
+      ) {
+        return;
+      }
+
+      const videoPos = selection.from;
+      editor.commands.command(({ tr }) => {
+        const node = tr.doc.nodeAt(videoPos);
+        if (!node || node.type.name !== "video") return false;
+        tr.setNodeMarkup(videoPos, undefined, {
+          ...node.attrs,
+          [key]: value,
+        });
+        tr.setSelection(NodeSelection.create(tr.doc, videoPos));
+        return true;
+      });
+      editor.commands.focus();
+
+      // Update local state
+      setSelectedVideo({
+        ...selectedVideo,
+        [key]: value,
       });
     },
     [editor, selectedVideo]
@@ -2778,6 +2860,85 @@ export function Editor({
                   <p className="mt-1 text-xs text-gray-500">
                     Customize the seekbar and play button color
                   </p>
+                </div>
+
+                {/* Display Options */}
+                <div className="mb-6 space-y-3">
+                  <label className="block text-xs font-medium text-gray-500 mb-2">
+                    Display Options
+                  </label>
+
+                  {/* Autoplay Toggle */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-700">Autoplay</span>
+                    <button
+                      onClick={() =>
+                        handleVideoSettingChange(
+                          "autoplay",
+                          !selectedVideo.autoplay
+                        )
+                      }
+                      className={`relative w-11 h-6 rounded-full transition-colors ${selectedVideo.autoplay ? "bg-indigo-600" : "bg-gray-200"
+                        }`}
+                    >
+                      <div
+                        className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${selectedVideo.autoplay
+                          ? "translate-x-5"
+                          : "translate-x-0"
+                          }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Show Duration Toggle */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-700">Show Duration</span>
+                    <button
+                      onClick={() =>
+                        handleVideoSettingChange(
+                          "showDuration",
+                          !selectedVideo.showDuration
+                        )
+                      }
+                      className={`relative w-11 h-6 rounded-full transition-colors ${selectedVideo.showDuration
+                        ? "bg-indigo-600"
+                        : "bg-gray-200"
+                        }`}
+                    >
+                      <div
+                        className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${selectedVideo.showDuration
+                          ? "translate-x-5"
+                          : "translate-x-0"
+                          }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Show Background Toggle */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-700">
+                      Show Background
+                    </span>
+                    <button
+                      onClick={() =>
+                        handleVideoSettingChange(
+                          "showBackground",
+                          !selectedVideo.showBackground
+                        )
+                      }
+                      className={`relative w-11 h-6 rounded-full transition-colors ${selectedVideo.showBackground
+                        ? "bg-indigo-600"
+                        : "bg-gray-200"
+                        }`}
+                    >
+                      <div
+                        className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${selectedVideo.showBackground
+                          ? "translate-x-5"
+                          : "translate-x-0"
+                          }`}
+                      />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Timestamps Button */}

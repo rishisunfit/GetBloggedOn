@@ -103,6 +103,25 @@ function extractPrimaryColorFromUrl(url: string): string | null {
   return null;
 }
 
+function extractBooleanFromUrl(
+  url: string,
+  key: string,
+  defaultValue: boolean = true
+): boolean {
+  try {
+    const urlObj = new URL(url);
+    const val = urlObj.searchParams.get(key);
+    if (val === "false") return false;
+    if (val === "true") return true;
+  } catch {
+    const match = url.match(new RegExp(`${key}=(true|false)`));
+    if (match) {
+      return match[1] === "true";
+    }
+  }
+  return defaultValue;
+}
+
 export function VideoJsPlayer({
   postId,
   videoUrl,
@@ -116,6 +135,18 @@ export function VideoJsPlayer({
   const resolvedVideoId = providedVideoId || extractedVideoId;
   const extractedPrimaryColor =
     providedPrimaryColor || extractPrimaryColorFromUrl(videoUrl) || "#3B82F6";
+
+  const autoplay = extractBooleanFromUrl(videoUrl, "autoplay", true);
+  const showDuration = extractBooleanFromUrl(videoUrl, "showDuration", true);
+  const showBackground = extractBooleanFromUrl(videoUrl, "showBackground", true);
+
+  console.log("VideoJsPlayer settings from URL:", {
+    videoUrl,
+    autoplay,
+    showDuration,
+    showBackground,
+  });
+
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const playerRef = useRef<Player | null>(null);
   const hlsRef = useRef<Hls | null>(null);
@@ -176,7 +207,7 @@ export function VideoJsPlayer({
     // and can clip the control bar (especially after fullscreen exit). So we disable `fluid` and let the parent
     // container define sizing.
     const player = videojs(video, {
-      autoplay: true, // Autoplay muted in background
+      autoplay: autoplay, // Respect extracted setting
       muted: true, // Start muted
       controls: true,
       preload: "auto",
@@ -214,8 +245,8 @@ export function VideoJsPlayer({
     player.on("durationchange", updateDuration);
     player.ready(() => {
       setTimeout(updateDuration, 100);
-      // Ensure video starts playing muted in background
-      if (!hasStartedRef.current && player.paused()) {
+      // Ensure video starts playing muted in background if autoplay is enabled
+      if (autoplay && !hasStartedRef.current && player.paused()) {
         const playPromise = player.play();
         if (playPromise !== undefined) {
           playPromise.catch((err) => {
@@ -300,8 +331,8 @@ export function VideoJsPlayer({
 
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         console.log("HLS manifest loaded successfully");
-        // Try to play muted in background
-        if (!hasStartedRef.current && player.paused()) {
+        // Try to play muted in background if autoplay is enabled
+        if (autoplay && !hasStartedRef.current && player.paused()) {
           const playPromise = player.play();
           if (playPromise !== undefined) {
             playPromise.catch((err) => {
@@ -337,9 +368,9 @@ export function VideoJsPlayer({
         src: finalUrl,
         type: videoUrl.includes(".mp4") ? "video/mp4" : "video/webm",
       });
-      // Try to play muted in background after source is set
+      // Try to play muted in background after source is set if autoplay is enabled
       player.ready(() => {
-        if (!hasStartedRef.current && player.paused()) {
+        if (autoplay && !hasStartedRef.current && player.paused()) {
           const playPromise = player.play();
           if (playPromise !== undefined) {
             playPromise.catch((err) => {
@@ -547,9 +578,8 @@ export function VideoJsPlayer({
   // If placeholderId is provided, render into placeholder using portal
   const containerClassName = placeholderId
     ? `rounded-xl border border-gray-200 overflow-hidden ${className ?? ""}`
-    : `mt-12 rounded-xl border border-gray-200 overflow-hidden ${
-        className ?? ""
-      }`;
+    : `mt-12 rounded-xl border border-gray-200 overflow-hidden ${className ?? ""
+    }`;
 
   // Convert primary color to rgba for overlay
   const hexToRgba = (hex: string, alpha: number): string => {
@@ -559,7 +589,9 @@ export function VideoJsPlayer({
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   };
 
-  const overlayColor = hexToRgba(extractedPrimaryColor, 0.7);
+  const overlayColor = showBackground
+    ? hexToRgba(extractedPrimaryColor, 0.7)
+    : "transparent";
 
   const handleOverlayPlayClick = () => {
     if (playerRef.current && !hasStartedRef.current) {
@@ -589,11 +621,11 @@ export function VideoJsPlayer({
           margin: "0 auto",
           ...(placeholderId
             ? ({
-                position: "absolute",
-                inset: 0,
-                width: "100%",
-                height: "100%",
-              } as React.CSSProperties)
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+            } as React.CSSProperties)
             : ({} as React.CSSProperties)),
         } as React.CSSProperties
       }
@@ -670,16 +702,18 @@ export function VideoJsPlayer({
               </svg>
             </div>
             {/* Duration */}
-            <div
-              style={{
-                color: "white",
-                fontSize: "16px",
-                fontWeight: 500,
-                textShadow: "0 2px 4px rgba(0, 0, 0, 0.3)",
-              }}
-            >
-              Video Duration: {videoDuration}
-            </div>
+            {showDuration && (
+              <div
+                style={{
+                  color: "white",
+                  fontSize: "16px",
+                  fontWeight: 500,
+                  textShadow: "0 2px 4px rgba(0, 0, 0, 0.3)",
+                }}
+              >
+                Video Duration: {videoDuration}
+              </div>
+            )}
           </div>
         )}
       </div>
