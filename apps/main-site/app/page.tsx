@@ -57,7 +57,7 @@ export default function HomePage() {
   const [quizzes, setQuizzes] = useState<ReturnType<typeof convertQuiz>[]>([]);
   const [folders, setFolders] = useState<Folder[]>([]);
   const [loading, setLoading] = useState(true);
-  const { signOut, profile, user, isLoading: authLoading } = useAuth();
+  const { signOut, profile, user, loading: authLoading } = useAuth();
   const router = useRouter();
   const { showDialog } = useDialog();
 
