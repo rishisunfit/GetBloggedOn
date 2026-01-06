@@ -20,6 +20,7 @@ export interface Post {
   folder_id?: string | null;
   folder_slug?: string | null;
   post_slug?: string | null;
+  next_post_id?: string | null;
 }
 
 export interface PostStyles {
@@ -44,6 +45,7 @@ export interface CreatePostData {
   template_data?: PostTemplateData | null;
   folder_id?: string | null;
   post_slug?: string | null;
+  next_post_id?: string | null;
 }
 
 export interface UpdatePostData {
@@ -59,6 +61,7 @@ export interface UpdatePostData {
   template_data?: PostTemplateData | null;
   folder_id?: string | null;
   post_slug?: string | null;
+  next_post_id?: string | null;
 }
 
 export const postsApi = {
@@ -157,6 +160,8 @@ export const postsApi = {
       updateData.folder_id = postData.folder_id;
     if (postData.post_slug !== undefined)
       updateData.post_slug = postData.post_slug;
+    if (postData.next_post_id !== undefined)
+      updateData.next_post_id = postData.next_post_id;
     updateData.updated_at = new Date().toISOString();
 
     const { data, error } = await supabase

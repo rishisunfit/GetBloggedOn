@@ -3,6 +3,7 @@ import { ReactionBar } from "./ReactionBar";
 import { CTAForm } from "./CTAForm";
 import { QuizRenderer } from "./QuizRenderer";
 import { VideoJsPlayer, extractCloudflareVideoIdFromUrl } from "./VideoJsPlayer";
+import { NextArticle } from "./NextArticle";
 import { PostTemplateData } from "@/services/postTemplate";
 import { useMemo } from "react";
 
@@ -13,6 +14,7 @@ interface PreviewProps {
   postId?: string;
   quizId?: string | null;
   templateData?: PostTemplateData;
+  nextPostId?: string | null;
   onBack: () => void;
 }
 
@@ -23,6 +25,7 @@ export function Preview({
   postId,
   quizId,
   templateData,
+  nextPostId,
   onBack,
 }: PreviewProps) {
   const formatDate = (date: Date) => {
@@ -189,6 +192,9 @@ export function Preview({
 
           {/* CTA Form */}
           <CTAForm postId={postId} quizId={quizId} />
+
+          {/* Next Article */}
+          {nextPostId && <NextArticle nextPostId={nextPostId} />}
         </div>
 
         {/* Footer */}

@@ -11,6 +11,7 @@ import {
   extractCloudflareVideoIdFromUrl,
 } from "@/components/viewer/VideoJsPlayer";
 import { HeatmapTracker } from "@/components/viewer/HeatmapTracker";
+import { NextArticle } from "@/components/viewer/NextArticle";
 import { postsApi, PostStyles, type Post } from "@/services/posts";
 import {
   normalizeTemplateData,
@@ -393,6 +394,9 @@ export default function CanonicalPostPage() {
               if (componentType === "cta" && post.cta_enabled !== false) {
                 return <CTAForm key="cta" postId={post.id} />;
               }
+              if (componentType === "nextArticle" && post.next_post_id) {
+                return <NextArticle key="nextArticle" nextPostId={post.next_post_id} />;
+              }
               return null;
             })
           ) : (
@@ -402,6 +406,7 @@ export default function CanonicalPostPage() {
               )}
               {post.rating_enabled !== false && <ReactionBar postId={post.id} />}
               {post.cta_enabled !== false && <CTAForm postId={post.id} />}
+              {post.next_post_id && <NextArticle nextPostId={post.next_post_id} />}
             </>
           )}
         </div>

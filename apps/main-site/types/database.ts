@@ -462,6 +462,7 @@ export type Database = {
           folder_slug: string | null
           id: string
           is_draft: boolean
+          next_post_id: string | null
           post_slug: string | null
           quiz_id: string | null
           rating_enabled: boolean | null
@@ -481,6 +482,7 @@ export type Database = {
           folder_slug?: string | null
           id?: string
           is_draft?: boolean
+          next_post_id?: string | null
           post_slug?: string | null
           quiz_id?: string | null
           rating_enabled?: boolean | null
@@ -500,6 +502,7 @@ export type Database = {
           folder_slug?: string | null
           id?: string
           is_draft?: boolean
+          next_post_id?: string | null
           post_slug?: string | null
           quiz_id?: string | null
           rating_enabled?: boolean | null
@@ -516,6 +519,13 @@ export type Database = {
             columns: ["folder_id"]
             isOneToOne: false
             referencedRelation: "folders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_next_post_id_fkey"
+            columns: ["next_post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
             referencedColumns: ["id"]
           },
           {

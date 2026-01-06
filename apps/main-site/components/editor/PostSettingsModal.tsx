@@ -14,6 +14,7 @@ import {
 import { quizzesApi } from "@/services/quizzes";
 import type { Quiz } from "@/types/quiz";
 import { foldersApi, generateSlug, type Folder } from "@/services/folders";
+import { postsApi, type Post } from "@/services/posts";
 
 interface PostSettingsModalProps {
   isOpen: boolean;
@@ -24,13 +25,16 @@ interface PostSettingsModalProps {
   componentOrder?: string[];
   folderId?: string | null;
   postSlug?: string | null;
+  nextPostId?: string | null;
+  currentPostId?: string | null;
   onSave: (
     quizId: string | null,
     ratingEnabled: boolean,
     ctaEnabled: boolean,
     componentOrder: string[],
     folderId: string | null,
-    postSlug: string | null
+    postSlug: string | null,
+    nextPostId: string | null
   ) => void;
 }
 
@@ -40,9 +44,11 @@ export function PostSettingsModal({
   quizId,
   ratingEnabled,
   ctaEnabled,
-  componentOrder = ["quiz", "rating", "cta"],
+  componentOrder = ["quiz", "rating", "cta", "nextArticle"],
   folderId,
   postSlug,
+  nextPostId,
+  currentPostId,
   onSave,
 }: PostSettingsModalProps) {
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
@@ -71,17 +77,35 @@ export function PostSettingsModal({
   const [newFolderSlug, setNewFolderSlug] = useState("");
   const [creatingFolder, setCreatingFolder] = useState(false);
 
+  // Next Article state
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [allPosts, setAllPosts] = useState<Post[]>([]);
+  const [loadingPosts, setLoadingPosts] = useState(true);
+  const [selectedNextPostId, setSelectedNextPostId] = useState<string | null>(nextPostId || null);
+  const [nextArticleEnabled, setNextArticleEnabled] = useState(!!nextPostId);
+  const [postSearchQuery, setPostSearchQuery] = useState("");
+
   useEffect(() => {
     if (isOpen) {
       loadQuizzes();
       loadFolders();
+      loadPosts();
       setSelectedQuizId(quizId);
       setQuizEnabled(!!quizId);
       setRatingEnabledState(ratingEnabled);
       setCtaEnabledState(ctaEnabled);
-      setComponentOrderState(componentOrder);
+
+      // Ensure nextArticle is in the component order
+      const order = componentOrder || ["quiz", "rating", "cta", "nextArticle"];
+      if (!order.includes("nextArticle")) {
+        order.push("nextArticle");
+      }
+      setComponentOrderState(order);
+
       setSelectedFolderId(folderId || null);
       setPostSlugState(postSlug || "");
+      setSelectedNextPostId(nextPostId || null);
+      setNextArticleEnabled(!!nextPostId);
       setSlugError(null);
       setShowCreateFolder(false);
       setNewFolderName("");
@@ -95,6 +119,7 @@ export function PostSettingsModal({
     componentOrder,
     folderId,
     postSlug,
+    nextPostId,
   ]);
 
   const loadQuizzes = async () => {
@@ -130,6 +155,40 @@ export function PostSettingsModal({
       setQuizzes(filtered);
     }
   }, [searchQuery, allQuizzes]);
+
+  const loadPosts = async () => {
+    try {
+      setLoadingPosts(true);
+      const data = await postsApi.getAll();
+      // Filter out current post and sort by updated_at descending
+      const filtered = data
+        .filter((p) => p.id !== currentPostId)
+        .sort(
+          (a, b) =>
+            new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+        );
+      setAllPosts(filtered);
+      setPosts(filtered.slice(0, 5));
+    } catch (err) {
+      console.error("Error loading posts:", err);
+    } finally {
+      setLoadingPosts(false);
+    }
+  };
+
+  // Filter posts based on search query
+  useEffect(() => {
+    if (!postSearchQuery.trim()) {
+      // Show 5 most recent when no search
+      setPosts(allPosts.slice(0, 5));
+    } else {
+      // Filter by search query
+      const filtered = allPosts.filter((post) =>
+        post.title.toLowerCase().includes(postSearchQuery.toLowerCase())
+      );
+      setPosts(filtered);
+    }
+  }, [postSearchQuery, allPosts]);
 
   const loadFolders = async () => {
     try {
@@ -206,7 +265,8 @@ export function PostSettingsModal({
       ctaEnabledState,
       componentOrderState,
       selectedFolderId,
-      postSlugState.trim() || null
+      postSlugState.trim() || null,
+      nextArticleEnabled ? selectedNextPostId : null
     );
     onClose();
   };
@@ -236,6 +296,8 @@ export function PostSettingsModal({
         return "Rating/Reaction Bar";
       case "cta":
         return "Have a Question Form";
+      case "nextArticle":
+        return "Next Article";
       default:
         return type;
     }
@@ -249,6 +311,8 @@ export function PostSettingsModal({
         return ratingEnabledState;
       case "cta":
         return ctaEnabledState;
+      case "nextArticle":
+        return nextArticleEnabled;
       default:
         return false;
     }
@@ -365,11 +429,10 @@ export function PostSettingsModal({
                           <button
                             key={quiz.id}
                             onClick={() => setSelectedQuizId(quiz.id)}
-                            className={`w-full text-left p-4 border rounded-lg transition-colors ${
-                              selectedQuizId === quiz.id
-                                ? "border-violet-500 bg-violet-50"
-                                : "border-gray-200 hover:border-violet-300 hover:bg-violet-50/50"
-                            }`}
+                            className={`w-full text-left p-4 border rounded-lg transition-colors ${selectedQuizId === quiz.id
+                              ? "border-violet-500 bg-violet-50"
+                              : "border-gray-200 hover:border-violet-300 hover:bg-violet-50/50"
+                              }`}
                           >
                             <div className="flex items-center justify-between">
                               <div className="flex-1">
@@ -388,11 +451,10 @@ export function PostSettingsModal({
                                   <span>{quiz.questions.length} questions</span>
                                   <span>•</span>
                                   <span
-                                    className={`px-2 py-0.5 rounded-full text-xs ${
-                                      quiz.status === "published"
-                                        ? "bg-green-100 text-green-800"
-                                        : "bg-yellow-100 text-yellow-800"
-                                    }`}
+                                    className={`px-2 py-0.5 rounded-full text-xs ${quiz.status === "published"
+                                      ? "bg-green-100 text-green-800"
+                                      : "bg-yellow-100 text-yellow-800"
+                                      }`}
                                   >
                                     {quiz.status}
                                   </span>
@@ -400,11 +462,10 @@ export function PostSettingsModal({
                               </div>
                               <ClipboardList
                                 size={20}
-                                className={`ml-4 ${
-                                  selectedQuizId === quiz.id
-                                    ? "text-violet-600"
-                                    : "text-gray-400"
-                                }`}
+                                className={`ml-4 ${selectedQuizId === quiz.id
+                                  ? "text-violet-600"
+                                  : "text-gray-400"
+                                  }`}
                               />
                             </div>
                           </button>
@@ -467,6 +528,135 @@ export function PostSettingsModal({
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-violet-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div>
               </label>
             </div>
+          </div>
+
+          {/* Next Article Section */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h4 className="text-lg font-semibold text-gray-900 mb-1">
+                  Next Article
+                </h4>
+                <p className="text-sm text-gray-600">
+                  Add a link to the next article that readers should read after this one.
+                </p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={nextArticleEnabled}
+                  onChange={(e) => {
+                    setNextArticleEnabled(e.target.checked);
+                    if (!e.target.checked) {
+                      setSelectedNextPostId(null);
+                    }
+                  }}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-violet-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div>
+              </label>
+            </div>
+
+            {nextArticleEnabled && (
+              <div className="mt-4">
+                {loadingPosts ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 size={24} className="animate-spin text-gray-400" />
+                  </div>
+                ) : allPosts.length === 0 ? (
+                  <div className="text-center py-8 border border-gray-200 rounded-lg">
+                    <LinkIcon
+                      size={32}
+                      className="mx-auto text-gray-300 mb-2"
+                    />
+                    <p className="text-gray-600 text-sm mb-1">
+                      No other posts found
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Create more posts to link them together
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Search Input */}
+                    <div className="mb-4">
+                      <div className="relative">
+                        <Search
+                          size={18}
+                          className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                        />
+                        <input
+                          type="text"
+                          value={postSearchQuery}
+                          onChange={(e) => setPostSearchQuery(e.target.value)}
+                          placeholder="Search posts..."
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Post List */}
+                    {posts.length === 0 ? (
+                      <div className="text-center py-8 border border-gray-200 rounded-lg">
+                        <p className="text-gray-600 text-sm">
+                          No posts found matching "{postSearchQuery}"
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2 max-h-64 overflow-y-auto">
+                        {posts.map((post) => (
+                          <button
+                            key={post.id}
+                            onClick={() => setSelectedNextPostId(post.id)}
+                            className={`w-full text-left p-4 border rounded-lg transition-colors ${selectedNextPostId === post.id
+                              ? "border-violet-500 bg-violet-50"
+                              : "border-gray-200 hover:border-violet-300 hover:bg-violet-50/50"
+                              }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <h5 className="font-semibold text-gray-900">
+                                    {post.title}
+                                  </h5>
+                                  {selectedNextPostId === post.id && (
+                                    <Check
+                                      size={16}
+                                      className="text-violet-600"
+                                    />
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-3 text-sm text-gray-600">
+                                  <span>
+                                    {new Date(post.updated_at).toLocaleDateString()}
+                                  </span>
+                                  <span>•</span>
+                                  <span
+                                    className={`px-2 py-0.5 rounded-full text-xs ${post.status === "published"
+                                      ? "bg-green-100 text-green-800"
+                                      : "bg-yellow-100 text-yellow-800"
+                                      }`}
+                                  >
+                                    {post.status}
+                                  </span>
+                                </div>
+                              </div>
+                              <LinkIcon
+                                size={20}
+                                className={`ml-4 ${selectedNextPostId === post.id
+                                  ? "text-violet-600"
+                                  : "text-gray-400"
+                                  }`}
+                              />
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
           {/* URL & Folder Section */}
@@ -600,9 +790,8 @@ export function PostSettingsModal({
                       value={postSlugState}
                       onChange={(e) => handleSlugChange(e.target.value)}
                       placeholder="e.g., knee-strengthening"
-                      className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent font-mono text-sm ${
-                        slugError ? "border-red-300" : "border-gray-300"
-                      }`}
+                      className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent font-mono text-sm ${slugError ? "border-red-300" : "border-gray-300"
+                        }`}
                     />
                   </div>
                   {slugError && (
@@ -636,11 +825,10 @@ export function PostSettingsModal({
                 return (
                   <div
                     key={component}
-                    className={`flex items-center gap-3 p-3 rounded-lg border-2 ${
-                      enabled
-                        ? "bg-white border-violet-200"
-                        : "bg-gray-50 border-gray-200 opacity-60"
-                    }`}
+                    className={`flex items-center gap-3 p-3 rounded-lg border-2 ${enabled
+                      ? "bg-white border-violet-200"
+                      : "bg-gray-50 border-gray-200 opacity-60"
+                      }`}
                   >
                     <GripVertical className="text-gray-400" size={20} />
                     <div className="flex-1">

@@ -159,6 +159,7 @@ interface EditorProps {
   initialStyles?: PostStyles;
   initialFolderId?: string | null;
   initialPostSlug?: string | null;
+  initialNextPostId?: string | null;
   onBack: () => void;
   onPreview: () => void;
   onSave: (
@@ -191,6 +192,7 @@ interface EditorProps {
   onUpdateComponentOrder?: (order: string[]) => void;
   onUpdateFolderId?: (folderId: string | null) => void;
   onUpdatePostSlug?: (postSlug: string | null) => void;
+  onUpdateNextPostId?: (nextPostId: string | null) => void;
 }
 
 export function Editor({
@@ -203,6 +205,7 @@ export function Editor({
   initialStyles,
   initialFolderId = null,
   initialPostSlug = null,
+  initialNextPostId = null,
   onBack,
   onSave,
   onSaveDraft,
@@ -214,7 +217,8 @@ export function Editor({
   onUpdateComponentOrder,
   onUpdateFolderId,
   onUpdatePostSlug,
-  initialComponentOrder = ["quiz", "rating", "cta"],
+  onUpdateNextPostId,
+  initialComponentOrder = ["quiz", "rating", "cta", "nextArticle"],
 }: EditorProps) {
   const [templateData, setTemplateData] = useState<PostTemplateData>(() =>
     normalizeTemplateData(initialTemplateData)
@@ -230,6 +234,7 @@ export function Editor({
   );
   const [folderId, setFolderId] = useState<string | null>(initialFolderId);
   const [postSlug, setPostSlug] = useState<string | null>(initialPostSlug);
+  const [nextPostId, setNextPostId] = useState<string | null>(initialNextPostId);
   const [showSettings, setShowSettings] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [viewMode, setViewMode] = useState<"desktop" | "mobile">("desktop");
@@ -2209,13 +2214,16 @@ export function Editor({
             componentOrder={componentOrder}
             folderId={folderId}
             postSlug={postSlug}
+            nextPostId={nextPostId}
+            currentPostId={postId}
             onSave={(
               newQuizId,
               newRatingEnabled,
               newCtaEnabled,
               newComponentOrder,
               newFolderId,
-              newPostSlug
+              newPostSlug,
+              newNextPostId
             ) => {
               setQuizId(newQuizId);
               setRatingEnabled(newRatingEnabled);
@@ -2223,6 +2231,7 @@ export function Editor({
               setComponentOrder(newComponentOrder);
               setFolderId(newFolderId);
               setPostSlug(newPostSlug);
+              setNextPostId(newNextPostId);
               if (onUpdateQuizId) {
                 onUpdateQuizId(newQuizId);
               }
@@ -2240,6 +2249,9 @@ export function Editor({
               }
               if (onUpdatePostSlug) {
                 onUpdatePostSlug(newPostSlug);
+              }
+              if (onUpdateNextPostId) {
+                onUpdateNextPostId(newNextPostId);
               }
             }}
           />

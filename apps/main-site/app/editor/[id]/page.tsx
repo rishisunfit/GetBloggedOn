@@ -34,9 +34,11 @@ export default function EditorPage() {
     "quiz",
     "rating",
     "cta",
+    "nextArticle",
   ]);
   const [folderId, setFolderId] = useState<string | null>(null);
   const [postSlug, setPostSlug] = useState<string | null>(null);
+  const [nextPostId, setNextPostId] = useState<string | null>(null);
 
   const loadPost = useCallback(async () => {
     if (!id) return;
@@ -76,10 +78,11 @@ export default function EditorPage() {
       setRatingEnabled((data as any).rating_enabled !== false);
       setCtaEnabled((data as any).cta_enabled !== false);
       setComponentOrder(
-        (data as any).component_order || ["quiz", "rating", "cta"]
+        (data as any).component_order || ["quiz", "rating", "cta", "nextArticle"]
       );
       setFolderId((data as any).folder_id || null);
       setPostSlug((data as any).post_slug || null);
+      setNextPostId((data as any).next_post_id || null);
     } catch (error) {
       console.error("Error loading post:", error);
       await showDialog({
@@ -215,6 +218,25 @@ export default function EditorPage() {
     }
   };
 
+  const handleUpdateNextPostId = async (newNextPostId: string | null) => {
+    if (!id) return;
+    try {
+      await postsApi.update(id, {
+        next_post_id: newNextPostId,
+      });
+      setNextPostId(newNextPostId);
+      await loadPost();
+    } catch (error) {
+      console.error("Error updating next post:", error);
+      await showDialog({
+        type: "alert",
+        message:
+          error instanceof Error ? error.message : "Failed to update next post",
+        title: "Error",
+      });
+    }
+  };
+
   const handleSaveDraft = async (
     template: PostTemplateData,
     content: string,
@@ -235,6 +257,7 @@ export default function EditorPage() {
         cta_enabled: ctaEnabled,
         component_order: componentOrder,
         template_data: template,
+        next_post_id: nextPostId,
       };
 
       // Only include styles if provided and not empty
@@ -295,6 +318,7 @@ export default function EditorPage() {
         cta_enabled: ctaEnabled,
         component_order: componentOrder,
         template_data: template,
+        next_post_id: nextPostId,
       };
 
       // Only include styles if provided and not empty
@@ -358,6 +382,7 @@ export default function EditorPage() {
         cta_enabled: ctaEnabled,
         component_order: componentOrder,
         template_data: template,
+        next_post_id: nextPostId,
       };
 
       // Only include styles if provided and not empty
@@ -416,6 +441,7 @@ export default function EditorPage() {
         initialStyles={post?.styles}
         initialFolderId={folderId}
         initialPostSlug={postSlug}
+        initialNextPostId={nextPostId}
         onBack={handleBack}
         onPreview={handlePreview}
         onSave={handleSave}
@@ -428,6 +454,7 @@ export default function EditorPage() {
         onUpdateComponentOrder={handleUpdateComponentOrder}
         onUpdateFolderId={handleUpdateFolderId}
         onUpdatePostSlug={handleUpdatePostSlug}
+        onUpdateNextPostId={handleUpdateNextPostId}
       />
     </ProtectedRoute>
   );
