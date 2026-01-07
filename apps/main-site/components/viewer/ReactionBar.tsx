@@ -34,8 +34,8 @@ interface ReactionBarProps {
 
 export function ReactionBar({ postId }: ReactionBarProps) {
   const [ratings, setRatings] = useState<StarRating[]>([
-    { stars: 5, count: 0 },
     { stars: 3, count: 0 },
+    { stars: 2, count: 0 },
     { stars: 1, count: 0 },
   ]);
   const [userRating, setUserRating] = useState<number | null>(null);
@@ -59,8 +59,8 @@ export function ReactionBar({ postId }: ReactionBarProps) {
         const data = await response.json();
         if (data.counts) {
           setRatings([
-            { stars: 5, count: data.counts[5] || 0 },
             { stars: 3, count: data.counts[3] || 0 },
+            { stars: 2, count: data.counts[2] || 0 },
             { stars: 1, count: data.counts[1] || 0 },
           ]);
         }
@@ -124,8 +124,8 @@ export function ReactionBar({ postId }: ReactionBarProps) {
         const data = await response.json();
         if (data.counts) {
           setRatings([
-            { stars: 5, count: data.counts[5] || 0 },
             { stars: 3, count: data.counts[3] || 0 },
+            { stars: 2, count: data.counts[2] || 0 },
             { stars: 1, count: data.counts[1] || 0 },
           ]);
         }
@@ -160,11 +160,11 @@ export function ReactionBar({ postId }: ReactionBarProps) {
               <h2 className="text-3xl font-bold mb-6 text-gray-900">
                 How was this essay?
               </h2>
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 justify-center w-full max-w-md">
-                {[5, 3, 1].map((stars) => (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 w-full max-w-md mx-auto">
+                {[3, 2, 1].map((stars) => (
                   <div
                     key={stars}
-                    className="flex flex-col items-center gap-2 px-6 py-4 bg-gray-50 rounded-lg w-full sm:w-auto sm:flex-1 animate-pulse"
+                    className="flex flex-col items-center gap-2 px-4 py-4 bg-gray-50 rounded-lg w-full animate-pulse"
                   >
                     <div className="flex gap-1">
                       {Array.from({ length: stars }).map((_, i) => (
@@ -209,39 +209,35 @@ export function ReactionBar({ postId }: ReactionBarProps) {
             </h2>
 
             {/* Rating buttons */}
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center w-full max-w-md">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 w-full max-w-md mx-auto">
               {ratings.map((rating) => (
                 <button
                   key={rating.stars}
                   onClick={() => handleRating(rating.stars)}
                   disabled={!postId}
-                  className={`flex flex-col items-center gap-2 px-6 py-4 rounded-lg transition-all w-full sm:w-auto sm:flex-1 ${
-                    userRating === rating.stars
-                      ? "bg-blue-50 border-2 border-blue-500 shadow-md"
-                      : "bg-gray-50 hover:bg-gray-100 border-2 border-transparent hover:border-gray-200"
-                  } ${
-                    !postId ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
-                  }`}
+                  className={`flex flex-col items-center gap-2 px-2 py-4 rounded-lg transition-all w-full ${userRating === rating.stars
+                    ? "bg-blue-50 border-2 border-blue-500 shadow-md"
+                    : "bg-gray-50 hover:bg-gray-100 border-2 border-transparent hover:border-gray-200"
+                    } ${!postId ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+                    }`}
                 >
                   <div className="flex gap-1">
                     {Array.from({ length: rating.stars }).map((_, i) => (
                       <StarIcon
                         key={i}
                         filled={userRating === rating.stars}
-                        className={`w-6 h-6 ${
-                          userRating === rating.stars
-                            ? "text-blue-600"
-                            : "text-gray-400"
-                        }`}
+                        className={`w-6 h-6 ${userRating === rating.stars
+                          ? "text-blue-600"
+                          : "text-gray-400"
+                          }`}
                       />
                     ))}
                   </div>
                   <span
-                    className={`text-lg font-semibold ${
-                      userRating === rating.stars
-                        ? "text-blue-600"
-                        : "text-gray-700"
-                    }`}
+                    className={`text-lg font-semibold ${userRating === rating.stars
+                      ? "text-blue-600"
+                      : "text-gray-700"
+                      }`}
                   >
                     {rating.count}
                   </span>

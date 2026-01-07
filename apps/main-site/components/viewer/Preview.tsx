@@ -1,4 +1,4 @@
-import { ArrowLeft, Calendar } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { ReactionBar } from "./ReactionBar";
 import { CTAForm } from "./CTAForm";
 import { QuizRenderer } from "./QuizRenderer";
