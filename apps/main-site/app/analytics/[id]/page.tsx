@@ -291,7 +291,7 @@ export default function PostAnalyticsPage() {
             <h1 className="text-2xl font-bold text-gray-900 mb-4">Error</h1>
             <p className="text-gray-600 mb-6">{error || "Post not found"}</p>
             <button
-              onClick={() => router.push("/")}
+              onClick={() => router.push("/dashboard")}
               className="inline-block px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
             >
               Back to Dashboard
@@ -329,7 +329,7 @@ export default function PostAnalyticsPage() {
           {/* Header */}
           <div className="mb-8">
             <button
-              onClick={() => router.push("/")}
+              onClick={() => router.push("/dashboard")}
               className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 transition-colors"
             >
               <ArrowLeft size={20} />
@@ -459,18 +459,17 @@ export default function PostAnalyticsPage() {
                       {/* Header */}
                       <header className="mb-8">
                         <div
-                          className={`${
-                            safeTemplate.alignment === "center"
+                          className={`${safeTemplate.alignment === "center"
                               ? "text-center"
                               : safeTemplate.alignment === "right"
-                              ? "text-right"
-                              : "text-left"
-                          } tracking-[0.18em] uppercase mb-4`}
+                                ? "text-right"
+                                : "text-left"
+                            } tracking-[0.18em] uppercase mb-4`}
                           style={{
                             fontFamily: safeTemplate.seriesFont
                               ? fontOptions.find(
-                                  (f) => f.name === safeTemplate.seriesFont
-                                )?.value || safeTemplate.seriesFont
+                                (f) => f.name === safeTemplate.seriesFont
+                              )?.value || safeTemplate.seriesFont
                               : undefined,
                             fontWeight: safeTemplate.seriesWeight || "700",
                             fontSize: safeTemplate.seriesSize || "0.75rem",
@@ -480,25 +479,24 @@ export default function PostAnalyticsPage() {
                         >
                           {(safeTemplate.seriesName || "").trim()}
                           {(safeTemplate.seriesName || "").trim() &&
-                          (safeTemplate.volume || "").trim()
+                            (safeTemplate.volume || "").trim()
                             ? " • "
                             : ""}
                           {(safeTemplate.volume || "").trim() || ""}
                         </div>
 
                         <h1
-                          className={`mb-4 ${
-                            safeTemplate.alignment === "center"
+                          className={`mb-4 ${safeTemplate.alignment === "center"
                               ? "text-center"
                               : safeTemplate.alignment === "right"
-                              ? "text-right"
-                              : "text-left"
-                          }`}
+                                ? "text-right"
+                                : "text-left"
+                            }`}
                           style={{
                             fontFamily: safeTemplate.titleFont
                               ? fontOptions.find(
-                                  (f) => f.name === safeTemplate.titleFont
-                                )?.value || safeTemplate.titleFont
+                                (f) => f.name === safeTemplate.titleFont
+                              )?.value || safeTemplate.titleFont
                               : headingFont,
                             fontWeight:
                               safeTemplate.titleWeight || styles.headingWeight,
@@ -513,18 +511,17 @@ export default function PostAnalyticsPage() {
 
                         {(safeTemplate.subtitle || "").trim() ? (
                           <p
-                            className={`italic mb-6 ${
-                              safeTemplate.alignment === "center"
+                            className={`italic mb-6 ${safeTemplate.alignment === "center"
                                 ? "text-center"
                                 : safeTemplate.alignment === "right"
-                                ? "text-right"
-                                : "text-left"
-                            }`}
+                                  ? "text-right"
+                                  : "text-left"
+                              }`}
                             style={{
                               fontFamily: safeTemplate.subtitleFont
                                 ? fontOptions.find(
-                                    (f) => f.name === safeTemplate.subtitleFont
-                                  )?.value || safeTemplate.subtitleFont
+                                  (f) => f.name === safeTemplate.subtitleFont
+                                )?.value || safeTemplate.subtitleFont
                                 : undefined,
                               fontWeight:
                                 safeTemplate.subtitleWeight || undefined,
@@ -539,20 +536,19 @@ export default function PostAnalyticsPage() {
                         ) : null}
 
                         {(safeTemplate.authorName || "").trim() ||
-                        (safeTemplate.date || "").trim() ? (
+                          (safeTemplate.date || "").trim() ? (
                           <div
-                            className={`${
-                              safeTemplate.alignment === "center"
+                            className={`${safeTemplate.alignment === "center"
                                 ? "text-center"
                                 : safeTemplate.alignment === "right"
-                                ? "text-right"
-                                : "text-left"
-                            } tracking-[0.14em] uppercase border-b pb-4`}
+                                  ? "text-right"
+                                  : "text-left"
+                              } tracking-[0.14em] uppercase border-b pb-4`}
                             style={{
                               fontFamily: safeTemplate.bylineFont
                                 ? fontOptions.find(
-                                    (f) => f.name === safeTemplate.bylineFont
-                                  )?.value || safeTemplate.bylineFont
+                                  (f) => f.name === safeTemplate.bylineFont
+                                )?.value || safeTemplate.bylineFont
                                 : undefined,
                               fontWeight: safeTemplate.bylineWeight || "700",
                               fontSize: safeTemplate.bylineSize || "0.75rem",
@@ -566,8 +562,8 @@ export default function PostAnalyticsPage() {
                               ? `By ${safeTemplate.authorName}`
                               : ""}
                             {(safeTemplate.authorName || "").trim() &&
-                            (safeTemplate.date ||
-                              formatDate(new Date(post.created_at)))
+                              (safeTemplate.date ||
+                                formatDate(new Date(post.created_at)))
                               ? " • "
                               : ""}
                             {safeTemplate.date ||
@@ -604,33 +600,27 @@ export default function PostAnalyticsPage() {
                                                         .preview-content h5,
                                                         .preview-content h6 {
                                                             font-family: ${headingFont};
-                                                            font-weight: ${
-                                                              styles.headingWeight
-                                                            };
-                                                            color: ${
-                                                              styles.textColor
-                                                            };
+                                                            font-weight: ${styles.headingWeight
+                              };
+                                                            color: ${styles.textColor
+                              };
                                                         }
                                                         .preview-content a {
-                                                            color: ${
-                                                              styles.linkColor
-                                                            };
+                                                            color: ${styles.linkColor
+                              };
                                                         }
                                                         .preview-content blockquote {
-                                                            border-left-color: ${
-                                                              styles.textColor
-                                                            };
-                                                            color: ${
-                                                              styles.textColor
-                                                            };
+                                                            border-left-color: ${styles.textColor
+                              };
+                                                            color: ${styles.textColor
+                              };
                                                         }
                                                         .preview-content code {
-                                                            background-color: ${
-                                                              styles.backgroundColor ===
-                                                              "#FFFFFF"
-                                                                ? "#F3F4F6"
-                                                                : "rgba(0,0,0,0.1)"
-                                                            };
+                                                            background-color: ${styles.backgroundColor ===
+                                "#FFFFFF"
+                                ? "#F3F4F6"
+                                : "rgba(0,0,0,0.1)"
+                              };
                                                         }
                                                         .preview-content iframe[src*="cloudflarestream.com"],
                                                         .preview-content iframe[src*="videodelivery.net"] {
@@ -748,19 +738,17 @@ export default function PostAnalyticsPage() {
                           return (
                             <div
                               key={index}
-                              className={`absolute w-4 h-4 rounded-full border-2 border-white shadow-lg pointer-events-none z-50 ${
-                                click.is_dead_click
+                              className={`absolute w-4 h-4 rounded-full border-2 border-white shadow-lg pointer-events-none z-50 ${click.is_dead_click
                                   ? "bg-red-500"
                                   : "bg-green-500"
-                              }`}
+                                }`}
                               style={{
                                 left: `${x}px`,
                                 top: `${y}px`,
                                 transform: "translate(-50%, -50%)",
                               }}
-                              title={`${
-                                click.is_dead_click ? "Dead click" : "Click"
-                              } at (${x}, ${y})`}
+                              title={`${click.is_dead_click ? "Dead click" : "Click"
+                                } at (${x}, ${y})`}
                             />
                           );
                         })}

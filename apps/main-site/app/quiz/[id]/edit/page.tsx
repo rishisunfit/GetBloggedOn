@@ -99,7 +99,7 @@ export default function EditQuizPage() {
   };
 
   const handleBack = () => {
-    router.push("/");
+    router.push("/dashboard");
   };
 
   if (loading) {
@@ -127,7 +127,7 @@ export default function EditQuizPage() {
             The quiz you're trying to edit doesn't exist.
           </p>
           <button
-            onClick={() => router.push("/")}
+            onClick={() => router.push("/dashboard")}
             className="px-6 py-3 bg-stone-900 text-white rounded-lg font-medium hover:bg-stone-800 transition-colors"
           >
             Go Home

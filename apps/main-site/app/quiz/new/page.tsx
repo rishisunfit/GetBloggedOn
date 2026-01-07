@@ -57,7 +57,7 @@ export default function NewQuizPage() {
     };
 
     const handleBack = () => {
-      router.push("/");
+      router.push("/dashboard");
     };
 
     if (isPreviewMode && previewQuiz) {

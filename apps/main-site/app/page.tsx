@@ -1,239 +1,156 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { LogOut } from "lucide-react";
-import { Dashboard } from "@/components/Dashboard";
-import { DashboardShimmer } from "@/components/DashboardShimmer";
-import { postsApi } from "@/services/posts";
-import { quizzesApi } from "@/services/quizzes";
-import { foldersApi, type Folder } from "@/services/folders";
-import { useAuth } from "@/hooks/useAuth";
-import { useDialog } from "@/hooks/useDialog";
-import { Quiz } from "@/types/quiz";
-import LandingPage from "./landingpage/page";
+import { useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { ArrowRight } from "lucide-react";
 
-type Post = {
-  id: string;
-  title: string;
-  content: string;
-  created_at: string;
-  updated_at: string;
-  status: "draft" | "published";
-  user_id: string;
-  is_draft: boolean;
-};
+export default function LandingPage() {
+  const [email, setEmail] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
-// Helper to convert DB post to UI format
-const convertPost = (post: Post) => ({
-  id: post.id,
-  title: post.title,
-  content: post.content,
-  createdAt: new Date(post.created_at),
-  updatedAt: new Date(post.updated_at),
-  status: post.status as "draft" | "published",
-  user_id: post.user_id,
-  is_draft: post.is_draft,
-  folder_id:
-    (post as unknown as { folder_id: string | null }).folder_id || null,
-  folder_slug:
-    (post as unknown as { folder_slug: string | null }).folder_slug || null,
-  post_slug:
-    (post as unknown as { post_slug: string | null }).post_slug || null,
-});
+  const handleWaitlistSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) return;
 
-// Helper to convert quiz to UI format
-const convertQuiz = (quiz: Quiz) => ({
-  id: quiz.id,
-  title: quiz.title,
-  questionsCount: quiz.questions.length,
-  createdAt: new Date(quiz.createdAt),
-  updatedAt: new Date(quiz.updatedAt),
-  status: quiz.status,
-});
-
-export default function HomePage() {
-  const [posts, setPosts] = useState<ReturnType<typeof convertPost>[]>([]);
-  const [quizzes, setQuizzes] = useState<ReturnType<typeof convertQuiz>[]>([]);
-  const [folders, setFolders] = useState<Folder[]>([]);
-  const [loading, setLoading] = useState(true);
-  const { signOut, profile, user, loading: authLoading } = useAuth();
-  const router = useRouter();
-  const { showDialog } = useDialog();
-
-  // Load posts and quizzes on mount (only if authenticated)
-  useEffect(() => {
-    if (user) {
-      loadData();
-    } else if (!authLoading) {
-      setLoading(false);
-    }
-  }, [user, authLoading]);
-
-  const loadData = async () => {
-    try {
-      const [postsData, quizzesData, foldersData] = await Promise.all([
-        postsApi.getAll(),
-        quizzesApi.getAll(),
-        foldersApi.getAll(),
-      ]);
-      setPosts(postsData.map(convertPost));
-      setQuizzes(quizzesData.map(convertQuiz));
-      setFolders(foldersData);
-    } catch (error) {
-      console.error("Error loading data:", error);
-    } finally {
-      setLoading(false);
-    }
+    setIsSubmitting(true);
+    // TODO: Save email to Supabase waitlist table
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    setIsSubmitted(true);
+    setIsSubmitting(false);
   };
-
-  // Post handlers
-  const handleCreatePost = () => {
-    router.push("/editor/new");
-  };
-
-  const handleEditPost = (postId: string) => {
-    router.push(`/editor/${postId}`);
-  };
-
-  const handlePreviewPost = (postId: string) => {
-    router.push(`/preview/${postId}`);
-  };
-
-  const handleViewAnalytics = (postId: string) => {
-    router.push(`/analytics/${postId}`);
-  };
-
-  const handleDeletePost = async (id: string) => {
-    const confirmed = await showDialog({
-      type: "confirm",
-      message: "Are you sure you want to delete this post?",
-      title: "Delete Post",
-      confirmText: "Delete",
-      cancelText: "Cancel",
-    });
-
-    if (confirmed) {
-      try {
-        await postsApi.delete(id);
-        setPosts(posts.filter((p) => p.id !== id));
-      } catch (error) {
-        console.error("Error deleting post:", error);
-        await showDialog({
-          type: "alert",
-          message: "Failed to delete post",
-          title: "Error",
-        });
-      }
-    }
-  };
-
-  // Quiz handlers
-  const handleCreateQuiz = () => {
-    router.push("/quiz/new");
-  };
-
-  const handleEditQuiz = (quizId: string) => {
-    router.push(`/quiz/${quizId}/edit`);
-  };
-
-  const handlePreviewQuiz = (quizId: string) => {
-    router.push(`/quiz/${quizId}`);
-  };
-
-  const handleDeleteQuiz = async (id: string) => {
-    const confirmed = await showDialog({
-      type: "confirm",
-      message: "Are you sure you want to delete this quiz?",
-      title: "Delete Quiz",
-      confirmText: "Delete",
-      cancelText: "Cancel",
-    });
-
-    if (confirmed) {
-      try {
-        await quizzesApi.delete(id);
-        setQuizzes(quizzes.filter((q) => q.id !== id));
-      } catch (error) {
-        console.error("Error deleting quiz:", error);
-        await showDialog({
-          type: "alert",
-          message: "Failed to delete quiz",
-          title: "Error",
-        });
-      }
-    }
-  };
-
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-      router.push("/");
-    } catch (error) {
-      console.error("Error signing out:", error);
-    }
-  };
-
-  // Show loading while auth is checking
-  if (authLoading) {
-    return <DashboardShimmer />;
-  }
-
-  // Show landing page for unauthenticated users
-  if (!user) {
-    return <LandingPage />;
-  }
-
-  // Show loading while fetching data for authenticated users
-  if (loading) {
-    return <DashboardShimmer />;
-  }
 
   return (
-    <>
-      {/* Header with user info and logout */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Blogish</h1>
-            {profile?.name && (
-              <p className="text-sm text-gray-600">Welcome, {profile.name}</p>
-            )}
-          </div>
-          <button
-            onClick={handleSignOut}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            <LogOut size={18} />
-            Sign Out
-          </button>
-        </div>
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Gradient Background */}
+      <div className="fixed inset-0 -z-10">
+        <div className="absolute inset-0 bg-gradient-to-br from-violet-100 via-purple-50 to-pink-100" />
+        <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-blue-200/40 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+        <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-pink-200/50 rounded-full blur-3xl translate-x-1/4 translate-y-1/4" />
+        <div className="absolute top-1/2 left-1/4 w-[300px] h-[300px] bg-purple-200/30 rounded-full blur-2xl" />
       </div>
 
-      <Dashboard
-        onCreatePost={handleCreatePost}
-        onEditPost={handleEditPost}
-        onDeletePost={handleDeletePost}
-        onPreviewPost={handlePreviewPost}
-        onViewAnalytics={handleViewAnalytics}
-        onCreateQuiz={handleCreateQuiz}
-        onEditQuiz={handleEditQuiz}
-        onDeleteQuiz={handleDeleteQuiz}
-        onPreviewQuiz={handlePreviewQuiz}
-        posts={posts}
-        quizzes={quizzes}
-        folders={folders}
-        onFoldersChange={async () => {
-          // Reload both posts and folders to get updated counts
-          const [postsData, foldersData] = await Promise.all([
-            postsApi.getAll(),
-            foldersApi.getAll(),
-          ]);
-          setPosts(postsData.map(convertPost));
-          setFolders(foldersData);
-        }}
-        isCreating={false}
-      />
-    </>
+      {/* Decorative sparkles */}
+      <div className="fixed inset-0 -z-5 overflow-hidden pointer-events-none">
+        <svg className="absolute top-[20%] left-[15%] w-3 h-3 text-gray-400/50" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 0L14 10L24 12L14 14L12 24L10 14L0 12L10 10L12 0Z" />
+        </svg>
+        <svg className="absolute top-[60%] left-[10%] w-2 h-2 text-gray-400/40" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 0L14 10L24 12L14 14L12 24L10 14L0 12L10 10L12 0Z" />
+        </svg>
+        <svg className="absolute top-[40%] right-[10%] w-3 h-3 text-gray-400/50" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 0L14 10L24 12L14 14L12 24L10 14L0 12L10 10L12 0Z" />
+        </svg>
+        <svg className="absolute bottom-[30%] right-[20%] w-2 h-2 text-gray-400/40" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 0L14 10L24 12L14 14L12 24L10 14L0 12L10 10L12 0Z" />
+        </svg>
+        <svg className="absolute bottom-[20%] left-[30%] w-2 h-2 text-gray-400/30" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 0L14 10L24 12L14 14L12 24L10 14L0 12L10 10L12 0Z" />
+        </svg>
+      </div>
+
+      {/* Main Content */}
+      <div className="relative min-h-screen flex flex-col items-center justify-center px-4 py-16">
+        {/* White Card Container */}
+        <div className="w-full max-w-2xl bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl shadow-purple-500/5 border border-white/50 p-8 md:p-12">
+
+          {/* Logo */}
+          <div className="flex items-center justify-center gap-3 mb-12">
+            <Image
+              src="/logo.png"
+              alt="Bloggish"
+              width={40}
+              height={40}
+              className="w-10 h-10 rounded-full"
+            />
+            <span
+              className="text-2xl text-gray-900 tracking-tight"
+              style={{ fontFamily: "'PT Serif', Georgia, serif", fontWeight: 700 }}
+            >
+              Bloggish
+            </span>
+          </div>
+
+
+          {/* Heading - Using PT Serif to match editor H1 */}
+          <h1
+            className="text-4xl md:text-5xl text-gray-900 text-center leading-tight mb-6"
+            style={{ fontFamily: "'PT Serif', Georgia, serif", fontWeight: 400 }}
+          >
+            It's like a blog but...<br /><span className="font-bold">better</span>
+          </h1>
+
+          {/* Subtext */}
+          <p className="text-center text-gray-500 mb-10 text-lg">
+            Ready to turn your blog into a conversion engine?<br />
+            Secure your spot on the waitlist.
+          </p>
+
+          {/* Waitlist Card */}
+          <div className="bg-white rounded-2xl shadow-lg shadow-gray-200/50 border border-gray-100 p-6 md:p-8">
+            {/* Badge */}
+            <div className="flex justify-center mb-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100/80 border border-gray-200/50">
+                <svg className="w-3 h-3 text-gray-600" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 0L14 10L24 12L14 14L12 24L10 14L0 12L10 10L12 0Z" />
+                </svg>
+                <span className="text-xs text-gray-700 font-medium">Bloggish is live by <span className="font-bold">INVITE ONLY</span></span>
+              </div>
+            </div>
+
+            <h2 className="text-xl font-semibold text-gray-900 mb-1 text-center">
+              Join the waitlist
+            </h2>
+            <p className="text-gray-500 text-sm mb-6 text-center">
+              Sign up to be one of the first to use Bloggish.
+            </p>
+
+            {/* Form */}
+            {!isSubmitted ? (
+              <form onSubmit={handleWaitlistSubmit}>
+                <div className="flex gap-3">
+                  <input
+                    type="email"
+                    placeholder="Enter your email..."
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900 transition-colors"
+                  />
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="px-6 py-3 bg-gray-900 text-white font-medium rounded-xl hover:bg-gray-800 transition-all disabled:opacity-50 flex items-center gap-2 whitespace-nowrap"
+                  >
+                    {isSubmitting ? (
+                      <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        Get Notified
+                        <ArrowRight className="w-4 h-4" />
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-center">
+                <p className="text-emerald-700 font-medium">🎉 You're on the list! We'll be in touch soon.</p>
+              </div>
+            )}
+          </div>
+
+          {/* Login Link */}
+          <p className="text-center text-gray-500 mt-8">
+            Already have an account?{" "}
+            <Link href="/login" className="text-gray-900 font-medium hover:underline">
+              Log in
+            </Link>
+          </p>
+        </div>
+
+      </div>
+    </div>
   );
 }

@@ -34,7 +34,7 @@ export default function PreviewPage() {
     if (id) {
       loadPost();
     } else {
-      router.push("/");
+      router.push("/dashboard");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, router]);
@@ -52,7 +52,7 @@ export default function PreviewPage() {
         message: "Failed to load post for preview",
         title: "Error",
       });
-      router.push("/");
+      router.push("/dashboard");
     } finally {
       setLoading(false);
     }
@@ -62,7 +62,7 @@ export default function PreviewPage() {
     if (id) {
       router.push(`/editor/${id}`);
     } else {
-      router.push("/");
+      router.push("/dashboard");
     }
   };
 

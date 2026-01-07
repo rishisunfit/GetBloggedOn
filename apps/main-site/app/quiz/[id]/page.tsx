@@ -61,7 +61,7 @@ export default function QuizPage() {
             The quiz you're looking for doesn't exist or has been removed.
           </p>
           <button
-            onClick={() => router.push("/")}
+            onClick={() => router.push("/dashboard")}
             className="px-6 py-3 bg-stone-900 text-white rounded-lg font-medium hover:bg-stone-800 transition-colors"
           >
             Go Home

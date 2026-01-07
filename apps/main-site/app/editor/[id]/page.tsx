@@ -98,7 +98,7 @@ export default function EditorPage() {
         message: "Failed to load post",
         title: "Error",
       });
-      router.push("/");
+      router.push("/dashboard");
     } finally {
       setLoading(false);
     }
@@ -114,7 +114,7 @@ export default function EditorPage() {
   }, [id, loadPost]);
 
   const handleBack = () => {
-    router.push("/");
+    router.push("/dashboard");
   };
 
   const handlePreview = () => {

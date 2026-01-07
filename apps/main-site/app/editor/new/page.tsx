@@ -17,7 +17,7 @@ export default function NewEditorPage() {
   const defaultTemplate = getDefaultTemplateData();
 
   const handleBack = () => {
-    router.push("/");
+    router.push("/dashboard");
   };
 
   const handlePreview = () => {
