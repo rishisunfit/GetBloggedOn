@@ -114,7 +114,10 @@
   margin-right: auto;
   text-align: left;
   padding-left: 1.5rem;
-  max-width: 100%;
+  width: calc(100% - 3rem) !important;
+  max-width: calc(100% - 3rem) !important;
+  table-layout: fixed !important;
+  box-sizing: border-box !important;
 }
 
 .ProseMirror ul[style*="text-align: center"] li,
@@ -822,6 +825,13 @@
   font-style: italic;
 }
 
+/* Ensure proper margins on prose lists (public pages) */
+.prose ul:not([style*="text-align: center"]),
+.prose ol:not([style*="text-align: center"]) {
+  margin-left: 1.5rem !important;
+  margin-right: 1.5rem !important;
+}
+
 .preview-content ul {
   list-style-type: disc;
   margin-left: 1.5rem;
@@ -1166,6 +1176,7 @@
   overflow-wrap: break-word;
   word-wrap: break-word;
   max-width: 100%;
+  width: 100%;
 }
 
 .ProseMirror li,
@@ -1173,9 +1184,33 @@
 .prose li {
   overflow-wrap: break-word;
   word-wrap: break-word;
+  word-break: break-word;
   white-space: normal;
   /* Ensure content doesn't overflow container */
   max-width: 100%;
+}
+
+/* Force wrapping on paragraphs inside list items */
+.ProseMirror li p,
+.preview-content li p,
+.prose li p {
+  overflow-wrap: break-word !important;
+  word-wrap: break-word !important;
+  word-break: break-word !important;
+  max-width: 100% !important;
+  white-space: normal !important;
+}
+
+/* Force proper width constraints on table-based centered lists */
+.ProseMirror ul[style*="text-align: center"],
+.ProseMirror ol[style*="text-align: center"],
+.preview-content ul[style*="text-align: center"],
+.preview-content ol[style*="text-align: center"],
+.prose ul[style*="text-align: center"],
+.prose ol[style*="text-align: center"] {
+  width: auto !important;
+  max-width: calc(100% - 3rem) !important;
+  box-sizing: border-box !important;
 }
 
 /* Ensure mobile preview specific constraints are respected */
@@ -1183,4 +1218,16 @@
 .mobile-preview .preview-content {
   width: 100%;
   overflow-x: hidden;
+}
+
+/* Override max-w-none for list containers */
+.prose.max-w-none ul,
+.prose.max-w-none ol,
+.ProseMirror ul,
+.ProseMirror ol,
+.preview-content ul,
+.preview-content ol {
+  max-width: 100% !important;
+  overflow-wrap: break-word !important;
+  word-break: break-word !important;
 }
