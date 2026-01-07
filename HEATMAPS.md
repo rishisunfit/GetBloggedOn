@@ -6,7 +6,7 @@ This document explains the heatmap tracking system implemented for posts.
 
 The heatmap system tracks 5 types of user interactions:
 
-1. **Scroll Depth Heatmap** - Tracks how far users scroll down the page
+1. **Scroll Depth Heatmap** - Tracks how far users scroll down the pages
 2. **Click Heatmap** - Tracks where users click (including dead clicks)
 3. **Attention by Section Heatmap** - Tracks which content sections get viewed
 4. **CTA Interaction Heatmap** - Tracks CTA impressions vs clicks
