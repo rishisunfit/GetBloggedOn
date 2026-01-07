@@ -212,6 +212,8 @@ export function VideoJsPlayer({
       controls: true,
       preload: "auto",
       fluid: false,
+      inactivityTimeout: 3000, // Hide controls after 3 seconds of inactivity
+      playbackRates: [0.5, 0.75, 1, 1.25, 1.5, 2], // Allow speed change
       html5: {
         vhs: {
           overrideNative: true,
@@ -221,6 +223,11 @@ export function VideoJsPlayer({
         nativeTextTracks: false,
       },
     });
+
+    // Ensure pitch preservation (prevent chipmunk effect)
+    if ((video as any).mozPreservesPitch !== undefined) (video as any).mozPreservesPitch = true;
+    if ((video as any).webkitPreservesPitch !== undefined) (video as any).webkitPreservesPitch = true;
+    if ((video as any).preservesPitch !== undefined) (video as any).preservesPitch = true;
 
     playerRef.current = player;
     console.log("Player initialized");
@@ -614,6 +621,7 @@ export function VideoJsPlayer({
       ref={containerRef}
       className={containerClassName}
       data-video-started={hasStarted}
+      data-has-timestamps={timestamps.length > 0 ? "true" : "false"}
       style={
         {
           "--vjs-primary-color": extractedPrimaryColor,
@@ -761,31 +769,134 @@ export function VideoJsPlayer({
         }
 
         /* Show control bar when video has started */
+        /* Show control bar when video has started - Premium Floating Style */
         #${playerId}[data-video-started="true"] .video-js .vjs-control-bar {
           z-index: 10 !important;
           display: flex !important;
           opacity: 1 !important;
           visibility: visible !important;
-          bottom: 0 !important;
-          left: 0 !important;
-          right: 0 !important;
-          height: 48px !important;
-          background-color: rgba(0, 0, 0, 0.8) !important;
+          bottom: 16px !important;
+          left: 16px !important;
+          right: 16px !important;
+          width: auto !important;
+          height: 52px !important;
+          background-color: rgba(15, 15, 15, 0.85) !important;
+          backdrop-filter: blur(16px) !important;
+          -webkit-backdrop-filter: blur(16px) !important;
+          border-radius: 16px !important;
+          border: 1px solid rgba(255, 255, 255, 0.1) !important;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
           transform: none !important;
-          transition: none !important;
+          transition: opacity 0.3s ease, visibility 0.3s ease !important;
           position: absolute !important;
+          padding: 0 12px !important;
+          align-items: center !important;
         }
 
+        /* Improved Icon aesthetics */
+        #${playerId} .video-js .vjs-button {
+          width: 36px !important;
+          height: 36px !important;
+          border-radius: 8px !important;
+          transition: background-color 0.2s !important;
+        }
+        #${playerId} .video-js .vjs-button:hover {
+          background-color: rgba(255, 255, 255, 0.1) !important;
+        }
+        #${playerId} .video-js .vjs-icon-placeholder:before {
+            font-size: 1.8em !important;
+            line-height: 36px !important;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5) !important;
+        }
+        
+        #${playerId} .video-js .vjs-volume-panel {
+            margin-right: 8px !important;
+            display: flex !important;
+            align-items: center !important;
+        }
+
+        /* Fix vertical alignment for text controls (Time, Speed) */
+        #${playerId} .video-js .vjs-playback-rate,
+        #${playerId} .video-js .vjs-time-control {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            height: 36px !important;
+            margin-top: 0 !important; 
+        }
+
+        #${playerId} .video-js .vjs-playback-rate-value {
+             display: flex !important;
+             align-items: center !important;
+             justify-content: center !important;
+             height: 100% !important;
+             line-height: 1 !important;
+             font-size: 13px !important;
+             font-weight: 500 !important;
+        }
+
+        #${playerId} .video-js .vjs-current-time,
+        #${playerId} .video-js .vjs-duration,
+        #${playerId} .video-js .vjs-remaining-time {
+             display: flex !important;
+             align-items: center !important;
+             height: 36px !important;
+        }
+        
+        #${playerId} .video-js .vjs-remaining-time-display,
+        #${playerId} .video-js .vjs-current-time-display,
+        #${playerId} .video-js .vjs-duration-display {
+             display: flex !important;
+             align-items: center !important;
+             line-height: 1 !important;
+             font-size: 14px !important;
+             font-weight: 500 !important;
+             padding: 0 4px !important;
+        }
+
+        /* Maximize seekbar space: Hide Volume and Time controls (except Duration) */
+        #${playerId} .video-js .vjs-volume-panel,
+        #${playerId} .video-js .vjs-current-time,
+        #${playerId} .video-js .vjs-remaining-time,
+        #${playerId} .video-js .vjs-time-divider {
+            display: none !important;
+        }
+        
+        #${playerId} .video-js .vjs-duration {
+            display: flex !important;
+            align-items: center !important;
+            margin-left: 4px !important;
+            margin-right: 4px !important;
+            order: 3 !important;
+        }
+
+        /* Ensure progress control expands */
+        #${playerId} .video-js .vjs-progress-control {
+            flex: 1 1 auto !important;
+            width: auto !important;
+            margin: 0 8px !important;
+            order: 2 !important;
+        }
+        
+        #${playerId} .video-js .vjs-playback-rate { order: 4 !important; }
+        #${playerId} .video-js .vjs-fullscreen-control { order: 5 !important; }
         #${playerId} .video-js .vjs-control-bar.vjs-hidden {
           display: flex !important;
         }
 
-        /* Ensure controls are visible even when user is "inactive" or transitioning (only after video started) */
-        #${playerId}[data-video-started="true"] .video-js.vjs-user-inactive .vjs-control-bar,
-                #${playerId}[data-video-started="true"] .video-js.vjs-fullscreen .vjs-control-bar {
+        /* Ensure controls are visible even when user is "inactive" ONLY if timestamps exist */
+        #${playerId}[data-video-started="true"][data-has-timestamps="true"] .video-js.vjs-user-inactive .vjs-control-bar,
+        #${playerId}[data-video-started="true"][data-has-timestamps="true"] .video-js.vjs-fullscreen .vjs-control-bar {
           display: flex !important;
           opacity: 1 !important;
           visibility: visible !important;
+        }
+
+        /* If NO timestamps, allow controls to hide on inactivity */
+        #${playerId}[data-video-started="true"][data-has-timestamps="false"] .video-js.vjs-user-inactive .vjs-control-bar {
+          opacity: 0 !important;
+          visibility: hidden !important;
+          transition: visibility 1s, opacity 1s;
         }
         #${playerId} [data-vjs-player] {
           border-radius: 0.75rem !important;
@@ -807,9 +918,44 @@ export function VideoJsPlayer({
         #${playerId} .video-js .vjs-text-track-display {
           border-radius: 0.75rem !important;
         }
-        #${playerId} .video-js .vjs-play-progress,
-        #${playerId} .video-js .vjs-load-progress {
-          background-color: ${extractedPrimaryColor} !important;
+        /* Sleek Progress Bar */
+        #${playerId} .video-js .vjs-progress-control {
+             height: 4px !important;
+             top: 0 !important; /* Reset layout */
+             margin: 0 16px !important;
+             border-radius: 100px !important;
+        }
+        #${playerId} .video-js .vjs-slider {
+             background-color: rgba(255, 255, 255, 0.2) !important;
+             height: 4px !important;
+             border-radius: 100px !important;
+             margin: 0 !important; /* Fix alignment */
+        }
+        #${playerId} .video-js .vjs-play-progress {
+             background-color: ${extractedPrimaryColor} !important;
+             border-radius: 100px !important;
+             box-shadow: 0 0 12px ${extractedPrimaryColor}90 !important;
+        }
+        #${playerId} .video-js .vjs-play-progress:before {
+             display: none !important; /* Remove default square knob */
+        }
+        #${playerId} .video-js .vjs-play-progress:after {
+             content: '' !important;
+             position: absolute !important;
+             top: -4px !important;
+             right: -6px !important;
+             width: 12px !important;
+             height: 12px !important;
+             background-color: white !important;
+             border-radius: 50% !important;
+             box-shadow: 0 2px 8px rgba(0,0,0,0.5) !important;
+             opacity: 0 !important;
+             transform: scale(0) !important;
+             transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+        }
+        #${playerId} .video-js .vjs-progress-control:hover .vjs-play-progress:after {
+             opacity: 1 !important;
+             transform: scale(1) !important;
         }
         #${playerId} .video-js .vjs-play-control:hover,
         #${playerId} .video-js .vjs-play-control:focus {

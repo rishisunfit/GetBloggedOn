@@ -104,40 +104,66 @@
 
 /* Centered lists - center the list block while keeping bullets inline with text */
 .ProseMirror ul[style*="text-align: center"],
-.ProseMirror ol[style*="text-align: center"] {
+.ProseMirror ol[style*="text-align: center"],
+.preview-content ul[style*="text-align: center"],
+.preview-content ol[style*="text-align: center"],
+.prose ul[style*="text-align: center"],
+.prose ol[style*="text-align: center"] {
   display: table;
   margin-left: auto;
   margin-right: auto;
   text-align: left;
   padding-left: 1.5rem;
+  max-width: 100%;
 }
 
 .ProseMirror ul[style*="text-align: center"] li,
-.ProseMirror ol[style*="text-align: center"] li {
+.ProseMirror ol[style*="text-align: center"] li,
+.preview-content ul[style*="text-align: center"] li,
+.preview-content ol[style*="text-align: center"] li,
+.prose ul[style*="text-align: center"] li,
+.prose ol[style*="text-align: center"] li {
   text-align: left;
 }
 
 .ProseMirror ul[style*="text-align: center"] li p,
-.ProseMirror ol[style*="text-align: center"] li p {
+.ProseMirror ol[style*="text-align: center"] li p,
+.preview-content ul[style*="text-align: center"] li p,
+.preview-content ol[style*="text-align: center"] li p,
+.prose ul[style*="text-align: center"] li p,
+.prose ol[style*="text-align: center"] li p {
   text-align: left;
 }
 
 .ProseMirror ul[style*="text-align: right"],
-.ProseMirror ol[style*="text-align: right"] {
+.ProseMirror ol[style*="text-align: right"],
+.preview-content ul[style*="text-align: right"],
+.preview-content ol[style*="text-align: right"],
+.prose ul[style*="text-align: right"],
+.prose ol[style*="text-align: right"] {
   display: table;
   margin-left: auto;
   margin-right: 0;
   text-align: left;
   padding-left: 1.5rem;
+  max-width: 100%;
 }
 
 .ProseMirror ul[style*="text-align: right"] li,
-.ProseMirror ol[style*="text-align: right"] li {
+.ProseMirror ol[style*="text-align: right"] li,
+.preview-content ul[style*="text-align: right"] li,
+.preview-content ol[style*="text-align: right"] li,
+.prose ul[style*="text-align: right"] li,
+.prose ol[style*="text-align: right"] li {
   text-align: left;
 }
 
 .ProseMirror ul[style*="text-align: right"] li p,
-.ProseMirror ol[style*="text-align: right"] li p {
+.ProseMirror ol[style*="text-align: right"] li p,
+.preview-content ul[style*="text-align: right"] li p,
+.preview-content ol[style*="text-align: right"] li p,
+.prose ul[style*="text-align: right"] li p,
+.prose ol[style*="text-align: right"] li p {
   text-align: left;
 }
 
@@ -1131,4 +1157,30 @@
   border-bottom: 1px solid #e5e7eb;
   padding-bottom: 1rem;
   margin-bottom: 3rem;
+}
+
+/* Fix for text overflow in editor and public views, especially for lists in mobile view */
+.ProseMirror,
+.preview-content,
+.prose {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  max-width: 100%;
+}
+
+.ProseMirror li,
+.preview-content li,
+.prose li {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  white-space: normal;
+  /* Ensure content doesn't overflow container */
+  max-width: 100%;
+}
+
+/* Ensure mobile preview specific constraints are respected */
+.mobile-preview .ProseMirror,
+.mobile-preview .preview-content {
+  width: 100%;
+  overflow-x: hidden;
 }
