@@ -9,9 +9,20 @@ import { Loader2 } from "lucide-react";
 interface QuizEmbedProps {
   quizId: string;
   align?: "left" | "center" | "right";
+  showResponsesPreview?: boolean;
+  skipContactCollection?: boolean;
+  showDescription?: boolean;
+  showResponsesButton?: boolean;
 }
 
-export function QuizEmbed({ quizId, align = "center" }: QuizEmbedProps) {
+export function QuizEmbed({
+  quizId,
+  align = "center",
+  showResponsesPreview = false,
+  skipContactCollection = false,
+  showDescription = true,
+  showResponsesButton = false,
+}: QuizEmbedProps) {
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -91,8 +102,8 @@ export function QuizEmbed({ quizId, align = "center" }: QuizEmbedProps) {
     align === "left"
       ? "items-start"
       : align === "right"
-      ? "items-end"
-      : "items-center";
+        ? "items-end"
+        : "items-center";
 
   return (
     <div
@@ -103,7 +114,13 @@ export function QuizEmbed({ quizId, align = "center" }: QuizEmbedProps) {
     >
       <div className={`w-full max-w-2xl flex ${alignClass}`}>
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden w-full">
-          <QuizPlayer quiz={quiz} />
+          <QuizPlayer
+            quiz={quiz}
+            showResponsesPreview={showResponsesPreview}
+            skipContactCollection={skipContactCollection}
+            showDescription={showDescription}
+            showResponsesButton={showResponsesButton}
+          />
         </div>
       </div>
     </div>

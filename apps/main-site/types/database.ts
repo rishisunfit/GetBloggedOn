@@ -465,6 +465,10 @@ export type Database = {
           next_post_id: string | null
           post_slug: string | null
           quiz_id: string | null
+          quiz_show_description: boolean | null
+          quiz_show_responses_button: boolean | null
+          quiz_show_responses_preview: boolean | null
+          quiz_skip_contact_collection: boolean | null
           rating_enabled: boolean | null
           status: string
           styles: Json | null
@@ -485,6 +489,10 @@ export type Database = {
           next_post_id?: string | null
           post_slug?: string | null
           quiz_id?: string | null
+          quiz_show_description?: boolean | null
+          quiz_show_responses_button?: boolean | null
+          quiz_show_responses_preview?: boolean | null
+          quiz_skip_contact_collection?: boolean | null
           rating_enabled?: boolean | null
           status?: string
           styles?: Json | null
@@ -505,6 +513,10 @@ export type Database = {
           next_post_id?: string | null
           post_slug?: string | null
           quiz_id?: string | null
+          quiz_show_description?: boolean | null
+          quiz_show_responses_button?: boolean | null
+          quiz_show_responses_preview?: boolean | null
+          quiz_skip_contact_collection?: boolean | null
           rating_enabled?: boolean | null
           status?: string
           styles?: Json | null

@@ -7,9 +7,23 @@ interface QuizCoverProps {
   cover: QuizCoverPage;
   styles: QuizStyles;
   onStart: () => void;
+  showDescription?: boolean;
+  showResponsesButton?: boolean;
+  skipContactCollection?: boolean;
+  hasPriorCompletion?: boolean;
+  onShowResults?: () => void;
 }
 
-export function QuizCover({ cover, styles, onStart }: QuizCoverProps) {
+export function QuizCover({
+  cover,
+  styles,
+  onStart,
+  showDescription = true,
+  showResponsesButton = false,
+  skipContactCollection = false,
+  hasPriorCompletion = false,
+  onShowResults,
+}: QuizCoverProps) {
   const getBorderRadius = () => {
     switch (styles.borderRadius) {
       case "none":
@@ -62,7 +76,7 @@ export function QuizCover({ cover, styles, onStart }: QuizCoverProps) {
       </h1>
 
       {/* Description */}
-      {cover.description && (
+      {showDescription && cover.description && (
         <p
           className="text-lg md:text-xl max-w-xl mb-10 opacity-70 leading-relaxed"
           style={{ color: styles.textColor }}
@@ -98,13 +112,46 @@ export function QuizCover({ cover, styles, onStart }: QuizCoverProps) {
         />
       </button>
 
-      {/* Time estimate */}
-      <p
-        className="mt-6 text-sm opacity-50"
-        style={{ color: styles.textColor }}
-      >
-        Takes about 2 minutes
-      </p>
+      {/* Time estimate and No Email Required */}
+      <div className="flex flex-col items-center gap-1 mt-6">
+        <p
+          className="text-sm opacity-50"
+          style={{ color: styles.textColor }}
+        >
+          Takes about 2 minutes
+        </p>
+        {skipContactCollection && (
+          <p
+            className="text-sm font-medium opacity-70"
+            style={{ color: styles.textColor }}
+          >
+            No Email Required
+          </p>
+        )}
+      </div>
+
+      {/* Show Responses Button (Visible only if enabled AND has prior completion) */}
+      {showResponsesButton && hasPriorCompletion && (
+        <button
+          onClick={() => {
+            if (onShowResults) {
+              onShowResults();
+            }
+          }}
+          className="mt-6 group px-8 py-4 text-lg font-semibold transition-all duration-300 flex items-center gap-3 hover:gap-4 shadow-lg hover:shadow-xl"
+          style={{
+            backgroundColor: styles.secondaryColor,
+            color: "#ffffff",
+            borderRadius: getBorderRadius(),
+          }}
+        >
+          Show my previous results
+          <ArrowRight
+            size={20}
+            className="transition-transform group-hover:translate-x-1"
+          />
+        </button>
+      )}
     </div>
   );
 }

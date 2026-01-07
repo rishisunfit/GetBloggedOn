@@ -39,6 +39,10 @@ export default function EditorPage() {
   const [folderId, setFolderId] = useState<string | null>(null);
   const [postSlug, setPostSlug] = useState<string | null>(null);
   const [nextPostId, setNextPostId] = useState<string | null>(null);
+  const [quizShowResponsesPreview, setQuizShowResponsesPreview] = useState<boolean>(false);
+  const [quizSkipContactCollection, setQuizSkipContactCollection] = useState<boolean>(false);
+  const [quizShowDescription, setQuizShowDescription] = useState<boolean>(true);
+  const [quizShowResponsesButton, setQuizShowResponsesButton] = useState<boolean>(false);
 
   const loadPost = useCallback(async () => {
     if (!id) return;
@@ -83,6 +87,10 @@ export default function EditorPage() {
       setFolderId((data as any).folder_id || null);
       setPostSlug((data as any).post_slug || null);
       setNextPostId((data as any).next_post_id || null);
+      setQuizShowResponsesPreview((data as any).quiz_show_responses_preview || false);
+      setQuizSkipContactCollection((data as any).quiz_skip_contact_collection || false);
+      setQuizShowDescription((data as any).quiz_show_description ?? true);
+      setQuizShowResponsesButton((data as any).quiz_show_responses_button || false);
     } catch (error) {
       console.error("Error loading post:", error);
       await showDialog({
@@ -234,6 +242,58 @@ export default function EditorPage() {
           error instanceof Error ? error.message : "Failed to update next post",
         title: "Error",
       });
+    }
+  };
+
+  const handleUpdateQuizShowResponsesPreview = async (enabled: boolean) => {
+    if (!id) return;
+    try {
+      await postsApi.update(id, {
+        quiz_show_responses_preview: enabled,
+      });
+      setQuizShowResponsesPreview(enabled);
+      await loadPost();
+    } catch (error) {
+      console.error("Error updating quiz responses preview:", error);
+    }
+  };
+
+  const handleUpdateQuizSkipContactCollection = async (enabled: boolean) => {
+    if (!id) return;
+    try {
+      await postsApi.update(id, {
+        quiz_skip_contact_collection: enabled,
+      });
+      setQuizSkipContactCollection(enabled);
+      await loadPost();
+    } catch (error) {
+      console.error("Error updating quiz skip contact:", error);
+    }
+  };
+
+  const handleUpdateQuizShowDescription = async (enabled: boolean) => {
+    if (!id) return;
+    try {
+      await postsApi.update(id, {
+        quiz_show_description: enabled,
+      });
+      setQuizShowDescription(enabled);
+      await loadPost();
+    } catch (error) {
+      console.error("Error updating quiz show description:", error);
+    }
+  };
+
+  const handleUpdateQuizShowResponsesButton = async (enabled: boolean) => {
+    if (!id) return;
+    try {
+      await postsApi.update(id, {
+        quiz_show_responses_button: enabled,
+      });
+      setQuizShowResponsesButton(enabled);
+      await loadPost();
+    } catch (error) {
+      console.error("Error updating quiz show responses button:", error);
     }
   };
 
@@ -442,6 +502,10 @@ export default function EditorPage() {
         initialFolderId={folderId}
         initialPostSlug={postSlug}
         initialNextPostId={nextPostId}
+        initialQuizShowResponsesPreview={quizShowResponsesPreview}
+        initialQuizSkipContactCollection={quizSkipContactCollection}
+        initialQuizShowDescription={quizShowDescription}
+        initialQuizShowResponsesButton={quizShowResponsesButton}
         onBack={handleBack}
         onPreview={handlePreview}
         onSave={handleSave}
@@ -455,6 +519,10 @@ export default function EditorPage() {
         onUpdateFolderId={handleUpdateFolderId}
         onUpdatePostSlug={handleUpdatePostSlug}
         onUpdateNextPostId={handleUpdateNextPostId}
+        onUpdateQuizShowResponsesPreview={handleUpdateQuizShowResponsesPreview}
+        onUpdateQuizSkipContactCollection={handleUpdateQuizSkipContactCollection}
+        onUpdateQuizShowDescription={handleUpdateQuizShowDescription}
+        onUpdateQuizShowResponsesButton={handleUpdateQuizShowResponsesButton}
       />
     </ProtectedRoute>
   );

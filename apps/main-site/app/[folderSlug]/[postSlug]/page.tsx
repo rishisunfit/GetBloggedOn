@@ -431,7 +431,16 @@ export default function CanonicalPostPage() {
                 post.quiz_id &&
                 post.quiz_id !== null
               ) {
-                return <QuizRenderer key="quiz" quizId={post.quiz_id} />;
+                return (
+                  <QuizRenderer
+                    key="quiz"
+                    quizId={post.quiz_id}
+                    showResponsesPreview={post.quiz_show_responses_preview ?? false}
+                    skipContactCollection={post.quiz_skip_contact_collection ?? false}
+                    showDescription={post.quiz_show_description ?? true}
+                    showResponsesButton={post.quiz_show_responses_button ?? false}
+                  />
+                );
               }
               if (componentType === "rating" && post.rating_enabled !== false) {
                 return <ReactionBar key="rating" postId={post.id} />;
@@ -447,7 +456,13 @@ export default function CanonicalPostPage() {
           ) : (
             <>
               {post.quiz_id && post.quiz_id !== null && (
-                <QuizRenderer quizId={post.quiz_id} />
+                <QuizRenderer
+                  quizId={post.quiz_id}
+                  showResponsesPreview={post.quiz_show_responses_preview ?? false}
+                  skipContactCollection={post.quiz_skip_contact_collection ?? false}
+                  showDescription={post.quiz_show_description ?? true}
+                  showResponsesButton={post.quiz_show_responses_button ?? false}
+                />
               )}
               {post.rating_enabled !== false && <ReactionBar postId={post.id} />}
               {post.cta_enabled !== false && <CTAForm postId={post.id} />}

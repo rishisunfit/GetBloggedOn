@@ -160,6 +160,10 @@ interface EditorProps {
   initialFolderId?: string | null;
   initialPostSlug?: string | null;
   initialNextPostId?: string | null;
+  initialQuizShowResponsesPreview?: boolean;
+  initialQuizSkipContactCollection?: boolean;
+  initialQuizShowDescription?: boolean;
+  initialQuizShowResponsesButton?: boolean;
   onBack: () => void;
   onPreview: () => void;
   onSave: (
@@ -193,6 +197,10 @@ interface EditorProps {
   onUpdateFolderId?: (folderId: string | null) => void;
   onUpdatePostSlug?: (postSlug: string | null) => void;
   onUpdateNextPostId?: (nextPostId: string | null) => void;
+  onUpdateQuizShowResponsesPreview?: (enabled: boolean) => void;
+  onUpdateQuizSkipContactCollection?: (enabled: boolean) => void;
+  onUpdateQuizShowDescription?: (enabled: boolean) => void;
+  onUpdateQuizShowResponsesButton?: (enabled: boolean) => void;
 }
 
 export function Editor({
@@ -206,6 +214,10 @@ export function Editor({
   initialFolderId = null,
   initialPostSlug = null,
   initialNextPostId = null,
+  initialQuizShowResponsesPreview = false,
+  initialQuizSkipContactCollection = false,
+  initialQuizShowDescription = true,
+  initialQuizShowResponsesButton = false,
   onBack,
   onSave,
   onSaveDraft,
@@ -218,6 +230,10 @@ export function Editor({
   onUpdateFolderId,
   onUpdatePostSlug,
   onUpdateNextPostId,
+  onUpdateQuizShowResponsesPreview,
+  onUpdateQuizSkipContactCollection,
+  onUpdateQuizShowDescription,
+  onUpdateQuizShowResponsesButton,
   initialComponentOrder = ["quiz", "rating", "cta", "nextArticle"],
 }: EditorProps) {
   const [templateData, setTemplateData] = useState<PostTemplateData>(() =>
@@ -235,6 +251,18 @@ export function Editor({
   const [folderId, setFolderId] = useState<string | null>(initialFolderId);
   const [postSlug, setPostSlug] = useState<string | null>(initialPostSlug);
   const [nextPostId, setNextPostId] = useState<string | null>(initialNextPostId);
+  const [quizShowResponsesPreview, setQuizShowResponsesPreview] = useState<boolean>(
+    initialQuizShowResponsesPreview
+  );
+  const [quizSkipContactCollection, setQuizSkipContactCollection] = useState<boolean>(
+    initialQuizSkipContactCollection
+  );
+  const [quizShowDescription, setQuizShowDescription] = useState<boolean>(
+    initialQuizShowDescription
+  );
+  const [quizShowResponsesButton, setQuizShowResponsesButton] = useState<boolean>(
+    initialQuizShowResponsesButton
+  );
   const [showSettings, setShowSettings] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [viewMode, setViewMode] = useState<"desktop" | "mobile">("desktop");
@@ -2221,6 +2249,10 @@ export function Editor({
             postSlug={postSlug}
             nextPostId={nextPostId}
             currentPostId={postId}
+            quizShowResponsesPreview={quizShowResponsesPreview}
+            quizSkipContactCollection={quizSkipContactCollection}
+            quizShowDescription={quizShowDescription}
+            quizShowResponsesButton={quizShowResponsesButton}
             onSave={(
               newQuizId,
               newRatingEnabled,
@@ -2228,8 +2260,25 @@ export function Editor({
               newComponentOrder,
               newFolderId,
               newPostSlug,
-              newNextPostId
+              newNextPostId,
+              newQuizShowResponsesPreview,
+              newQuizSkipContactCollection,
+              newQuizShowDescription,
+              newQuizShowResponsesButton
             ) => {
+              // Update local state first
+              const quizChanged = newQuizId !== quizId;
+              const ratingChanged = newRatingEnabled !== ratingEnabled;
+              const ctaChanged = newCtaEnabled !== ctaEnabled;
+              const orderChanged = JSON.stringify(newComponentOrder) !== JSON.stringify(componentOrder);
+              const folderChanged = newFolderId !== folderId;
+              const slugChanged = newPostSlug !== postSlug;
+              const nextPostChanged = newNextPostId !== nextPostId;
+              const responsesPreviewChanged = newQuizShowResponsesPreview !== quizShowResponsesPreview;
+              const skipContactChanged = newQuizSkipContactCollection !== quizSkipContactCollection;
+              const showDescriptionChanged = newQuizShowDescription !== quizShowDescription;
+              const showResponsesButtonChanged = newQuizShowResponsesButton !== quizShowResponsesButton;
+
               setQuizId(newQuizId);
               setRatingEnabled(newRatingEnabled);
               setCtaEnabled(newCtaEnabled);
@@ -2237,26 +2286,44 @@ export function Editor({
               setFolderId(newFolderId);
               setPostSlug(newPostSlug);
               setNextPostId(newNextPostId);
-              if (onUpdateQuizId) {
+              setQuizShowResponsesPreview(newQuizShowResponsesPreview);
+              setQuizSkipContactCollection(newQuizSkipContactCollection);
+              setQuizShowDescription(newQuizShowDescription);
+              setQuizShowResponsesButton(newQuizShowResponsesButton);
+
+              // Only trigger updates if changed
+              if (quizChanged && onUpdateQuizId) {
                 onUpdateQuizId(newQuizId);
               }
-              if (onUpdateRatingEnabled) {
+              if (ratingChanged && onUpdateRatingEnabled) {
                 onUpdateRatingEnabled(newRatingEnabled);
               }
-              if (onUpdateCtaEnabled) {
+              if (ctaChanged && onUpdateCtaEnabled) {
                 onUpdateCtaEnabled(newCtaEnabled);
               }
-              if (onUpdateComponentOrder) {
+              if (orderChanged && onUpdateComponentOrder) {
                 onUpdateComponentOrder(newComponentOrder);
               }
-              if (onUpdateFolderId) {
+              if (folderChanged && onUpdateFolderId) {
                 onUpdateFolderId(newFolderId);
               }
-              if (onUpdatePostSlug) {
+              if (slugChanged && onUpdatePostSlug) {
                 onUpdatePostSlug(newPostSlug);
               }
-              if (onUpdateNextPostId) {
+              if (nextPostChanged && onUpdateNextPostId) {
                 onUpdateNextPostId(newNextPostId);
+              }
+              if (responsesPreviewChanged && onUpdateQuizShowResponsesPreview) {
+                onUpdateQuizShowResponsesPreview(newQuizShowResponsesPreview);
+              }
+              if (skipContactChanged && onUpdateQuizSkipContactCollection) {
+                onUpdateQuizSkipContactCollection(newQuizSkipContactCollection);
+              }
+              if (showDescriptionChanged && onUpdateQuizShowDescription) {
+                onUpdateQuizShowDescription(newQuizShowDescription);
+              }
+              if (showResponsesButtonChanged && onUpdateQuizShowResponsesButton) {
+                onUpdateQuizShowResponsesButton(newQuizShowResponsesButton);
               }
             }}
           />
@@ -2686,6 +2753,10 @@ export function Editor({
                             key={`quiz-${quizId}`}
                             quizId={quizId}
                             skipInlineScan={true}
+                            showResponsesPreview={quizShowResponsesPreview}
+                            skipContactCollection={quizSkipContactCollection}
+                            showDescription={quizShowDescription}
+                            showResponsesButton={quizShowResponsesButton}
                           />
                         );
                       }
@@ -2723,7 +2794,14 @@ export function Editor({
                             className="mt-8 pointer-events-none opacity-75"
                             key={`quiz-preview-${quizId}`}
                           >
-                            <QuizRenderer quizId={quizId} skipInlineScan={true} />
+                            <QuizRenderer
+                              quizId={quizId}
+                              skipInlineScan={true}
+                              showResponsesPreview={quizShowResponsesPreview}
+                              skipContactCollection={quizSkipContactCollection}
+                              showDescription={quizShowDescription}
+                              showResponsesButton={quizShowResponsesButton}
+                            />
                           </div>
                         );
                       }

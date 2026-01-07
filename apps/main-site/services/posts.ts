@@ -21,6 +21,10 @@ export interface Post {
   folder_slug?: string | null;
   post_slug?: string | null;
   next_post_id?: string | null;
+  quiz_show_responses_preview?: boolean;
+  quiz_skip_contact_collection?: boolean;
+  quiz_show_description?: boolean;
+  quiz_show_responses_button?: boolean;
 }
 
 export interface PostStyles {
@@ -62,6 +66,10 @@ export interface UpdatePostData {
   folder_id?: string | null;
   post_slug?: string | null;
   next_post_id?: string | null;
+  quiz_show_responses_preview?: boolean;
+  quiz_skip_contact_collection?: boolean;
+  quiz_show_description?: boolean;
+  quiz_show_responses_button?: boolean;
 }
 
 export const postsApi = {
@@ -162,6 +170,17 @@ export const postsApi = {
       updateData.post_slug = postData.post_slug;
     if (postData.next_post_id !== undefined)
       updateData.next_post_id = postData.next_post_id;
+    if (postData.quiz_show_responses_preview !== undefined)
+      updateData.quiz_show_responses_preview =
+        postData.quiz_show_responses_preview;
+    if (postData.quiz_skip_contact_collection !== undefined)
+      updateData.quiz_skip_contact_collection =
+        postData.quiz_skip_contact_collection;
+    if (postData.quiz_show_description !== undefined)
+      updateData.quiz_show_description = postData.quiz_show_description;
+    if (postData.quiz_show_responses_button !== undefined)
+      updateData.quiz_show_responses_button =
+        postData.quiz_show_responses_button;
     updateData.updated_at = new Date().toISOString();
 
     const { data, error } = await supabase

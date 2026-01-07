@@ -7,6 +7,10 @@ import { QuizEmbed } from "./QuizEmbed";
 interface QuizRendererProps {
   quizId?: string | null;
   skipInlineScan?: boolean;
+  showDescription?: boolean;
+  showResponsesButton?: boolean;
+  showResponsesPreview?: boolean;
+  skipContactCollection?: boolean;
 }
 
 /**
@@ -17,6 +21,10 @@ interface QuizRendererProps {
 export function QuizRenderer({
   quizId,
   skipInlineScan = false,
+  showDescription = true,
+  showResponsesButton = false,
+  showResponsesPreview = false,
+  skipContactCollection = false,
 }: QuizRendererProps = {}) {
   // Scan for inline quizzes in content (only if not skipping and no direct quizId)
   useEffect(() => {
@@ -87,7 +95,16 @@ export function QuizRenderer({
 
   // If quizId is provided, render it directly (don't scan for inline quizzes)
   if (quizId && typeof quizId === "string" && quizId.trim() !== "") {
-    return <QuizEmbed quizId={quizId} align="center" />;
+    return (
+      <QuizEmbed
+        quizId={quizId}
+        align="center"
+        showDescription={showDescription}
+        showResponsesButton={showResponsesButton}
+        showResponsesPreview={showResponsesPreview}
+        skipContactCollection={skipContactCollection}
+      />
+    );
   }
 
   // If skipInlineScan is true, don't render anything

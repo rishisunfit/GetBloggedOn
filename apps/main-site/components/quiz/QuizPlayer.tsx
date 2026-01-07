@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Quiz, QuizAnswer, QuizSubmission } from "@/types/quiz";
 import { QuizCover } from "./QuizCover";
 import { QuizCard } from "./QuizCard";
@@ -14,11 +14,23 @@ interface QuizPlayerProps {
   quiz: Quiz;
   onComplete?: (submission: QuizSubmission) => void;
   onClose?: () => void;
+  showResponsesPreview?: boolean;
+  skipContactCollection?: boolean;
+  showDescription?: boolean;
+  showResponsesButton?: boolean;
 }
 
 type QuizStage = "cover" | "questions" | "contact" | "conclusion";
 
-export function QuizPlayer({ quiz, onComplete, onClose }: QuizPlayerProps) {
+export function QuizPlayer({
+  quiz,
+  onComplete,
+  onClose,
+  showResponsesPreview,
+  skipContactCollection,
+  showDescription = true,
+  showResponsesButton,
+}: QuizPlayerProps) {
   const [stage, setStage] = useState<QuizStage>("cover");
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, QuizAnswer>>({});
@@ -31,6 +43,17 @@ export function QuizPlayer({ quiz, onComplete, onClose }: QuizPlayerProps) {
   const [slideDirection, setSlideDirection] = useState<"left" | "right">(
     "left"
   );
+  const [hasPriorCompletion, setHasPriorCompletion] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const data = localStorage.getItem(`quiz_data_${quiz.id}`);
+      const legacy = localStorage.getItem(`quiz_completed_${quiz.id}`);
+      if (data || legacy) {
+        setHasPriorCompletion(true);
+      }
+    }
+  }, [quiz.id]);
 
   const currentQuestion = quiz.questions[currentQuestionIndex];
   const isFirstQuestion = currentQuestionIndex === 0;
@@ -78,7 +101,31 @@ export function QuizPlayer({ quiz, onComplete, onClose }: QuizPlayerProps) {
   );
 
   const handleStart = () => {
+    // Reset answers if starting fresh? 
+    // For now, keeping existing behavior (which keeps answers if they exist in state).
+    // If we want to clear previous session when starting NEW, we should setAnswers({}) here.
+    // However, if we just loaded from localStorage, maybe we want to keep them?
+    // Let's assume Start = Retake, so verify if we want to clear.
+    // Given 'Show Results' is separate, Start likely means Retake.
+    setAnswers({});
     animateTransition("left", () => setStage("questions"));
+  };
+
+  const handleShowResults = () => {
+    if (typeof window !== "undefined") {
+      const dataStr = localStorage.getItem(`quiz_data_${quiz.id}`);
+      if (dataStr) {
+        try {
+          const data = JSON.parse(dataStr);
+          if (data.answers) {
+            setAnswers(data.answers);
+          }
+        } catch (e) {
+          console.error("Failed to parse quiz data", e);
+        }
+      }
+    }
+    animateTransition("left", () => setStage("conclusion"));
   };
 
   const handleAnswer = (answer: QuizAnswer) => {
@@ -95,6 +142,7 @@ export function QuizPlayer({ quiz, onComplete, onClose }: QuizPlayerProps) {
       // Move to contact or conclusion
       animateTransition("left", () => {
         if (
+          !skipContactCollection &&
           quiz.contactSettings.enabled &&
           quiz.contactSettings.position === "before_conclusion"
         ) {
@@ -150,6 +198,22 @@ export function QuizPlayer({ quiz, onComplete, onClose }: QuizPlayerProps) {
       answers: Object.values(answers),
       contactInfo: info || contactInfo,
     });
+
+    if (typeof window !== "undefined") {
+      // Save full state for results viewing
+      const storedData = {
+        completed: true,
+        answers: answers,
+        score: submission.score,
+        submissionId: submission.id,
+        timestamp: new Date().toISOString()
+      };
+      localStorage.setItem(`quiz_data_${quiz.id}`, JSON.stringify(storedData));
+
+      // Also set legacy key just in case other things use it
+      localStorage.setItem(`quiz_completed_${quiz.id}`, "true");
+      setHasPriorCompletion(true);
+    }
 
     if (onComplete) {
       onComplete(submission);
@@ -216,6 +280,11 @@ export function QuizPlayer({ quiz, onComplete, onClose }: QuizPlayerProps) {
             cover={quiz.coverPage}
             styles={quiz.styles}
             onStart={handleStart}
+            showDescription={showDescription}
+            showResponsesButton={showResponsesButton}
+            skipContactCollection={skipContactCollection}
+            hasPriorCompletion={hasPriorCompletion}
+            onShowResults={handleShowResults}
           />
         )}
 

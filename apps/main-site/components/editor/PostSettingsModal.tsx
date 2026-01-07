@@ -27,6 +27,10 @@ interface PostSettingsModalProps {
   postSlug?: string | null;
   nextPostId?: string | null;
   currentPostId?: string | null;
+  quizShowResponsesPreview?: boolean;
+  quizSkipContactCollection?: boolean;
+  quizShowDescription?: boolean;
+  quizShowResponsesButton?: boolean;
   onSave: (
     quizId: string | null,
     ratingEnabled: boolean,
@@ -34,7 +38,11 @@ interface PostSettingsModalProps {
     componentOrder: string[],
     folderId: string | null,
     postSlug: string | null,
-    nextPostId: string | null
+    nextPostId: string | null,
+    quizShowResponsesPreview: boolean,
+    quizSkipContactCollection: boolean,
+    quizShowDescription: boolean,
+    quizShowResponsesButton: boolean
   ) => void;
 }
 
@@ -49,6 +57,10 @@ export function PostSettingsModal({
   postSlug,
   nextPostId,
   currentPostId,
+  quizShowResponsesPreview = false,
+  quizSkipContactCollection = false,
+  quizShowDescription = true,
+  quizShowResponsesButton = false,
   onSave,
 }: PostSettingsModalProps) {
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
@@ -63,6 +75,12 @@ export function PostSettingsModal({
     componentOrder || ["quiz", "rating", "cta"]
   );
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Quiz settings state
+  const [showResponsesPreview, setShowResponsesPreview] = useState(quizShowResponsesPreview);
+  const [skipContactCollection, setSkipContactCollection] = useState(quizSkipContactCollection);
+  const [showDescription, setShowDescription] = useState(quizShowDescription);
+  const [showResponsesButton, setShowResponsesButton] = useState(quizShowResponsesButton);
 
   // Folder and slug state
   const [folders, setFolders] = useState<Folder[]>([]);
@@ -94,6 +112,10 @@ export function PostSettingsModal({
       setQuizEnabled(!!quizId);
       setRatingEnabledState(ratingEnabled);
       setCtaEnabledState(ctaEnabled);
+      setShowResponsesPreview(quizShowResponsesPreview);
+      setSkipContactCollection(quizSkipContactCollection);
+      setShowDescription(quizShowDescription);
+      setShowResponsesButton(quizShowResponsesButton);
 
       // Ensure nextArticle is in the component order
       const order = componentOrder || ["quiz", "rating", "cta", "nextArticle"];
@@ -120,6 +142,10 @@ export function PostSettingsModal({
     folderId,
     postSlug,
     nextPostId,
+    quizShowResponsesPreview,
+    quizSkipContactCollection,
+    quizShowDescription,
+    quizShowResponsesButton,
   ]);
 
   const loadQuizzes = async () => {
@@ -259,6 +285,12 @@ export function PostSettingsModal({
       return;
     }
 
+    // Validate quiz selection
+    if (quizEnabled && !selectedQuizId) {
+      setError("Please select a quiz to enable the Quiz Funnel");
+      return;
+    }
+
     onSave(
       quizEnabled ? selectedQuizId : null,
       ratingEnabledState,
@@ -266,7 +298,11 @@ export function PostSettingsModal({
       componentOrderState,
       selectedFolderId,
       postSlugState.trim() || null,
-      nextArticleEnabled ? selectedNextPostId : null
+      nextArticleEnabled ? selectedNextPostId : null,
+      quizEnabled ? showResponsesPreview : false,
+      quizEnabled ? skipContactCollection : false,
+      quizEnabled ? showDescription : true,
+      quizEnabled ? showResponsesButton : false
     );
     onClose();
   };
@@ -477,6 +513,89 @@ export function PostSettingsModal({
               </div>
             )}
           </div>
+
+          {/* Quiz Settings (only visible when quiz is enabled and selected) */}
+          {quizEnabled && selectedQuizId && (
+            <div className="mb-6 ml-4 pl-4 border-l-2 border-violet-200">
+              <h5 className="text-sm font-medium text-gray-700 mb-3">Quiz Display Options</h5>
+
+              {/* Show Responses Preview */}
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <p className="text-sm font-medium text-gray-700">Show Responses Preview</p>
+                  <p className="text-xs text-gray-500">
+                    Display a summary of user&apos;s answers before showing results
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={showResponsesPreview}
+                    onChange={(e) => setShowResponsesPreview(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-violet-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-violet-600"></div>
+                </label>
+              </div>
+
+              {/* Skip Contact Collection */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-700">Skip Contact Collection</p>
+                  <p className="text-xs text-gray-500">
+                    Don&apos;t ask for contact info on this post (overrides quiz settings)
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={skipContactCollection}
+                    onChange={(e) => setSkipContactCollection(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-violet-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-violet-600"></div>
+                </label>
+              </div>
+
+              {/* Show Quiz Description */}
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <p className="text-sm font-medium text-gray-700">Show Description</p>
+                  <p className="text-xs text-gray-500">
+                    Show the quiz description on the cover page
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={showDescription}
+                    onChange={(e) => setShowDescription(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-violet-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-violet-600"></div>
+                </label>
+              </div>
+
+              {/* Show Responses Button */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-700">Show 'My Responses' Button</p>
+                  <p className="text-xs text-gray-500">
+                    Allow users to view their previous answers if they've taken the quiz
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={showResponsesButton}
+                    onChange={(e) => setShowResponsesButton(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-violet-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-violet-600"></div>
+                </label>
+              </div>
+            </div>
+          )}
 
           {/* Rating Section */}
           <div className="mb-6">
