@@ -49,6 +49,7 @@ import {
 import { uploadImageToStorage, uploadDataURLToStorage } from "@/lib/storage";
 import { useAuth } from "@/hooks/useAuth";
 import { mediaApi } from "@/services/media";
+import { ButtonModal, type ButtonConfig } from "./ButtonModal";
 
 interface EditorToolbarProps {
   editor: Editor;
@@ -72,9 +73,8 @@ const ToolbarButton = ({
   <button
     onClick={onClick}
     disabled={disabled}
-    className={`p-1.5 rounded hover:bg-gray-100 transition-colors ${
-      active ? "bg-gray-100 text-gray-900" : "text-gray-700"
-    } ${disabled ? "opacity-40 cursor-not-allowed" : ""}`}
+    className={`p-1.5 rounded hover:bg-gray-100 transition-colors ${active ? "bg-gray-100 text-gray-900" : "text-gray-700"
+      } ${disabled ? "opacity-40 cursor-not-allowed" : ""}`}
     title={title}
     type="button"
   >
@@ -98,6 +98,7 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
   const [showWebImageModal, setShowWebImageModal] = useState(false);
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [showQuizModal, setShowQuizModal] = useState(false);
+  const [showButtonModal, setShowButtonModal] = useState(false);
   const [, forceUpdate] = useState({});
   const dragStartRef = useRef<{ x: number; y: number } | null>(null);
   const { showDialog } = useDialog();
@@ -333,6 +334,14 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
       .run();
   };
 
+  const addButton = () => {
+    setShowButtonModal(true);
+  };
+
+  const handleInsertButton = (buttonConfig: ButtonConfig) => {
+    editor.chain().focus().setButton(buttonConfig).run();
+  };
+
   const handleInsertWebImage = async (values: ImageAttributionValues) => {
     // Insert as an image node with attribution attrs
     editor
@@ -548,9 +557,8 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
                   setShowHighlightPicker(false);
                   setShowLineSpacingPicker(false);
                 }}
-                className={`flex items-center gap-1 px-2 py-1 rounded hover:bg-gray-100 transition-colors text-sm font-medium ${
-                  showFontSizePicker ? "bg-gray-100 text-gray-900" : "text-gray-700"
-                }`}
+                className={`flex items-center gap-1 px-2 py-1 rounded hover:bg-gray-100 transition-colors text-sm font-medium ${showFontSizePicker ? "bg-gray-100 text-gray-900" : "text-gray-700"
+                  }`}
                 title="Font Size - Click to change text size"
               >
                 <Type size={16} />
@@ -678,9 +686,8 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
 
           {/* Alignment */}
           <div
-            className={`flex items-center gap-0 ${
-              currentAlignment ? "bg-blue-50 rounded px-1 py-0.5" : ""
-            }`}
+            className={`flex items-center gap-0 ${currentAlignment ? "bg-blue-50 rounded px-1 py-0.5" : ""
+              }`}
           >
             <ToolbarButton
               onClick={() => editor.chain().focus().setTextAlign("left").run()}
@@ -819,7 +826,7 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
               </ToolbarButton>
               {showColorPicker && (
                 <div className="fixed inset-0 z-[9999]" onClick={() => setShowColorPicker(false)}>
-                  <div 
+                  <div
                     className="absolute"
                     style={{ top: "100px", left: "50%", transform: "translateX(-50%)" }}
                     onClick={(e) => e.stopPropagation()}
@@ -972,9 +979,8 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
 
           {/* Table */}
           <div
-            className={`flex items-center gap-0 ${
-              editor.isActive("table") ? "bg-blue-50 rounded px-1 py-0.5" : ""
-            }`}
+            className={`flex items-center gap-0 ${editor.isActive("table") ? "bg-blue-50 rounded px-1 py-0.5" : ""
+              }`}
           >
             <ToolbarButton
               onClick={() => setShowTableModal(true)}
@@ -1051,8 +1057,8 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
             <ToolbarButton onClick={addVideo} title="Add Video">
               <Video size={18} />
             </ToolbarButton>
-            <ToolbarButton onClick={addQuiz} title="Embed Quiz">
-              <span className="text-xs font-medium">+ADD QUIZ</span>
+            <ToolbarButton onClick={addButton} title="Add Button">
+              <span className="text-xs font-medium">+BUTTON</span>
             </ToolbarButton>
             <ToolbarButton
               onClick={() => setShowHistory(true)}
@@ -1141,45 +1147,52 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
         }}
       />
 
+      {/* Button Modal */}
+      <ButtonModal
+        isOpen={showButtonModal}
+        onClose={() => setShowButtonModal(false)}
+        onInsert={handleInsertButton}
+      />
+
       {/* Close pickers when clicking outside */}
       {(showColorPicker ||
         showHighlightPicker ||
         showLineSpacingPicker ||
         showFontSizePicker) && (
-        <div
-          className="fixed inset-0 z-40"
-          onMouseDown={(e) => {
-            // Only track if clicking on the backdrop itself (not a child)
-            if (e.target === e.currentTarget) {
-              dragStartRef.current = { x: e.clientX, y: e.clientY };
-            }
-          }}
-          onMouseUp={(e) => {
-            // Only close if clicking on the backdrop itself and it was a click (not a drag)
-            if (e.target === e.currentTarget && dragStartRef.current) {
-              const dx = Math.abs(e.clientX - dragStartRef.current.x);
-              const dy = Math.abs(e.clientY - dragStartRef.current.y);
-              // If moved less than 5px, it's a click, not a drag
-              if (dx < 5 && dy < 5) {
+          <div
+            className="fixed inset-0 z-40"
+            onMouseDown={(e) => {
+              // Only track if clicking on the backdrop itself (not a child)
+              if (e.target === e.currentTarget) {
+                dragStartRef.current = { x: e.clientX, y: e.clientY };
+              }
+            }}
+            onMouseUp={(e) => {
+              // Only close if clicking on the backdrop itself and it was a click (not a drag)
+              if (e.target === e.currentTarget && dragStartRef.current) {
+                const dx = Math.abs(e.clientX - dragStartRef.current.x);
+                const dy = Math.abs(e.clientY - dragStartRef.current.y);
+                // If moved less than 5px, it's a click, not a drag
+                if (dx < 5 && dy < 5) {
+                  setShowColorPicker(false);
+                  setShowHighlightPicker(false);
+                  setShowLineSpacingPicker(false);
+                  setShowFontSizePicker(false);
+                }
+              }
+              dragStartRef.current = null;
+            }}
+            onClick={(e) => {
+              // Fallback: close on click if it's the backdrop
+              if (e.target === e.currentTarget) {
                 setShowColorPicker(false);
                 setShowHighlightPicker(false);
                 setShowLineSpacingPicker(false);
                 setShowFontSizePicker(false);
               }
-            }
-            dragStartRef.current = null;
-          }}
-          onClick={(e) => {
-            // Fallback: close on click if it's the backdrop
-            if (e.target === e.currentTarget) {
-              setShowColorPicker(false);
-              setShowHighlightPicker(false);
-              setShowLineSpacingPicker(false);
-              setShowFontSizePicker(false);
-            }
-          }}
-        />
-      )}
+            }}
+          />
+        )}
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { CTAForm } from "./CTAForm";
 import { QuizRenderer } from "./QuizRenderer";
 import { VideoJsPlayer, extractCloudflareVideoIdFromUrl } from "./VideoJsPlayer";
 import { NextArticle } from "./NextArticle";
+import { HydratedButton } from "./HydratedButton";
 import { PostTemplateData } from "@/services/postTemplate";
 import { useMemo } from "react";
 
@@ -37,9 +38,9 @@ export function Preview({
   };
 
   // Process HTML to extract videos and replace with placeholders
-  const { processedHtml, extractedVideos } = useMemo(() => {
+  const { processedHtml, extractedVideos, extractedButtons } = useMemo(() => {
     if (typeof window === "undefined" || !content) {
-      return { processedHtml: content, extractedVideos: [] };
+      return { processedHtml: content, extractedVideos: [], extractedButtons: [] };
     }
 
     const parser = new DOMParser();
@@ -47,11 +48,17 @@ export function Preview({
     const iframes = doc.querySelectorAll<HTMLIFrameElement>(
       'iframe[src*="cloudflarestream.com"], iframe[src*="videodelivery.net"]'
     );
+    const buttonDivs = doc.querySelectorAll<HTMLDivElement>('div[data-type="button"]');
 
     const videos: Array<{
       src: string;
       id: string | null;
       primaryColor: string | null;
+      placeholderId: string;
+    }> = [];
+
+    const buttons: Array<{
+      attrs: any;
       placeholderId: string;
     }> = [];
 
@@ -96,9 +103,38 @@ export function Preview({
       }
     });
 
+    // Handle buttons
+    buttonDivs.forEach((btnDiv, index) => {
+      const uniqueId = `preview-button-${index}-${Date.now()}`;
+      const placeholderId = uniqueId;
+
+      const attrs = {
+        text: btnDiv.getAttribute("text") || "",
+        url: btnDiv.getAttribute("url") || "",
+        variant: btnDiv.getAttribute("variant") || "solid",
+        color: btnDiv.getAttribute("color") || "primary",
+        customColor: btnDiv.getAttribute("customcolor"),
+        size: btnDiv.getAttribute("size") || "md",
+        radius: btnDiv.getAttribute("radius") || "md",
+        align: btnDiv.getAttribute("align") || "center",
+      };
+
+      buttons.push({
+        attrs,
+        placeholderId,
+      });
+
+      // Replace button div with placeholder
+      const placeholder = doc.createElement("div");
+      placeholder.id = placeholderId;
+      placeholder.className = "button-placeholder";
+      btnDiv.parentNode?.replaceChild(placeholder, btnDiv);
+    });
+
     return {
       processedHtml: doc.documentElement.outerHTML,
       extractedVideos: videos,
+      extractedButtons: buttons,
     };
   }, [content]);
 
@@ -181,6 +217,15 @@ export function Preview({
               videoUrl={video.src}
               videoId={video.id}
               primaryColor={video.primaryColor}
+            />
+          ))}
+
+          {/* Render HydratedButtons */}
+          {extractedButtons.map((btn) => (
+            <HydratedButton
+              key={btn.placeholderId}
+              placeholderId={btn.placeholderId}
+              attrs={btn.attrs}
             />
           ))}
 

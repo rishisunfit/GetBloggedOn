@@ -12,6 +12,7 @@ import {
 } from "@/components/viewer/VideoJsPlayer";
 import { HeatmapTracker } from "@/components/viewer/HeatmapTracker";
 import { NextArticle } from "@/components/viewer/NextArticle";
+import { HydratedButton } from "@/components/viewer/HydratedButton";
 import { postsApi, PostStyles, type Post } from "@/services/posts";
 import {
   normalizeTemplateData,
@@ -112,9 +113,9 @@ export default function CanonicalPostPage() {
   const styles = post?.styles || defaultStyles;
 
   // Process HTML to replace iframes with placeholders and extract video data
-  const { processedHtml, extractedVideos } = useMemo(() => {
+  const { processedHtml, extractedVideos, extractedButtons } = useMemo(() => {
     if (typeof window === "undefined" || !bodyHtml) {
-      return { processedHtml: bodyHtml, extractedVideos: [] };
+      return { processedHtml: bodyHtml, extractedVideos: [], extractedButtons: [] };
     }
     const parser = new DOMParser();
     const doc = parser.parseFromString(bodyHtml, "text/html");
@@ -122,12 +123,18 @@ export default function CanonicalPostPage() {
       'iframe[src*="cloudflarestream.com"], iframe[src*="videodelivery.net"]'
     );
     const videoTags = doc.querySelectorAll<HTMLVideoElement>("video");
+    const buttonDivs = doc.querySelectorAll<HTMLDivElement>('div[data-type="button"]');
 
     const videos: Array<{
       src: string;
       id: string | null;
       primaryColor: string | null;
       index: number;
+      placeholderId: string;
+    }> = [];
+
+    const buttons: Array<{
+      attrs: any;
       placeholderId: string;
     }> = [];
 
@@ -222,9 +229,38 @@ export default function CanonicalPostPage() {
       videoTag.parentNode?.replaceChild(placeholder, videoTag);
     });
 
+    // Handle buttons
+    buttonDivs.forEach((btnDiv, index) => {
+      const postId = post?.id || "unknown";
+      const placeholderId = `button-placeholder-${postId}-${index}`;
+
+      const attrs = {
+        text: btnDiv.getAttribute("text") || "",
+        url: btnDiv.getAttribute("url") || "",
+        variant: btnDiv.getAttribute("variant") || "solid",
+        color: btnDiv.getAttribute("color") || "primary",
+        customColor: btnDiv.getAttribute("customcolor"),
+        size: btnDiv.getAttribute("size") || "md",
+        radius: btnDiv.getAttribute("radius") || "md",
+        align: btnDiv.getAttribute("align") || "center",
+      };
+
+      buttons.push({
+        attrs,
+        placeholderId,
+      });
+
+      // Replace button div with placeholder
+      const placeholder = doc.createElement("div");
+      placeholder.id = placeholderId;
+      placeholder.className = "button-placeholder";
+      btnDiv.parentNode?.replaceChild(placeholder, btnDiv);
+    });
+
     return {
       processedHtml: doc.documentElement.outerHTML,
       extractedVideos: videos,
+      extractedButtons: buttons,
     };
   }, [bodyHtml, post?.id, styles]);
 
@@ -375,6 +411,15 @@ export default function CanonicalPostPage() {
               videoUrl={video.src}
               videoId={video.id || null}
               primaryColor={video.primaryColor || styles.primaryColor}
+            />
+          ))}
+
+          {/* Buttons */}
+          {extractedButtons.map((btn) => (
+            <HydratedButton
+              key={btn.placeholderId}
+              placeholderId={btn.placeholderId}
+              attrs={btn.attrs}
             />
           ))}
 

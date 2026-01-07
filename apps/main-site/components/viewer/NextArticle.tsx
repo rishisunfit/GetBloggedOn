@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ArrowRight } from "lucide-react";
 import { postsApi, type Post } from "@/services/posts";
 import Link from "next/link";
 
@@ -43,8 +42,9 @@ export function NextArticle({ nextPostId }: NextArticleProps) {
 
   if (loading) {
     return (
-      <div className="my-8 flex justify-end">
-        <div className="h-6 bg-gray-200 rounded w-48 animate-pulse"></div>
+      <div className="my-12 text-center">
+        <div className="h-4 bg-gray-200 rounded w-48 mx-auto mb-2 animate-pulse"></div>
+        <div className="h-6 bg-gray-200 rounded w-64 mx-auto animate-pulse"></div>
       </div>
     );
   }
@@ -59,13 +59,15 @@ export function NextArticle({ nextPostId }: NextArticleProps) {
     : `/posts/${nextPost.id}`;
 
   return (
-    <div className="my-8 flex justify-end">
+    <div className="my-12 text-center">
+      <p className="text-gray-700 italic mb-2">
+        Read Next Blog -&gt;
+      </p>
       <Link
         href={nextPostUrl}
-        className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 font-medium transition-colors"
+        className="text-xl font-medium text-gray-900 underline hover:text-blue-600 transition-colors"
       >
-        <span>Next: {nextPost.title}</span>
-        <ArrowRight size={18} />
+        {nextPost.title}
       </Link>
     </div>
   );

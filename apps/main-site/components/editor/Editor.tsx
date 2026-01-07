@@ -6,6 +6,7 @@ import Link from "@tiptap/extension-link";
 import { ImageExtension } from "./ImageExtension";
 import { VideoExtension } from "./VideoExtension";
 import { QuizExtension } from "./QuizExtension";
+import { ButtonExtension } from "./ButtonExtension";
 import Placeholder from "@tiptap/extension-placeholder";
 import TextAlign from "@tiptap/extension-text-align";
 import Underline from "@tiptap/extension-underline";
@@ -72,8 +73,6 @@ import {
   MessageSquare,
   Video,
   Eraser,
-  PanelRightClose,
-  PanelRight,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -99,6 +98,7 @@ import {
 import { VideoModal } from "./VideoModal";
 import { VideoTimestampModal } from "./VideoTimestampModal";
 import { QuizModal } from "./QuizModal";
+import { ButtonModal, type ButtonConfig } from "./ButtonModal";
 import { ColorPickerPopover } from "./ColorPickerPopover";
 import { NodeSelection } from "prosemirror-state";
 import { uploadImageToStorage, uploadDataURLToStorage } from "@/lib/storage";
@@ -252,6 +252,7 @@ export function Editor({
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [showVideoTimestampModal, setShowVideoTimestampModal] = useState(false);
   const [showQuizModal, setShowQuizModal] = useState(false);
+  const [showButtonModal, setShowButtonModal] = useState(false);
   const [selectedVideoId, setSelectedVideoId] = useState<string>("");
   const [selectedVideo, setSelectedVideo] = useState<{
     videoId: string;
@@ -330,6 +331,7 @@ export function Editor({
       ImageExtension,
       VideoExtension,
       QuizExtension,
+      ButtonExtension,
       Placeholder.configure({
         placeholder: "Start writing your story...",
       }),
@@ -725,6 +727,11 @@ export function Editor({
         align: align || "center",
       })
       .run();
+  };
+
+  // Button handler
+  const handleInsertButton = (buttonConfig: ButtonConfig) => {
+    editor?.chain().focus().setButton(buttonConfig).run();
   };
 
   // Set link
@@ -1791,15 +1798,13 @@ export function Editor({
               <Video size={16} />
             </ToolbarButton>
 
-            {/* Quiz */}
+            {/* Button */}
             <ToolbarButton
-              onClick={() => setShowQuizModal(true)}
-              title="Embed Quiz"
+              onClick={() => setShowButtonModal(true)}
+              title="Add Button"
             >
-              <span className="text-xs font-medium">+ADD QUIZ</span>
+              <span className="text-xs font-medium">+BUTTON</span>
             </ToolbarButton>
-
-            <Divider />
 
             {/* Callout Box */}
             <div className="relative" id="callout-button-container">
@@ -3510,6 +3515,13 @@ export function Editor({
         onSelect={(quizId) => {
           handleInsertQuiz(quizId, "center");
         }}
+      />
+
+      {/* Button Modal */}
+      <ButtonModal
+        isOpen={showButtonModal}
+        onClose={() => setShowButtonModal(false)}
+        onInsert={handleInsertButton}
       />
 
       {/* Unsaved Changes Warning Modal */}
