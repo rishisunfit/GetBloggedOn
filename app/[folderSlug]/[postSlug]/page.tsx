@@ -393,7 +393,7 @@ export default function CanonicalPostPage() {
         <div className={template?.useGreenTemplate ? "bg-white rounded-lg p-8 shadow-lg" : ""}>
           {/* Post Content */}
           <div
-            className="prose prose-lg max-w-none mb-12"
+            className="prose prose-lg max-w-none mb-12 preview-content"
             style={{
               fontFamily: bodyFontOption.value,
               fontWeight: styles.bodyWeight || "400",
