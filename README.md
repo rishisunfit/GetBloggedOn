@@ -1,6 +1,6 @@
 # Blogish
 
-A modern blog platform with an interactive editor, quizzes, and analytics.
+A modern blog platform with interactive editors, quizzes, and analytics.
 
 ## Tech Stack
 
