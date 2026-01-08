@@ -1,139 +1,115 @@
-# Blogish Monorepo
+# Blogish
 
-A multi-tenant blog platform supporting:
-- **bloggish.io** + **www.bloggish.io** → Main marketing site
-- **\*.bloggish.io** (e.g., rishfits.bloggish.io, john.bloggish.io) → User blog sites
+A modern blog platform with an interactive editor, quizzes, and analytics.
 
-## Repository Structure
+## Tech Stack
+
+- **Framework**: Next.js 16 with React 19
+- **Styling**: Tailwind CSS
+- **Database**: Supabase
+- **Editor**: TipTap (rich text editor)
+- **Language**: TypeScript
+
+## Project Structure
 
 ```
 /
-├── apps/
-│   ├── main-site/        # Marketing website (bloggish.io, www.bloggish.io)
-│   └── blogs-platform/   # Tenant blogs (*.bloggish.io subdomains)
-├── package.json          # Root package.json with workspace scripts
-└── README.md
+├── app/                 # Next.js App Router pages
+│   ├── dashboard/       # User dashboard (protected)
+│   ├── editor/          # Post editor
+│   ├── preview/         # Post preview
+│   ├── analytics/       # Post analytics & heatmaps
+│   ├── quiz/            # Quiz builder & player
+│   ├── login/           # Authentication
+│   └── signup/
+├── components/          # React components
+│   ├── editor/          # Editor components
+│   ├── viewer/          # Post viewer components
+│   └── quiz/            # Quiz components
+├── contexts/            # React contexts
+├── hooks/               # Custom React hooks
+├── lib/                 # Utilities & Supabase client
+├── services/            # API services
+├── types/               # TypeScript types
+├── migrations/          # Database migrations
+└── public/              # Static assets
 ```
 
-## Apps Overview
-
-### `apps/main-site`
-The main marketing and dashboard application. This is where users sign up, manage their blogs, and access the editor.
-
-- **Domain**: `bloggish.io`, `www.bloggish.io`
-- **Stack**: Next.js 16, React 19, TypeScript, Tailwind CSS, Supabase
-
-### `apps/blogs-platform`
-Handles all tenant blog subdomains. When a user visits `username.bloggish.io`, the middleware rewrites the request to `/blog/username`.
-
-- **Domain**: `*.bloggish.io` (wildcard subdomain)
-- **Stack**: Next.js 16, React 19, TypeScript, Tailwind CSS
-
-## Development
+## Getting Started
 
 ### Prerequisites
+
 - Node.js 18+ (recommended: 20+)
-- npm
+- npm or yarn
+
+### Environment Variables
+
+Create a `.env` file with:
+
+```
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
 
 ### Install Dependencies
 
-From the repo root:
 ```bash
-# Install all apps
-npm run install:all
-
-# Or install individually
-cd apps/main-site && npm install
-cd apps/blogs-platform && npm install
+npm install
 ```
 
-### Run Development Servers
+### Run Development Server
 
-From the repo root:
 ```bash
-# Run main site (default: http://localhost:3000)
-npm run dev:main
-
-# Run blogs platform (default: http://localhost:3000)
-npm run dev:blogs
+npm run dev
 ```
 
-Or run directly in each app folder:
+The app will be available at `http://localhost:3000`
+
+### Build for Production
+
 ```bash
-cd apps/main-site && npm run dev
-cd apps/blogs-platform && npm run dev
+npm run build
+npm start
 ```
 
-### Local Subdomain Testing (blogs-platform)
+## Features
 
-To test subdomain routing locally:
+- **Rich Text Editor**: TipTap-based editor with formatting, images, videos, and tables
+- **Quiz Builder**: Create interactive quizzes with multiple question types
+- **Analytics**: Track scroll depth, clicks, attention, and engagement
+- **Landing Page**: Public landing page with waitlist signup
+- **Dashboard**: Manage posts, quizzes, and folders
+- **Authentication**: Supabase auth with login/signup
 
-1. **Add hosts entry** (requires admin/root):
-   ```bash
-   # On macOS/Linux, edit /etc/hosts:
-   sudo nano /etc/hosts
-   
-   # Add this line:
-   127.0.0.1 rishfits.bloggish.io
-   ```
+## Routes
 
-2. **Run the blogs-platform dev server** (use port 3001 if main-site is running):
-   ```bash
-   cd apps/blogs-platform
-   npm run dev -- --port 3001
-   ```
+| Route             | Description                |
+| ----------------- | -------------------------- |
+| `/`               | Landing page (public)      |
+| `/login`          | Login page                 |
+| `/signup`         | Signup page                |
+| `/dashboard`      | User dashboard (protected) |
+| `/editor/new`     | Create new post            |
+| `/editor/[id]`    | Edit existing post         |
+| `/preview/[id]`   | Preview post               |
+| `/analytics/[id]` | View post analytics        |
+| `/quiz/new`       | Create new quiz            |
+| `/quiz/[id]`      | View quiz                  |
+| `/quiz/[id]/edit` | Edit quiz                  |
 
-3. **Visit the subdomain**:
-   ```
-   http://rishfits.bloggish.io:3001
-   ```
+## Deployment
 
-4. **Expected result**: You should see "Blog tenant: rishfits"
+Deploy to Vercel:
 
-## Deployment (Vercel)
+1. Connect your GitHub repository to Vercel
+2. Configure environment variables
+3. Deploy
 
-This monorepo is designed for two separate Vercel projects:
+## Scripts
 
-### Main Site
-- **Project**: `blogish-main-site`
-- **Root Directory**: `apps/main-site`
-- **Domains**: `bloggish.io`, `www.bloggish.io`
-
-### Blogs Platform
-- **Project**: `blogish-blogs-platform`
-- **Root Directory**: `apps/blogs-platform`
-- **Domains**: `*.bloggish.io` (wildcard subdomain)
-
-### Vercel Configuration
-
-1. Create two Vercel projects
-2. For each project, set the **Root Directory** to the respective app folder
-3. Configure domains:
-   - Main site: Add `bloggish.io` and `www.bloggish.io`
-   - Blogs platform: Add `*.bloggish.io` as a wildcard domain
-
-## Architecture Notes
-
-### Subdomain Routing
-
-The `apps/blogs-platform/middleware.ts` handles subdomain detection:
-- Requests to `username.bloggish.io` are rewritten to `/blog/username`
-- Reserved subdomains (`www`, `bloggish`) are not rewritten
-- The `/blog/[username]` route renders the tenant's blog
-
-### Shared Code (Future)
-
-If you need to share code between apps, consider:
-1. Creating a `/packages` folder for shared utilities
-2. Using npm workspaces to link packages
-3. Publishing shared packages to a private registry
-
-## Scripts Reference
-
-| Script | Description |
-|--------|-------------|
-| `npm run dev:main` | Start main-site dev server |
-| `npm run dev:blogs` | Start blogs-platform dev server |
-| `npm run build:main` | Build main-site for production |
-| `npm run build:blogs` | Build blogs-platform for production |
-| `npm run install:all` | Install dependencies for all apps |
+| Script          | Description              |
+| --------------- | ------------------------ |
+| `npm run dev`   | Start development server |
+| `npm run build` | Build for production     |
+| `npm start`     | Start production server  |
+| `npm run lint`  | Run ESLint               |
