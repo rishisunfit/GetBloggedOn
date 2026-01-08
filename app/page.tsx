@@ -1,155 +1,461 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import Image from "next/image";
-import { ArrowRight } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Calendar } from "lucide-react";
+import { ReactionBar } from "@/components/viewer/ReactionBar";
+import { CTAForm } from "@/components/viewer/CTAForm";
+import { QuizRenderer } from "@/components/viewer/QuizRenderer";
+import {
+  VideoJsPlayer,
+  extractCloudflareVideoIdFromUrl,
+} from "@/components/viewer/VideoJsPlayer";
+import { HeatmapTracker } from "@/components/viewer/HeatmapTracker";
+import { NextArticle } from "@/components/viewer/NextArticle";
+import { HydratedButton } from "@/components/viewer/HydratedButton";
+import { postsApi, PostStyles, type Post } from "@/services/posts";
+import {
+  normalizeTemplateData,
+  splitTemplateFromHtml,
+  type PostTemplateData,
+} from "@/services/postTemplate";
+
+// Font options matching the editor
+const fontOptions = [
+  { name: "PT Serif", value: "PT Serif, Georgia, serif" },
+  { name: "Georgia", value: "Georgia, serif" },
+  { name: "Merriweather", value: "Merriweather, Georgia, serif" },
+  { name: "Playfair Display", value: "Playfair Display, Georgia, serif" },
+  { name: "Lora", value: "Lora, Georgia, serif" },
+  { name: "Inter", value: "Inter, system-ui, sans-serif" },
+  { name: "Open Sans", value: "Open Sans, system-ui, sans-serif" },
+  { name: "Roboto", value: "Roboto, system-ui, sans-serif" },
+];
+
+// Default styles if post doesn't have styles
+const defaultStyles: PostStyles = {
+  backgroundColor: "#FFFFFF",
+  textColor: "#000000",
+  primaryColor: "#DB2777",
+  primaryTextColor: "#FFFFFF",
+  secondaryColor: "#6B7280",
+  linkColor: "#4746E5",
+  headingFont: "PT Serif",
+  headingWeight: "700",
+  bodyFont: "Georgia",
+  bodyWeight: "400",
+};
 
 export default function LandingPage() {
-  const [email, setEmail] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [post, setPost] = useState<Post | null>(null);
+  const [template, setTemplate] = useState<PostTemplateData | null>(null);
+  const [bodyHtml, setBodyHtml] = useState<string>("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleWaitlistSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email) return;
+  useEffect(() => {
+    const loadPost = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await postsApi.getPublicById(
+          "1754779f-1b9e-425c-83ff-1b891442c793"
+        );
+        const t = data.template_data;
+        if (t) {
+          setTemplate(normalizeTemplateData(t, data.created_at));
+          setBodyHtml(data.content || "");
+        } else {
+          // Legacy fallback: older posts may have header embedded in HTML content
+          const split = splitTemplateFromHtml(
+            data.content || "",
+            data.created_at
+          );
+          setTemplate(split.template);
+          setBodyHtml(split.body || "");
+        }
+        setPost(data);
+      } catch (err) {
+        console.error("Error loading post:", err);
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to load post";
+        setError(errorMessage);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadPost();
+  }, []);
 
-    setIsSubmitting(true);
-    // TODO: Save email to Supabase waitlist table
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsSubmitted(true);
-    setIsSubmitting(false);
-  };
+  // Update page title when post loads
+  useEffect(() => {
+    if (post) {
+      document.title = `${post.title} | Blogish`;
+    } else {
+      document.title = "Blogish";
+    }
+  }, [post]);
+
+  // Get styles from post or use defaults
+  const styles = post?.styles || defaultStyles;
+
+  // Process HTML to replace iframes with placeholders and extract video data
+  const { processedHtml, extractedVideos, extractedButtons } = useMemo(() => {
+    if (typeof window === "undefined" || !bodyHtml) {
+      return { processedHtml: bodyHtml, extractedVideos: [], extractedButtons: [] };
+    }
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(bodyHtml, "text/html");
+    const iframes = doc.querySelectorAll<HTMLIFrameElement>(
+      'iframe[src*="cloudflarestream.com"], iframe[src*="videodelivery.net"]'
+    );
+    const videoTags = doc.querySelectorAll<HTMLVideoElement>("video");
+    const buttonDivs = doc.querySelectorAll<HTMLDivElement>('div[data-type="button"]');
+
+    const videos: Array<{
+      src: string;
+      id: string | null;
+      primaryColor: string | null;
+      index: number;
+      placeholderId: string;
+    }> = [];
+
+    const buttons: Array<{
+      attrs: any;
+      placeholderId: string;
+    }> = [];
+
+    // Handle iframes
+    iframes.forEach((iframe, index) => {
+      const src = iframe.getAttribute("src");
+      if (!src) return;
+
+      const normalizedSrc = src.startsWith("http")
+        ? src
+        : `https://${src.replace(/^\/\//, "")}`;
+      const { videoId } = extractCloudflareVideoIdFromUrl(normalizedSrc);
+
+      // Extract primaryColor from URL
+      let primaryColor: string | null = null;
+      try {
+        const urlObj = new URL(normalizedSrc);
+        const pc = urlObj.searchParams.get("primaryColor");
+        if (pc) {
+          primaryColor = pc.startsWith("#") ? pc : `#${pc.replace(/^%23/, "")}`;
+        } else {
+          // Try regex fallback
+          const match = normalizedSrc.match(/primaryColor=%23([a-fA-F0-9]{6})/);
+          if (match) {
+            primaryColor = `#${match[1]}`;
+          }
+        }
+      } catch {
+        // Invalid URL, try regex
+        const match = normalizedSrc.match(/primaryColor=%23([a-fA-F0-9]{6})/);
+        if (match) {
+          primaryColor = `#${match[1]}`;
+        }
+      }
+
+      if (videoId) {
+        const postId = post?.id || "unknown";
+        const placeholderId = `video-placeholder-${postId}-${videoId}-${index}`;
+        videos.push({
+          src: normalizedSrc,
+          id: videoId,
+          primaryColor,
+          index,
+          placeholderId,
+        });
+
+        // Replace iframe with placeholder div
+        const placeholder = doc.createElement("div");
+        placeholder.id = placeholderId;
+        placeholder.className = "video-js-placeholder";
+        placeholder.setAttribute("data-video-src", normalizedSrc);
+        placeholder.setAttribute("data-video-id", videoId);
+        if (primaryColor) {
+          placeholder.setAttribute("data-primary-color", primaryColor);
+        }
+        iframe.parentNode?.replaceChild(placeholder, iframe);
+      }
+    });
+
+    // Handle video tags
+    videoTags.forEach((videoTag, index) => {
+      const src =
+        videoTag.getAttribute("src") ||
+        videoTag.querySelector("source")?.getAttribute("src");
+      if (!src) return;
+
+      const normalizedSrc = src.startsWith("http")
+        ? src
+        : `https://${src.replace(/^\/\//, "")}`;
+
+      // For local/direct videos, we might not have a Cloudflare ID, but we can still use VideoJsPlayer
+      const { videoId } = extractCloudflareVideoIdFromUrl(normalizedSrc);
+      const finalVideoId = videoId || `direct-${index}`;
+
+      const postId = post?.id || "unknown";
+      const placeholderId = `video-placeholder-tag-${postId}-${finalVideoId}-${index}`;
+
+      videos.push({
+        src: normalizedSrc,
+        id: finalVideoId,
+        primaryColor: styles?.primaryColor || "#3B82F6",
+        index: iframes.length + index,
+        placeholderId,
+      });
+
+      // Replace video tag with placeholder div
+      const placeholder = doc.createElement("div");
+      placeholder.id = placeholderId;
+      placeholder.className = "video-js-placeholder";
+      placeholder.setAttribute("data-video-src", normalizedSrc);
+
+      videoTag.parentNode?.replaceChild(placeholder, videoTag);
+    });
+
+    // Handle buttons
+    buttonDivs.forEach((btnDiv, index) => {
+      const postId = post?.id || "unknown";
+      const placeholderId = `button-placeholder-${postId}-${index}`;
+
+      const attrs = {
+        text: btnDiv.getAttribute("text") || "",
+        url: btnDiv.getAttribute("url") || "",
+        variant: btnDiv.getAttribute("variant") || "solid",
+        color: btnDiv.getAttribute("color") || "primary",
+        customColor: btnDiv.getAttribute("customcolor"),
+        size: btnDiv.getAttribute("size") || "md",
+        radius: btnDiv.getAttribute("radius") || "md",
+        align: btnDiv.getAttribute("align") || "center",
+      };
+
+      buttons.push({
+        attrs,
+        placeholderId,
+      });
+
+      // Replace button div with placeholder
+      const placeholder = doc.createElement("div");
+      placeholder.id = placeholderId;
+      placeholder.className = "button-placeholder";
+      btnDiv.parentNode?.replaceChild(placeholder, btnDiv);
+    });
+
+    return {
+      processedHtml: doc.documentElement.outerHTML,
+      extractedVideos: videos,
+      extractedButtons: buttons,
+    };
+  }, [bodyHtml, post?.id, styles]);
+
+  if (loading) {
+    return (
+      <div
+        className="min-h-screen"
+        style={{ backgroundColor: defaultStyles.backgroundColor }}
+      >
+        <div className="max-w-3xl mx-auto px-4 py-12">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-3/4 mb-4"></div>
+            <div className="h-12 bg-gray-200 rounded w-full mb-8"></div>
+            <div className="space-y-4">
+              <div className="h-4 bg-gray-200 rounded"></div>
+              <div className="h-4 bg-gray-200 rounded"></div>
+              <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !post) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="max-w-md mx-auto px-4 text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">
+            Post Not Found
+          </h1>
+          <p className="text-gray-600 mb-6">
+            {error ||
+              "The post you're looking for doesn't exist or is not published."}
+          </p>
+          <a
+            href="/"
+            className="inline-block px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+          >
+            Go to Home
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  // Find matching font option
+  const headingFontOption =
+    fontOptions.find((f) => f.name === styles.headingFont) || fontOptions[0];
+  const bodyFontOption =
+    fontOptions.find((f) => f.name === styles.bodyFont) || fontOptions[1];
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
-      {/* Gradient Background */}
-      <div className="fixed inset-0 -z-10">
-        <div className="absolute inset-0 bg-gradient-to-br from-violet-100 via-purple-50 to-pink-100" />
-        <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-blue-200/40 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
-        <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-pink-200/50 rounded-full blur-3xl translate-x-1/4 translate-y-1/4" />
-        <div className="absolute top-1/2 left-1/4 w-[300px] h-[300px] bg-purple-200/30 rounded-full blur-2xl" />
-      </div>
-
-      {/* Decorative sparkles */}
-      <div className="fixed inset-0 -z-5 overflow-hidden pointer-events-none">
-        <svg className="absolute top-[20%] left-[15%] w-3 h-3 text-gray-400/50" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 0L14 10L24 12L14 14L12 24L10 14L0 12L10 10L12 0Z" />
-        </svg>
-        <svg className="absolute top-[60%] left-[10%] w-2 h-2 text-gray-400/40" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 0L14 10L24 12L14 14L12 24L10 14L0 12L10 10L12 0Z" />
-        </svg>
-        <svg className="absolute top-[40%] right-[10%] w-3 h-3 text-gray-400/50" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 0L14 10L24 12L14 14L12 24L10 14L0 12L10 10L12 0Z" />
-        </svg>
-        <svg className="absolute bottom-[30%] right-[20%] w-2 h-2 text-gray-400/40" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 0L14 10L24 12L14 14L12 24L10 14L0 12L10 10L12 0Z" />
-        </svg>
-        <svg className="absolute bottom-[20%] left-[30%] w-2 h-2 text-gray-400/30" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 0L14 10L24 12L14 14L12 24L10 14L0 12L10 10L12 0Z" />
-        </svg>
-      </div>
-
-      {/* Main Content */}
-      <div className="relative min-h-screen flex flex-col items-center justify-center px-4 py-16">
-        {/* White Card Container */}
-        <div className="w-full max-w-2xl bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl shadow-purple-500/5 border border-white/50 p-8 md:p-12">
-
-          {/* Logo */}
-          <div className="flex items-center justify-center gap-3 mb-12">
-            <Image
-              src="/logo.png"
-              alt="Bloggish"
-              width={40}
-              height={40}
-              className="w-10 h-10 rounded-full"
-            />
-            <span
-              className="text-2xl text-gray-900 tracking-tight"
-              style={{ fontFamily: "'PT Serif', Georgia, serif", fontWeight: 700 }}
-            >
-              Bloggish
-            </span>
-          </div>
-
-
-          {/* Heading - Using PT Serif to match editor H1 */}
-          <h1
-            className="text-4xl md:text-5xl text-gray-900 text-center leading-tight mb-6"
-            style={{ fontFamily: "'PT Serif', Georgia, serif", fontWeight: 400 }}
+    <div
+      className="min-h-screen"
+      style={{ backgroundColor: template?.useGreenTemplate ? "#10B981" : styles.backgroundColor }}
+    >
+      <HeatmapTracker postId={post.id} />
+      <div className="max-w-3xl mx-auto px-4 py-12">
+        {/* Template Header */}
+        {template && template.headerEnabled !== false && (
+          <div
+            className="mb-12"
+            style={{ textAlign: template.alignment || "left" }}
           >
-            It's like a blog but...<br /><span className="font-bold">better</span>
-          </h1>
-
-          {/* Subtext */}
-          <p className="text-center text-gray-500 mb-10 text-lg">
-            Ready to turn your blog into a conversion engine?<br />
-            Secure your spot on the waitlist.
-          </p>
-
-          {/* Waitlist Card */}
-          <div className="bg-white rounded-2xl shadow-lg shadow-gray-200/50 border border-gray-100 p-6 md:p-8">
-            {/* Badge */}
-            <div className="flex justify-center mb-4">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100/80 border border-gray-200/50">
-                <svg className="w-3 h-3 text-gray-600" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 0L14 10L24 12L14 14L12 24L10 14L0 12L10 10L12 0Z" />
-                </svg>
-                <span className="text-xs text-gray-700 font-medium">Bloggish is live by <span className="font-bold">INVITE ONLY</span></span>
-              </div>
-            </div>
-
-            <h2 className="text-xl font-semibold text-gray-900 mb-1 text-center">
-              Join the waitlist
-            </h2>
-            <p className="text-gray-500 text-sm mb-6 text-center">
-              Sign up to be one of the first to use Bloggish.
-            </p>
-
-            {/* Form */}
-            {!isSubmitted ? (
-              <form onSubmit={handleWaitlistSubmit}>
-                <div className="flex gap-3">
-                  <input
-                    type="email"
-                    placeholder="Enter your email..."
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900 transition-colors"
-                  />
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="px-6 py-3 bg-gray-900 text-white font-medium rounded-xl hover:bg-gray-800 transition-all disabled:opacity-50 flex items-center gap-2 whitespace-nowrap"
-                  >
-                    {isSubmitting ? (
-                      <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    ) : (
-                      <>
-                        Get Notified
-                        <ArrowRight className="w-4 h-4" />
-                      </>
-                    )}
-                  </button>
-                </div>
-              </form>
-            ) : (
-              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-center">
-                <p className="text-emerald-700 font-medium">🎉 You're on the list! We'll be in touch soon.</p>
+            {template.seriesName && template.volume && (
+              <p
+                className="mb-4"
+                style={{
+                  fontFamily: template.seriesFont || "inherit",
+                  fontWeight: template.seriesWeight || "400",
+                  fontSize: template.seriesSize || "0.875rem",
+                  color: template.useGreenTemplate ? "#FFFFFF" : (template.seriesColor || styles.textColor),
+                }}
+              >
+                {template.seriesName} • Volume {template.volume}
+              </p>
+            )}
+            {template.title && (
+              <h1
+                className="mb-4"
+                style={{
+                  fontFamily: headingFontOption.value,
+                  fontWeight: styles.headingWeight || "700",
+                  fontSize: "2.5rem",
+                  lineHeight: "1.2",
+                  color: template.useGreenTemplate ? "#FFFFFF" : styles.textColor,
+                }}
+              >
+                {template.title}
+              </h1>
+            )}
+            {template.subtitle && (
+              <p
+                className="mb-6"
+                style={{
+                  fontFamily: bodyFontOption.value,
+                  fontWeight: template.subtitleWeight || "400",
+                  fontSize: template.subtitleSize || "1.125rem",
+                  color: template.useGreenTemplate ? "#FFFFFF" : (template.subtitleColor || styles.textColor),
+                }}
+              >
+                {template.subtitle}
+              </p>
+            )}
+            {(template.authorName || template.date) && (
+              <div
+                className="flex items-center gap-2 text-sm"
+                style={{
+                  fontFamily: bodyFontOption.value,
+                  fontWeight: template.bylineWeight || "400",
+                  fontSize: template.bylineSize || "0.875rem",
+                  color: template.useGreenTemplate ? "#FFFFFF" : (template.bylineColor || styles.secondaryColor),
+                }}
+              >
+                {template.authorName && <span>By {template.authorName}</span>}
+                {template.authorName && template.date && <span>•</span>}
+                {template.date && (
+                  <span className="flex items-center gap-1">
+                    <Calendar size={14} />
+                    {template.date}
+                  </span>
+                )}
               </div>
             )}
           </div>
+        )}
 
-          {/* Login Link */}
-          <p className="text-center text-gray-500 mt-8">
-            Already have an account?{" "}
-            <Link href="/login" className="text-gray-900 font-medium hover:underline">
-              Log in
-            </Link>
-          </p>
+        {/* Content Wrapper - White card for green template */}
+        <div className={template?.useGreenTemplate ? "bg-white rounded-lg p-8 shadow-lg" : ""}>
+          {/* Post Content */}
+          <div
+            className="prose prose-lg max-w-none mb-12"
+            style={{
+              fontFamily: bodyFontOption.value,
+              fontWeight: styles.bodyWeight || "400",
+              color: template?.useGreenTemplate ? "#000000" : styles.textColor,
+            }}
+            dangerouslySetInnerHTML={{ __html: processedHtml }}
+          />
+
+          {/* Videos */}
+          {extractedVideos.map((video) => (
+            <VideoJsPlayer
+              key={video.placeholderId}
+              postId={post.id}
+              placeholderId={video.placeholderId}
+              videoUrl={video.src}
+              videoId={video.id || null}
+              primaryColor={video.primaryColor || styles.primaryColor}
+            />
+          ))}
+
+          {/* Buttons */}
+          {extractedButtons.map((btn) => (
+            <HydratedButton
+              key={btn.placeholderId}
+              placeholderId={btn.placeholderId}
+              attrs={btn.attrs}
+            />
+          ))}
+
+          {/* Components in order */}
+          {post.component_order && post.component_order.length > 0 ? (
+            post.component_order.map((componentType: string) => {
+              if (
+                componentType === "quiz" &&
+                post.quiz_id &&
+                post.quiz_id !== null
+              ) {
+                return (
+                  <QuizRenderer
+                    key="quiz"
+                    quizId={post.quiz_id}
+                    showResponsesPreview={post.quiz_show_responses_preview ?? false}
+                    skipContactCollection={post.quiz_skip_contact_collection ?? false}
+                    showDescription={post.quiz_show_description ?? true}
+                    showResponsesButton={post.quiz_show_responses_button ?? false}
+                  />
+                );
+              }
+              if (componentType === "rating" && post.rating_enabled !== false) {
+                return <ReactionBar key="rating" postId={post.id} />;
+              }
+              if (componentType === "cta" && post.cta_enabled !== false) {
+                return <CTAForm key="cta" postId={post.id} />;
+              }
+              if (componentType === "nextArticle" && post.next_post_id) {
+                return <NextArticle key="nextArticle" nextPostId={post.next_post_id} />;
+              }
+              return null;
+            })
+          ) : (
+            <>
+              {post.quiz_id && post.quiz_id !== null && (
+                <QuizRenderer
+                  quizId={post.quiz_id}
+                  showResponsesPreview={post.quiz_show_responses_preview ?? false}
+                  skipContactCollection={post.quiz_skip_contact_collection ?? false}
+                  showDescription={post.quiz_show_description ?? true}
+                  showResponsesButton={post.quiz_show_responses_button ?? false}
+                />
+              )}
+              {post.rating_enabled !== false && <ReactionBar postId={post.id} />}
+              {post.cta_enabled !== false && <CTAForm postId={post.id} />}
+              {post.next_post_id && <NextArticle nextPostId={post.next_post_id} />}
+            </>
+          )}
         </div>
-
       </div>
     </div>
   );
