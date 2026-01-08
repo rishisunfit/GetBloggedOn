@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Blogish",
-  description: "Your stories, beautifully told",
+  title: "Bloggish",
+  description: "Blogging Made Better",
+  icons: {
+    icon: "/Bloggish_Logo.png",
+  },
 };
