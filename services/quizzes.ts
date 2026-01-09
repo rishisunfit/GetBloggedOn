@@ -49,42 +49,7 @@ const transformQuizToRow = (
 };
 
 export const quizzesApi = {
-  async getAll(): Promise<Quiz[]> {
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData?.user) {
-      throw new Error("User not authenticated");
-    }
-
-    const { data, error } = await supabase
-      .from("quizzes")
-      .select("*")
-      .eq("user_id", userData.user.id)
-      .order("updated_at", { ascending: false });
-
-    if (error) throw error;
-    return (data || []).map(transformQuizRow);
-  },
-
-  async getById(id: string): Promise<Quiz | null> {
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData?.user) {
-      throw new Error("User not authenticated");
-    }
-
-    const { data, error } = await supabase
-      .from("quizzes")
-      .select("*")
-      .eq("id", id)
-      .eq("user_id", userData.user.id)
-      .single();
-
-    if (error) {
-      if (error.code === "PGRST116") return null; // Not found
-      throw error;
-    }
-
-    return data ? transformQuizRow(data) : null;
-  },
+  // Authenticated methods removed for viewer-only app
 
   async getBySlug(slug: string): Promise<Quiz | null> {
     // Public access - no auth required for published quizzes
@@ -118,74 +83,6 @@ export const quizzesApi = {
     }
 
     return data ? transformQuizRow(data) : null;
-  },
-
-  async create(
-    quiz: Omit<Quiz, "id" | "createdAt" | "updatedAt" | "userId">
-  ): Promise<Quiz> {
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData?.user) {
-      throw new Error("User not authenticated");
-    }
-
-    const row = transformQuizToRow({
-      ...quiz,
-      userId: userData.user.id,
-    });
-
-    const { data, error } = await supabase
-      .from("quizzes")
-      .insert(row)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return transformQuizRow(data);
-  },
-
-  async update(id: string, updates: Partial<Quiz>): Promise<Quiz | null> {
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData?.user) {
-      throw new Error("User not authenticated");
-    }
-
-    const row = transformQuizToRow(updates);
-    row.updated_at = new Date().toISOString();
-
-    const { data, error } = await supabase
-      .from("quizzes")
-      .update(row)
-      .eq("id", id)
-      .eq("user_id", userData.user.id)
-      .select()
-      .single();
-
-    if (error) {
-      if (error.code === "PGRST116") return null; // Not found
-      throw error;
-    }
-
-    return data ? transformQuizRow(data) : null;
-  },
-
-  async delete(id: string): Promise<boolean> {
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData?.user) {
-      throw new Error("User not authenticated");
-    }
-
-    const { error } = await supabase
-      .from("quizzes")
-      .delete()
-      .eq("id", id)
-      .eq("user_id", userData.user.id);
-
-    if (error) {
-      if (error.code === "PGRST116") return false; // Not found
-      throw error;
-    }
-
-    return true;
   },
 
   async submitQuiz(

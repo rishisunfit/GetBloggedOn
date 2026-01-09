@@ -47,15 +47,7 @@ export function QuizEmbed({
           quizData = await quizzesApi.getBySlug(quizId);
         }
 
-        // 3. If still not found, try authenticated fetch (for previewing drafts)
-        if (!quizData) {
-          try {
-            // This will throw if not logged in, which we catch and ignore
-            quizData = await quizzesApi.getById(quizId);
-          } catch {
-            // Check auth failed or not found, just ignore and leave quizData as null
-          }
-        }
+
 
         if (quizData) {
           setQuiz(quizData);
