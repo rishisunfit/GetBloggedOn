@@ -290,6 +290,7 @@ export function Editor({
     autoplay: boolean;
     showDuration: boolean;
     showBackground: boolean;
+    title?: string;
   } | null>(null);
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
@@ -729,7 +730,8 @@ export function Editor({
   const handleInsertVideo = (
     url: string,
     align: "left" | "center" | "right" = "center",
-    primaryColor?: string
+    primaryColor?: string,
+    title?: string
   ) => {
     editor
       ?.chain()
@@ -738,6 +740,7 @@ export function Editor({
         src: url,
         align: align || "center",
         primaryColor: primaryColor,
+        title: title,
       })
       .run();
   };
@@ -1127,6 +1130,7 @@ export function Editor({
           autoplay: node.attrs.autoplay !== false,
           showDuration: node.attrs.showDuration !== false,
           showBackground: node.attrs.showBackground !== false,
+          title: node.attrs.title || "",
         });
       } else {
         // Close sidebar if it was auto-opened for video
@@ -1201,7 +1205,6 @@ export function Editor({
         tr.setSelection(NodeSelection.create(tr.doc, videoPos));
         return true;
       });
-      editor.commands.focus();
 
       // Update local state
       setSelectedVideo({
@@ -1238,7 +1241,6 @@ export function Editor({
         tr.setSelection(NodeSelection.create(tr.doc, videoPos));
         return true;
       });
-      editor.commands.focus();
 
       // Update local state
       setSelectedVideo({
@@ -1251,7 +1253,10 @@ export function Editor({
 
   // Handle video settings change
   const handleVideoSettingChange = useCallback(
-    (key: "autoplay" | "showDuration" | "showBackground", value: boolean) => {
+    (
+      key: "autoplay" | "showDuration" | "showBackground" | "title",
+      value: boolean | string
+    ) => {
       if (!editor || !selectedVideo) return;
 
       const { state } = editor;
@@ -1275,7 +1280,6 @@ export function Editor({
         tr.setSelection(NodeSelection.create(tr.doc, videoPos));
         return true;
       });
-      editor.commands.focus();
 
       // Update local state
       setSelectedVideo({
@@ -2894,6 +2898,22 @@ export function Editor({
                   >
                     Delete
                   </button>
+                </div>
+
+                {/* Video Title */}
+                <div className="mb-4">
+                  <label className="block text-xs font-medium text-gray-500 mb-2">
+                    Video Title
+                  </label>
+                  <input
+                    type="text"
+                    value={selectedVideo.title || ""}
+                    onChange={(e) =>
+                      handleVideoSettingChange("title", e.target.value)
+                    }
+                    placeholder="Video Title"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black text-sm"
+                  />
                 </div>
 
                 {/* Video Alignment */}

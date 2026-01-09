@@ -38,13 +38,25 @@ export function QuizEmbed({
       try {
         setLoading(true);
         setError(null);
-        // Try to get by ID first (for user's own quizzes)
-        let quizData = await quizzesApi.getById(quizId);
-        // If not found, try by slug (for published quizzes)
+
+        // 1. Try public fetch by ID (most common case for public viewers)
+        let quizData = await quizzesApi.getPublicById(quizId);
+
+        // 2. If not found, try by slug
         if (!quizData) {
-          // Try to get by slug if quizId looks like a slug
           quizData = await quizzesApi.getBySlug(quizId);
         }
+
+        // 3. If still not found, try authenticated fetch (for previewing drafts)
+        if (!quizData) {
+          try {
+            // This will throw if not logged in, which we catch and ignore
+            quizData = await quizzesApi.getById(quizId);
+          } catch {
+            // Check auth failed or not found, just ignore and leave quizData as null
+          }
+        }
+
         if (quizData) {
           setQuiz(quizData);
         } else {

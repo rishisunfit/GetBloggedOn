@@ -117,6 +117,7 @@ export default function LandingPage() {
       primaryColor: string | null;
       index: number;
       placeholderId: string;
+      title?: string;
     }> = [];
 
     const buttons: Array<{
@@ -128,6 +129,8 @@ export default function LandingPage() {
     iframes.forEach((iframe, index) => {
       const src = iframe.getAttribute("src");
       if (!src) return;
+
+      const title = iframe.getAttribute("data-title") || undefined;
 
       const normalizedSrc = src.startsWith("http")
         ? src
@@ -165,6 +168,7 @@ export default function LandingPage() {
           primaryColor,
           index,
           placeholderId,
+          title,
         });
 
         // Replace iframe with placeholder div
@@ -187,6 +191,8 @@ export default function LandingPage() {
         videoTag.querySelector("source")?.getAttribute("src");
       if (!src) return;
 
+      const title = videoTag.getAttribute("data-title") || undefined;
+
       const normalizedSrc = src.startsWith("http")
         ? src
         : `https://${src.replace(/^\/\//, "")}`;
@@ -204,6 +210,7 @@ export default function LandingPage() {
         primaryColor: styles?.primaryColor || "#3B82F6",
         index: iframes.length + index,
         placeholderId,
+        title,
       });
 
       // Replace video tag with placeholder div
@@ -379,12 +386,14 @@ export default function LandingPage() {
         <div className={template?.useGreenTemplate ? "bg-white rounded-lg p-8 shadow-lg" : ""}>
           {/* Post Content */}
           <div
-            className="prose prose-lg max-w-none mb-12"
+            className="prose prose-lg max-w-none mb-12 preview-content"
             style={{
               fontFamily: bodyFontOption.value,
               fontWeight: styles.bodyWeight || "400",
               color: template?.useGreenTemplate ? "#000000" : styles.textColor,
-            }}
+              "--heading-font": headingFontOption.value,
+              "--heading-weight": styles.headingWeight || "700",
+            } as React.CSSProperties}
             dangerouslySetInnerHTML={{ __html: processedHtml }}
           />
 
@@ -397,6 +406,7 @@ export default function LandingPage() {
               videoUrl={video.src}
               videoId={video.id || null}
               primaryColor={video.primaryColor || styles.primaryColor}
+              videoTitle={video.title}
             />
           ))}
 

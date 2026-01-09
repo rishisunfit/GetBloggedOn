@@ -23,6 +23,7 @@ type VideoJsPlayerProps = {
   primaryColor?: string | null;
   className?: string;
   placeholderId?: string;
+  videoTitle?: string;
 };
 
 export function extractCloudflareVideoIdFromUrl(url: string): {
@@ -129,6 +130,7 @@ export function VideoJsPlayer({
   primaryColor: providedPrimaryColor,
   className,
   placeholderId,
+  videoTitle,
 }: VideoJsPlayerProps) {
   const { videoId: extractedVideoId } =
     extractCloudflareVideoIdFromUrl(videoUrl);
@@ -685,6 +687,25 @@ export function VideoJsPlayer({
               borderRadius: "inherit",
             }}
           >
+            {/* Title */}
+            {videoTitle && (
+              <h3
+                style={{
+                  color: "white",
+                  fontSize: "1.5rem",
+                  fontWeight: 600,
+                  marginBottom: "20px",
+                  textAlign: "center",
+                  textShadow: "0 2px 4px rgba(0, 0, 0, 0.5)",
+                  maxWidth: "90%",
+                  lineHeight: 1.3,
+                  fontFamily: "system-ui, sans-serif",
+                }}
+              >
+                {videoTitle}
+              </h3>
+            )}
+
             {/* Play Button */}
             <div
               style={{

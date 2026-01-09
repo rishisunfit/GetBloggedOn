@@ -8,7 +8,8 @@ interface VideoModalProps {
   onInsert: (
     url: string,
     align: "left" | "center" | "right",
-    primaryColor?: string
+    primaryColor?: string,
+    title?: string
   ) => void;
 }
 
@@ -31,6 +32,7 @@ function isValidCloudflareStreamUrl(url: string): boolean {
 
 export function VideoModal({ isOpen, onClose, onInsert }: VideoModalProps) {
   const [url, setUrl] = useState("");
+  const [title, setTitle] = useState("");
   const [align, setAlign] = useState<"left" | "center" | "right">("center");
   const [primaryColor, setPrimaryColor] = useState("#F48120"); // Default green color
   const [uploading, setUploading] = useState(false);
@@ -46,6 +48,7 @@ export function VideoModal({ isOpen, onClose, onInsert }: VideoModalProps) {
   useEffect(() => {
     if (!isOpen) {
       setUrl("");
+      setTitle("");
       setAlign("center");
       setPrimaryColor("#F48120");
       setUploading(false);
@@ -61,7 +64,7 @@ export function VideoModal({ isOpen, onClose, onInsert }: VideoModalProps) {
 
   const handleInsert = () => {
     if (url.trim() && isValidCloudflareStreamUrl(url)) {
-      onInsert(url.trim(), align, primaryColor);
+      onInsert(url.trim(), align, primaryColor, title);
       onClose();
     }
   };
@@ -172,6 +175,19 @@ export function VideoModal({ isOpen, onClose, onInsert }: VideoModalProps) {
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
+              Video Title (Optional)
+            </label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Enter a title for your video"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Cloudflare Stream URL or Video ID
             </label>
             <input
@@ -179,11 +195,10 @@ export function VideoModal({ isOpen, onClose, onInsert }: VideoModalProps) {
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="https://customer-CODE.cloudflarestream.com/VIDEO_UID/iframe or VIDEO_UID"
-              className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 ${
-                url.trim() && !isUrlValid
-                  ? "border-red-300 focus:ring-red-500"
-                  : "border-gray-300 focus:ring-black"
-              }`}
+              className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 ${url.trim() && !isUrlValid
+                ? "border-red-300 focus:ring-red-500"
+                : "border-gray-300 focus:ring-black"
+                }`}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && isUrlValid) {
                   handleInsert();
@@ -287,31 +302,28 @@ export function VideoModal({ isOpen, onClose, onInsert }: VideoModalProps) {
             <div className="flex gap-2">
               <button
                 onClick={() => setAlign("left")}
-                className={`flex-1 px-4 py-2 rounded-lg border transition-colors ${
-                  align === "left"
-                    ? "bg-black text-white border-black"
-                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                }`}
+                className={`flex-1 px-4 py-2 rounded-lg border transition-colors ${align === "left"
+                  ? "bg-black text-white border-black"
+                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                  }`}
               >
                 Left
               </button>
               <button
                 onClick={() => setAlign("center")}
-                className={`flex-1 px-4 py-2 rounded-lg border transition-colors ${
-                  align === "center"
-                    ? "bg-black text-white border-black"
-                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                }`}
+                className={`flex-1 px-4 py-2 rounded-lg border transition-colors ${align === "center"
+                  ? "bg-black text-white border-black"
+                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                  }`}
               >
                 Center
               </button>
               <button
                 onClick={() => setAlign("right")}
-                className={`flex-1 px-4 py-2 rounded-lg border transition-colors ${
-                  align === "right"
-                    ? "bg-black text-white border-black"
-                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                }`}
+                className={`flex-1 px-4 py-2 rounded-lg border transition-colors ${align === "right"
+                  ? "bg-black text-white border-black"
+                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                  }`}
               >
                 Right
               </button>

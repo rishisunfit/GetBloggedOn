@@ -20,6 +20,7 @@ declare module "@tiptap/core" {
         width?: number;
         height?: number;
         primaryColor?: string; // Hex color for player theme (e.g., "#F48120")
+        title?: string;
       }) => ReturnType;
       /**
        * Set video alignment
@@ -306,6 +307,13 @@ export const VideoExtension = Node.create<VideoOptions>({
           return {};
         },
       },
+      title: {
+        default: "",
+        parseHTML: (element) => element.getAttribute("data-title") || "",
+        renderHTML: (attributes) => ({
+          "data-title": attributes.title,
+        }),
+      },
     };
   },
 
@@ -337,6 +345,7 @@ export const VideoExtension = Node.create<VideoOptions>({
             showDuration: iframe.getAttribute("data-show-duration") !== "false",
             showBackground:
               iframe.getAttribute("data-show-background") !== "false",
+            title: iframe.getAttribute("data-title") || "",
           };
         },
       },
@@ -353,6 +362,7 @@ export const VideoExtension = Node.create<VideoOptions>({
       autoplay,
       showDuration,
       showBackground,
+      title,
     } = node.attrs;
     const sourceUrl = src || HTMLAttributes.src;
 
@@ -406,6 +416,7 @@ export const VideoExtension = Node.create<VideoOptions>({
       "data-autoplay": String(autoplay),
       "data-show-duration": String(showDuration),
       "data-show-background": String(showBackground),
+      "data-title": title || "",
       style: alignmentStyle,
     };
 
@@ -432,6 +443,7 @@ export const VideoExtension = Node.create<VideoOptions>({
             "data-autoplay": String(autoplay),
             "data-show-duration": String(showDuration),
             "data-show-background": String(showBackground),
+            "data-title": title || "",
           },
         ],
       ],
@@ -449,6 +461,7 @@ export const VideoExtension = Node.create<VideoOptions>({
         autoplay,
         showDuration,
         showBackground,
+        title,
       } = node.attrs;
 
       // Extract video ID and customer code from URL if not already stored
@@ -466,6 +479,7 @@ export const VideoExtension = Node.create<VideoOptions>({
       wrapper.setAttribute("data-autoplay", String(autoplay));
       wrapper.setAttribute("data-show-duration", String(showDuration));
       wrapper.setAttribute("data-show-background", String(showBackground));
+      if (title) wrapper.setAttribute("data-title", title);
       if (finalVideoId) {
         wrapper.setAttribute("data-video-id", finalVideoId);
       }
@@ -535,7 +549,7 @@ export const VideoExtension = Node.create<VideoOptions>({
       iframe.frameBorder = "0";
       iframe.setAttribute(
         "allow",
-        "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        "accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
       );
       iframe.allowFullscreen = true;
       iframe.style.width = "100%";
@@ -567,6 +581,7 @@ export const VideoExtension = Node.create<VideoOptions>({
           autoplay?: boolean;
           showDuration?: boolean;
           showBackground?: boolean;
+          title?: string;
         }) =>
         ({ commands }) => {
           const { videoId, customerCode } = extractCloudflareStreamId(
@@ -608,6 +623,7 @@ export const VideoExtension = Node.create<VideoOptions>({
               autoplay: options.autoplay !== false, // default true
               showDuration: options.showDuration !== false, // default true
               showBackground: options.showBackground !== false, // default true
+              title: options.title || "",
             },
           });
         },
@@ -656,6 +672,7 @@ export const VideoExtension = Node.create<VideoOptions>({
           autoplay?: boolean;
           showDuration?: boolean;
           showBackground?: boolean;
+          title?: string;
         }) =>
         ({ tr, state, dispatch }: any) => {
           const { selection } = state;

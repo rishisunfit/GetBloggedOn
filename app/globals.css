@@ -798,9 +798,19 @@
   margin-top: 1.5rem;
 }
 
+.preview-content h1,
+.preview-content h2,
+.preview-content h3,
+.preview-content h4,
+.preview-content h5,
+.preview-content h6 {
+  font-family: var(--heading-font, inherit);
+  font-weight: var(--heading-weight, 700);
+  color: var(--heading-color, inherit);
+}
+
 .preview-content h2 {
   font-size: 1.875rem;
-  font-weight: 700;
   margin-bottom: 0.75rem;
   margin-top: 1.25rem;
 }

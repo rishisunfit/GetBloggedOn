@@ -103,6 +103,23 @@ export const quizzesApi = {
     return data ? transformQuizRow(data) : null;
   },
 
+  async getPublicById(id: string): Promise<Quiz | null> {
+    // Public access - no auth required
+    const { data, error } = await supabase
+      .from("quizzes")
+      .select("*")
+      .eq("id", id)
+      .eq("status", "published")
+      .single();
+
+    if (error) {
+      if (error.code === "PGRST116") return null; // Not found
+      throw error;
+    }
+
+    return data ? transformQuizRow(data) : null;
+  },
+
   async create(
     quiz: Omit<Quiz, "id" | "createdAt" | "updatedAt" | "userId">
   ): Promise<Quiz> {

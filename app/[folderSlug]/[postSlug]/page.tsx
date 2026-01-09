@@ -131,6 +131,7 @@ export default function CanonicalPostPage() {
       primaryColor: string | null;
       index: number;
       placeholderId: string;
+      title?: string;
     }> = [];
 
     const buttons: Array<{
@@ -142,6 +143,8 @@ export default function CanonicalPostPage() {
     iframes.forEach((iframe, index) => {
       const src = iframe.getAttribute("src");
       if (!src) return;
+
+      const title = iframe.getAttribute("data-title") || undefined;
 
       const normalizedSrc = src.startsWith("http")
         ? src
@@ -179,6 +182,7 @@ export default function CanonicalPostPage() {
           primaryColor,
           index,
           placeholderId,
+          title,
         });
 
         // Replace iframe with placeholder div
@@ -201,6 +205,8 @@ export default function CanonicalPostPage() {
         videoTag.querySelector("source")?.getAttribute("src");
       if (!src) return;
 
+      const title = videoTag.getAttribute("data-title") || undefined;
+
       const normalizedSrc = src.startsWith("http")
         ? src
         : `https://${src.replace(/^\/\//, "")}`;
@@ -218,6 +224,7 @@ export default function CanonicalPostPage() {
         primaryColor: styles?.primaryColor || "#3B82F6",
         index: iframes.length + index,
         placeholderId,
+        title,
       });
 
       // Replace video tag with placeholder div
@@ -398,7 +405,9 @@ export default function CanonicalPostPage() {
               fontFamily: bodyFontOption.value,
               fontWeight: styles.bodyWeight || "400",
               color: template?.useGreenTemplate ? "#000000" : styles.textColor,
-            }}
+              "--heading-font": headingFontOption.value,
+              "--heading-weight": styles.headingWeight || "700",
+            } as React.CSSProperties}
             dangerouslySetInnerHTML={{ __html: processedHtml }}
           />
 
@@ -411,6 +420,7 @@ export default function CanonicalPostPage() {
               videoUrl={video.src}
               videoId={video.id || null}
               primaryColor={video.primaryColor || styles.primaryColor}
+              videoTitle={video.title}
             />
           ))}
 
