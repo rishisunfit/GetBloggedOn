@@ -58,7 +58,7 @@ export default function LandingPage() {
         setLoading(true);
         setError(null);
         const data = await postsApi.getPublicById(
-          "1754779f-1b9e-425c-83ff-1b891442c793"
+          "e16229ba-3d67-48a8-88d3-f2981664d4e4"
         );
         const t = data.template_data;
         if (t) {
